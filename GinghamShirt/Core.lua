@@ -502,11 +502,11 @@ function CompanionControlSquareColor(self, event, message, sender, ...)
 
     ---- program control (enable = 0.0, pause = 0.5, disable = 1.0)
     if programControlColor == nil then
-        programControlColor = 0.5
+        programControlColor = 0.0
     end
     ---- moving control (follow = 1.0, stay = 0.0)
     if movingControlColor == nil then
-        movingControlColor = 1.0
+        movingControlColor = 0.0
     end
     ---- combat control (assist = 1.0, passive = 0.0)
     if combatControlColor == nil then
@@ -518,7 +518,7 @@ function CompanionControlSquareColor(self, event, message, sender, ...)
             movingControlColor = 1.0
             programControlColor = 1.0
         elseif programControlColor == 1 then
-            SendChatMessage("Enable the control script! Go to the system and run it if you haven't done this before!", "PARTY")
+            SendChatMessage("Enable the control script!", "PARTY")
             programControlColor = 0.0
         end
     end

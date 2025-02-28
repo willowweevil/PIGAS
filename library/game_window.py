@@ -73,6 +73,9 @@ class GameWindow:
         if not self.window_id:
             self._find_window()
 
+        if not self.window_position or not self.window_size:
+            self._define_window_geometry()
+
         if self.window_id:
             try:
                 subprocess.run(['xdotool', 'windowactivate', self.window_id], capture_output=True, text=True)

@@ -41,3 +41,7 @@ def vector_between_points(point1, point2):
 
 def second_point_of_vector(x1, y1, vector, length=1):
     return x1 + length * np.sin(vector), y1 + length * np.cos(vector)
+
+
+def distance_between_points(point1, point2):
+    return np.linalg.norm(np.array(point2) - np.array(point1))

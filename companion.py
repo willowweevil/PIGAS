@@ -21,7 +21,7 @@ class Action(Enum):
 class Duty(Enum):
     NEARING = auto()
     INITIALIZE = auto()
-    AVOID_LOW_OBSTACLES = auto()
+    AVOID_LOW_OBSTACLE = auto()
     ROTATE = auto()
     ROTATE_LEFT = auto()
     ROTATE_RIGHT = auto()
@@ -33,28 +33,30 @@ class Duty(Enum):
 
 class Companion(object):
     def __init__(self):
-        self.moving_behaviour = Moving.FOLLOW
-        self.combat_behaviour = Combat.ASSIST
+        self.moving_behaviour = Moving.STAY
+        self.combat_behaviour = Combat.PASSIVE
         self.action_behaviour = Action.NONE
         self.duties = []
 
-    def add_duty(self, duty):
+    def add_duty(self, duty: Duty):
         self.duties.append(duty)
 
-    def check_duty(self, duty):
+    def has_duty(self, duty: Duty) -> bool:
         if duty in self.duties:
             return True
         return False
 
-    def change_behaviour(self, new_behaviour):
-        if isinstance(new_behaviour, Moving):
-            self.moving_behaviour = new_behaviour
-        elif isinstance(new_behaviour, Combat):
-            self.combat_behaviour = new_behaviour
-        elif isinstance(new_behaviour, Action):
-            self.action_behaviour = new_behaviour
-        else:
-            raise ValueError("Invalid state type.")
+    def get_duties(self):
+        return self.duties
 
-    def get_behaviour(self):
+    def change_moving_behaviour_to(self, new_moving_behaviour: Moving):
+        self.moving_behaviour = new_moving_behaviour
+
+    def change_combat_behaviour_to(self, new_combat_behaviour: Combat):
+        self.combat_behaviour = new_combat_behaviour
+
+    def change_action_behaviour_to(self, new_action_behaviour: Action):
+        self.action_behaviour = new_action_behaviour
+
+    def get_behaviours(self):
         return self.moving_behaviour, self.combat_behaviour, self.action_behaviour

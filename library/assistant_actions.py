@@ -3,13 +3,13 @@ import subprocess
 import time
 import logging
 
-from library.inputs import InputControllerXdotool
+from library.inputs import InputController
 from library.game_window import GameWindow
 from library.gingham_processing import pixels_analysis, get_message
 from library.ai_openai import get_response
 
 
-class AssistantActions(InputControllerXdotool, GameWindow):
+class AssistantActions(InputController, GameWindow):
     def __init__(self, game_window: GameWindow):
         super().__init__()
         self.window_title = game_window.window_title
@@ -27,24 +27,27 @@ class AssistantActions(InputControllerXdotool, GameWindow):
         return position_x, position_y
 
     def find_and_click(self, area_x, area_y, area_shift_x, area_shift_y, step_x, step_y, should_break=True):
-        cursor_message, was_break = self.scan_area(area_x, area_y, area_shift_x, area_shift_y, step_x, step_y,
+        cursor_message, break_reason = self.scan_area(area_x, area_y, area_shift_x, area_shift_y, step_x, step_y,
                                                    should_break=should_break)
-        if was_break:
+        if break_reason:
             self.click_mouse()
+            if break_reason == 'gather':
+                time.sleep(3)
         else:
             logging.info("Didn't find anything during the scan.")
 
     def scan_area(self, area_x, area_y, area_shift_x, area_shift_y, step_x, step_y, should_break=False):
 
-        break_keywords = ['herbalism', 'mining', 'corpse', 'skivvy']
+        gathering_keywords = ['herbalism', 'mining']
+        looting_keywords = ['corpse', 'skivvy', 'requires']
         scan_array_x, scan_array_y = self._get_scan_array_sides(area_x, area_y, area_shift_x, area_shift_y,
                                                                 step_x, step_y)
         output_message = []
         for y in scan_array_y[::-1]:
             for x in scan_array_x:
-                self.move_mouse(x, y)
+                self.move_mouse_to(x, y)
                 time.sleep(0.1)  # the pause must be here, because new gingham shirts pixels are updating some time
-                scan_gingham_shirt = self.take_screenshot(savefig=True, savefig_prefix='scan')
+                scan_gingham_shirt = self.take_screenshot(savefig=False, savefig_prefix='scan')
                 _, _, cursor_pixels = pixels_analysis(data=scan_gingham_shirt,
                                                    n_monitoring_pixels=self.n_pixels['y'],
                                                    pixel_height=self.pixel_size['y'],
@@ -52,11 +55,12 @@ class AssistantActions(InputControllerXdotool, GameWindow):
                 scan_message = get_message(cursor_pixels).lower()
                 if scan_message:
                     if should_break:
-                        if any(keyword in scan_message for keyword in break_keywords):
-                            return scan_message, True
+                        if any(keyword in scan_message for keyword in gathering_keywords):
+                            return scan_message, 'gather'
+                        elif any(keyword in scan_message for keyword in looting_keywords):
+                            return scan_message, 'loot'
                     else:
                         output_message.append(scan_message)
-
         return output_message, False
 
     def _get_scan_array_sides(self, area_x, area_y, area_shift_x, area_shift_y, step_x, step_y):
@@ -76,7 +80,7 @@ class AssistantActions(InputControllerXdotool, GameWindow):
     def send_message(self, message, channel="/p", receiver=None, key_delay=20, pause=1):
         full_message = f"{channel} {receiver} {message}" if receiver is not None else f"{channel} {message}"
         self.release_movement_keys()
-        self.press_key("Return", pause=0.2)
+        self.press_key("enter", pause=0.2)
         self.type_text(full_message, key_delay=key_delay, pause=0.2)
         self.press_key("Return", pause=pause)
 

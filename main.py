@@ -3,8 +3,9 @@ import time
 
 import subprocess
 
-from library.inputs import Key
-from library.inputs import InputControllerXdotool as InputController
+import numpy as np
+
+from library.inputs import InputController
 
 from library.assistant_actions import AssistantActions
 
@@ -13,6 +14,7 @@ from library.geometry import *
 from library.gingham_processing import *
 
 from companion import *
+
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 
@@ -51,19 +53,27 @@ try:
     time.sleep(1)
 
     forward_held = False
-    forward_released = False
+    forward_released = True
+    left_held = False
+    left_released = True
+    right_held = False
+    right_released = True
 
     frame = 0
     pause_frame = None
     assistant_control_start_time = time.time()
 
-    logging.debug("." * 100)
-    logging.debug(f"Frame #{frame}")
     while True:
         frame_start_time = time.time()
 
+        logging.debug("." * 100)
+        logging.debug(f"Frame #{frame}")
+
         # initialize assistant control class based on initialized GameWindow
         assistant = AssistantActions(game_window)
+        ### initialize the companion with default behavior:
+        # (Moving - STAY; Combat - ASSIST; Action - NONE)
+        companion = Companion()
 
         gingham_shirt = game_window.take_screenshot(savefig=True)
         data_pixels, player_message_pixels, cursor_message_pixels = pixels_analysis(data=gingham_shirt,
@@ -73,32 +83,35 @@ try:
                                                                                     game_window.pixel_size['y'],
                                                                                     pixel_width=
                                                                                     game_window.pixel_size['x'])
-
         ### script manipulation
         pause_script, disable_script = get_script_control_commands(data_pixels[0][0])
 
+        # disable script from game
         if disable_script:
             logging.warning("Control script was disabled from game.")
             if frame == 0:
                 logging.warning("Enable it by sending \'disable\' in the party chat.")
             inputs.release_movement_keys()
             exit(0)
-        # pause
+
+        # pause script
         elif pause_script:
             if not pause_frame:
                 pause_frame = frame
             if pause_frame == frame:
+                logging.info("Control script was paused.")
                 inputs.release_movement_keys()
                 forward_released = True
                 forward_held = False
                 inputs.press_key("x")
-                logging.info("Control script was paused.")
             pause_frame += 1
             pass
+
+        # end of the pause
         if not pause_script and pause_frame:
+            logging.info("Control script is active.")
             inputs.press_key("x", pause=2.0)
             assistant.send_message(message="/salute", channel='/s', pause=4.0)
-            logging.info("Control script is active.")
 
         ### main workflow
         if not disable_script and not pause_script:
@@ -126,7 +139,7 @@ try:
             player_facing_vector = vector_between_points(last_player_coordinates[1], last_player_coordinates[0])
             vector_between_assistant_and_player = vector_between_points((player_x, player_y),
                                                                         (assistant_x, assistant_y))
-            distance_to_player = np.linalg.norm(np.array([player_x, player_y]) - np.array([assistant_x, assistant_y]))
+            distance_to_player = distance_between_points([assistant_x, assistant_y], [player_x, player_y])
             angle_between_assistant_facing_and_vector_to_player = angle_between_vectors(assistant_facing_vector,
                                                                                         vector_between_assistant_and_player)
             angle_between_assistant_facing_and_player_facing = angle_between_vectors(assistant_facing_vector,
@@ -144,7 +157,7 @@ try:
             logging.debug(f"Player facing vector: {[round(float(val), 2) for val in player_facing_vector]}")
             logging.debug(
                 f"Vector between A-P: {[round(float(val), 2) for val in vector_between_assistant_and_player]}")
-            logging.debug(f"Distance between A facing and A-P: {round(distance_to_player, 2)}")
+            logging.debug(f"Distance between A facing and A-P (distance to player): {round(distance_to_player, 2)}")
             logging.debug(
                 f"Angle between A facing and A-P: {round(angle_between_assistant_facing_and_vector_to_player, 2)}")
             logging.debug(
@@ -153,76 +166,63 @@ try:
                 f"Assistant mean velocity for the last {number_of_frames} frames: {assistant_average_velocity}")
 
             ##### define companion activities
-            ### companion behavior and states
-            companion = Companion()
-            # behavior (defined by player commands and messages)
-            companion.moving_behaviour = Moving.STAY
-            companion.combat_behaviour = Combat.PASSIVE
-            companion.action_behaviour = Action.NONE
-            # should_collect_loot = False
-            # should_gather_resources = False
-
-            # states (based on behavior, time and geometry)
-            should_move_closer = False
-            should_do_initial_actions = False
-            # should_follow = False
-            should_avoid_low_obstacle = False
-            should_rotate = False
-            should_rotate_left = False
-            should_rotate_right = False
-            # should_be_assistable_in_combat = False
-            should_help_to_player_in_combat = False
-
             if follow_command:
-                # should_follow = True
-                companion.moving_behaviour = Moving.FOLLOW
+                companion.change_moving_behaviour_to(Moving.FOLLOW)
 
             if assist_command:
-                companion.combat_behaviour = Combat.ASSIST
-                # should_be_assistable_in_combat = True
+                companion.change_combat_behaviour_to(Combat.ASSIST)
 
             if player_message:
-                companion.action_behaviour = Action.ASK_TO_MESSAGE
+                companion.change_action_behaviour_to(Action.ASK_TO_MESSAGE)
+
+            if not loot_command:
+                looting_position = None
+
             elif loot_command:
-                companion.action_behaviour = Action.LOOT
+                companion.change_action_behaviour_to(Action.LOOT)
+                # if not looting_position:
+                #     looting_position = [player_x, player_y]
+                # distance_to_looting_point = distance_between_points([assistant_x, assistant_y], looting_position)
 
             if frame == 0:
-                should_do_initial_actions = True
+                companion.add_duty(Duty.INITIALIZE)
 
-            # if gather_command:
-            #     should_gather_resources = True
-
-            if companion.action_behaviour is Action.LOOT:  # should_collect_loot or should_gather_resources:
+            if companion.action_behaviour is Action.LOOT:
                 distance_delta = 0.08  # if make it closer - companion will run past and run around in circles
-                angle_delta = 12
-                delta_rotation_degree = 10
+                maximum_angle_distance_to_player = 0.5 * distance_delta #0.01
+                #delta_rotation_degree = 10
+                # move_to = player
             else:
                 distance_delta = 0.15
-                angle_delta = 22.5
-                delta_rotation_degree = 60
-
-            rotation_time = np.abs(
-                (angle_between_assistant_facing_and_vector_to_player + angle_delta) / (
-                        rotate_per_second - delta_rotation_degree))
+                maximum_angle_distance_to_player = 1.2 * distance_delta
+                #delta_rotation_degree = 60
+            rotation_angle_delta = np.rad2deg(np.arctan(maximum_angle_distance_to_player / distance_to_player))
+            # rotation_time = np.abs(
+            # (angle_between_assistant_facing_and_vector_to_player + rotation_angle_delta) / (
+            # rotate_per_second - delta_rotation_degree))
+            print(rotation_angle_delta)
 
             if companion.moving_behaviour is Moving.FOLLOW:
                 if distance_to_player >= distance_delta:
-                    should_move_closer = True
+                    companion.add_duty(Duty.NEARING)
 
                 if assistant_average_velocity < 0.001:
                     if distance_to_player > distance_delta * 2:
-                        should_avoid_low_obstacle = True
+                        companion.add_duty(Duty.AVOID_LOW_OBSTACLE)
 
-                if abs(angle_between_assistant_facing_and_vector_to_player) > angle_delta:
-                    should_rotate = True
-                    if angle_between_assistant_facing_and_vector_to_player <= -angle_delta:
-                        should_rotate_right = True
-                    elif angle_between_assistant_facing_and_vector_to_player > angle_delta:
-                        should_rotate_left = True
+                if abs(angle_between_assistant_facing_and_vector_to_player) > rotation_angle_delta:
+                    companion.add_duty(Duty.ROTATE)
+                    if angle_between_assistant_facing_and_vector_to_player <= -rotation_angle_delta:
+                        companion.add_duty(Duty.ROTATE_LEFT)
+                    elif angle_between_assistant_facing_and_vector_to_player > rotation_angle_delta:
+                        companion.add_duty(Duty.ROTATE_RIGHT)
 
             if companion.combat_behaviour is Combat.ASSIST:
                 if player_combat_status:
-                    should_help_to_player_in_combat = True
+                    companion.add_duty(Duty.HELP_IN_COMBAT)
+
+            logging.debug(f"Companion behaviours: {companion.get_behaviours()}")
+            logging.debug(f"Companion duties: {companion.get_duties()}")
 
             ###### companion logic
             ### answer to message and start the new iteration
@@ -233,70 +233,76 @@ try:
                 continue
 
             ### initial actions
-            if should_do_initial_actions:
+            if companion.has_duty(Duty.INITIALIZE):
                 # buffs
-                inputs.hold_key(Key.shift)
+                inputs.hold_key('shift')
                 inputs.press_key("2", pause=0.1)
-                inputs.release_key(Key.shift)
+                inputs.release_key('shift')
                 inputs.press_key("1", pause=2.0)
                 inputs.press_key("2", pause=0.1)
-                inputs.hold_key(Key.shift)
+                inputs.hold_key('shift')
                 inputs.press_key("1", pause=0.1)
-                inputs.release_key(Key.shift)
+                inputs.release_key('shift')
 
             ### movement
             # rotation
-            if should_rotate:
-                if should_rotate_right:
-                    inputs.hold_key_for_time("a", rotation_time)
-                elif should_rotate_left:
-                    inputs.hold_key_for_time("d", rotation_time)
-                else:
-                    inputs.release_key("a"), inputs.release_key("d")
+            if companion.has_duty(Duty.ROTATE_RIGHT) and not right_held:
+                right_held = True
+                right_released = False
+                inputs.hold_key("d")
+
+            if not companion.has_duty(Duty.ROTATE_RIGHT) and not right_released:
+                right_held = False
+                right_released = True
+                inputs.release_key("d")
+
+            if companion.has_duty(Duty.ROTATE_LEFT) and not left_held:
+                left_held = True
+                left_released = False
+                inputs.hold_key("a")
+
+            if not companion.has_duty(Duty.ROTATE_LEFT) and not left_released:
+                left_held = False
+                left_released = True
+                inputs.release_key("a")
+
+            # rotation
+            # if companion.has_duty(Duty.ROTATE):
+            #     if companion.has_duty(Duty.ROTATE_RIGHT):
+            #         inputs.hold_key_for_time("d", rotation_time)
+            #     elif companion.has_duty(Duty.ROTATE_LEFT):
+            #         inputs.hold_key_for_time("a", rotation_time)
+            #     else:
+            #         inputs.release_key("a"), inputs.release_key("d")
 
             # moving
-            if should_move_closer and not forward_held:
+            if companion.has_duty(Duty.NEARING) and not forward_held:
                 forward_held = True
                 forward_released = False
                 inputs.hold_key("w")
-            if not should_move_closer and not forward_released:
+            if not companion.has_duty(Duty.NEARING) and not forward_released:
                 forward_released = True
                 forward_held = False
                 inputs.release_key("w")
 
             # avoid low obstacles
-            if should_move_closer and should_avoid_low_obstacle:
-                inputs.press_key(Key.space, pause=1.5)
+            if companion.has_duty(Duty.NEARING) and companion.has_duty(Duty.AVOID_LOW_OBSTACLE):
+                inputs.press_key('space', pause=1.5)
 
             ### chat-commands based logic
             # looting
             if companion.action_behaviour is Action.LOOT:  # should_gather_resources or should_collect_loot:
                 logging.debug("Going to collect resources.")
-                inputs.move_mouse(game_window.window_position[0] + game_window.window_size[0] - 50,
-                                  game_window.window_position[1] + game_window.window_size[1] - 50)
-                if not should_move_closer and not should_rotate:
+                inputs.move_mouse_to_default_position(game_window)
+                if not companion.has_duty(Duty.NEARING) and not companion.has_duty(Duty.ROTATE):
                     assistant.find_and_click(area_x=200, area_y=300,
                                              area_shift_x=0, area_shift_y=0,
                                              step_x=35, step_y=50)
-                    time.sleep(3)
                     assistant.send_message("#loot", channel="/p", pause=1)
-                    # if should_gather_resources:
-                    #     time.sleep(3)
-                    #     assistant.send_message("#gather", channel="/p", pause=1)
-                    #     should_gather_resources = False
-                    # elif should_collect_loot:
-                    #     assistant.send_message("#loot", channel="/p", pause=1)
-                    #     should_collect_loot = False
-                inputs.move_mouse(game_window.window_position[0] + game_window.window_size[0] - 50,
-                                  game_window.window_position[1] + game_window.window_size[1] - 50)
+                inputs.move_mouse_to_default_position(game_window)
 
             ### assist in combat
-            if should_help_to_player_in_combat:
-                logging.debug("Should assist in combat")
-            else:
-                logging.debug("Shouldn't assist in combat")
-
-            if should_help_to_player_in_combat and not should_move_closer:
+            if companion.has_duty(Duty.HELP_IN_COMBAT) and not companion.has_duty(Duty.NEARING):
                 angle_delta = 30
                 if player_facing_vector != [0,
                                             0] and angle_between_assistant_facing_and_player_facing > angle_delta:
@@ -308,12 +314,13 @@ try:
                         inputs.hold_key_for_time("d",
                                                  np.abs(angle_between_assistant_facing_and_player_facing / 180))
                 else:
-                    if should_help_to_player_in_combat and assistant_state != 'combat': # and companion.combat_behaviour is Combat.ASSIST
+                    if companion.has_duty(
+                            Duty.HELP_IN_COMBAT) and assistant_state != 'combat':  # and companion.combat_behaviour is Combat.ASSIST
                         assistant_state = 'combat'
                         logging.debug("Enter the combat state!")
-                        inputs.hold_key(Key.shift)
+                        inputs.hold_key('shift')
                         inputs.press_key("F2", pause=0.1)
-                        inputs.release_key(Key.shift)
+                        inputs.release_key('shift')
 
                         if power_word_shield_ready:
                             inputs.press_key(spells_info["power word: shield"]["key"], pause=1.0)
@@ -334,7 +341,7 @@ try:
                     inputs.press_key(spells_info['holysmite']["key"], pause=2.0)
                     logging.debug("Cast \"Holysmite!\"")
 
-            if not should_help_to_player_in_combat:
+            if not companion.has_duty(Duty.HELP_IN_COMBAT):
                 assistant_state = 'following'
 
             # spells timers
@@ -376,4 +383,3 @@ except KeyboardInterrupt:
     InputController().release_movement_keys()
     print("Monitoring stopped.")
 
-InputController().release_movement_keys()
