@@ -4,7 +4,7 @@ from pynput.keyboard import Controller as KeyboardController, Key
 from pynput.mouse import Controller as MouseController, Button
 
 
-class InputController:
+class HardwareInputSimulator:
     def __init__(self):
         self.keyboard = KeyboardController()
         self.mouse = MouseController()
