@@ -39,7 +39,8 @@ def vector_between_points(point1, point2):
     return vector
 
 
-def second_point_of_vector(x1, y1, vector, length=1):
+def second_point_of_vector(point1, vector, length=1):
+    x1, y1 = point1
     return x1 + length * np.sin(vector), y1 + length * np.cos(vector)
 
 

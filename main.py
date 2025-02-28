@@ -4,6 +4,7 @@ import time
 import subprocess
 
 import numpy as np
+from statemachine.states import States
 
 from library.inputs import InputController
 
@@ -15,8 +16,7 @@ from library.gingham_processing import *
 
 from companion import *
 
-
-logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
+logging.basicConfig(level=logging.DEBUG, format="%(asctime)s %(levelname)s %(message)s")
 
 # 1 - monitoring column, 85 - letters
 # script, interaction, assistant_(xy, condition), player_(xy, condition), message_len, cursor_info_len
@@ -48,7 +48,15 @@ try:
     inputs = InputController()
     logging.info("Input Controller is ready.")
 
-    assistant_state = 'following'
+    # initialize assistant control class based on initialized GameWindow
+    assistant = AssistantActions(game_window)
+
+    ### initialize the companion with default behavior:
+    # (Moving - STAY; Combat - ASSIST; Action - NONE)
+    companion = Companion()
+    companion.set_state_to(State.NEUTRAL)
+
+    # assistant_state = 'following'
 
     time.sleep(1)
 
@@ -58,6 +66,7 @@ try:
     left_released = True
     right_held = False
     right_released = True
+    nearing_position = (0, 0)
 
     frame = 0
     pause_frame = None
@@ -68,12 +77,6 @@ try:
 
         logging.debug("." * 100)
         logging.debug(f"Frame #{frame}")
-
-        # initialize assistant control class based on initialized GameWindow
-        assistant = AssistantActions(game_window)
-        ### initialize the companion with default behavior:
-        # (Moving - STAY; Combat - ASSIST; Action - NONE)
-        companion = Companion()
 
         gingham_shirt = game_window.take_screenshot(savefig=True)
         data_pixels, player_message_pixels, cursor_message_pixels = pixels_analysis(data=gingham_shirt,
@@ -122,7 +125,7 @@ try:
             loot_command, gather_command, _ = [val // 1.0 for val in data_pixels[1]]
             assistant_coordinates = data_pixels[2:4]
             assistant_combat_status, assistant_health, assistant_mana = data_pixels[4]
-            player_coordinates = data_pixels[5:7]
+            player_coordinates_pixels = data_pixels[5:7]
             player_combat_status, player_health, player_mana = data_pixels[7]
             player_message = get_message(player_message_pixels)
             cursor_message = get_message(cursor_message_pixels)
@@ -130,20 +133,26 @@ try:
             # geometry calculation
             assistant_x, assistant_y, assistant_facing, assistant_pitch = coordinates_recalculation(
                 assistant_coordinates)
-            player_x, player_y, _, _ = coordinates_recalculation(player_coordinates)
-            assistant_facing_vector = vector_between_points((assistant_x, assistant_y),
-                                                            second_point_of_vector(assistant_x, assistant_y,
+            player_x, player_y, _, _ = coordinates_recalculation(player_coordinates_pixels)
+            assistant_position = (assistant_x, assistant_y)
+            player_position = (player_x, player_y)
+            assistant_facing_vector = vector_between_points(assistant_position,
+                                                            second_point_of_vector(assistant_position,
                                                                                    assistant_facing))
-            last_player_coordinates = [last_player_coordinates[1], [player_x,
-                                                                    player_y]] if frame % number_of_frames == 0 else last_player_coordinates
+            last_player_coordinates = [last_player_coordinates[1],
+                                       player_position] if frame % number_of_frames == 0 else last_player_coordinates
             player_facing_vector = vector_between_points(last_player_coordinates[1], last_player_coordinates[0])
-            vector_between_assistant_and_player = vector_between_points((player_x, player_y),
-                                                                        (assistant_x, assistant_y))
-            distance_to_player = distance_between_points([assistant_x, assistant_y], [player_x, player_y])
+            vector_between_assistant_and_player = vector_between_points(player_position,
+                                                                        assistant_position)
+            distance_to_player = distance_between_points(assistant_position, player_position)
             angle_between_assistant_facing_and_vector_to_player = angle_between_vectors(assistant_facing_vector,
                                                                                         vector_between_assistant_and_player)
             angle_between_assistant_facing_and_player_facing = angle_between_vectors(assistant_facing_vector,
                                                                                      player_facing_vector)
+
+
+            angle_between_assistant_facing_and_vector_to_nearing_point = None
+
 
             last_assistant_coordinates.append(np.sqrt(assistant_x ** 2 + assistant_y ** 2))
             last_assistant_coordinates.pop(0)
@@ -166,44 +175,45 @@ try:
                 f"Assistant mean velocity for the last {number_of_frames} frames: {assistant_average_velocity}")
 
             ##### define companion activities
+            companion.set_default_behaviours()
+            companion.clear_duties()
+
+            ### define BEHAVIOURS
             if follow_command:
-                companion.change_moving_behaviour_to(Moving.FOLLOW)
+                companion.set_moving_behaviour_to(Moving.FOLLOW)
 
             if assist_command:
-                companion.change_combat_behaviour_to(Combat.ASSIST)
+                companion.set_combat_behaviour_to(Combat.ASSIST)
 
             if player_message:
-                companion.change_action_behaviour_to(Action.ASK_TO_MESSAGE)
-
-            if not loot_command:
-                looting_position = None
-
+                companion.set_action_behaviour_to(Action.RESPOND)
             elif loot_command:
-                companion.change_action_behaviour_to(Action.LOOT)
-                # if not looting_position:
-                #     looting_position = [player_x, player_y]
-                # distance_to_looting_point = distance_between_points([assistant_x, assistant_y], looting_position)
+                companion.set_action_behaviour_to(Action.LOOT)
 
+            ### define DUTIES
+            companion.clear_duties()
             if frame == 0:
                 companion.add_duty(Duty.INITIALIZE)
 
-            if companion.action_behaviour is Action.LOOT:
+            if companion.action_behavior_is(Action.LOOT):
                 distance_delta = 0.08  # if make it closer - companion will run past and run around in circles
-                maximum_angle_distance_to_player = 0.5 * distance_delta #0.01
-                #delta_rotation_degree = 10
-                # move_to = player
+                maximum_angle_distance_to_player = 0.5 * distance_delta  # 0.01
+                if not companion.state_is(State.LOOTING):
+                    nearing_position = [player_x, player_y]
             else:
                 distance_delta = 0.15
                 maximum_angle_distance_to_player = 1.2 * distance_delta
-                #delta_rotation_degree = 60
-            rotation_angle_delta = np.rad2deg(np.arctan(maximum_angle_distance_to_player / distance_to_player))
-            # rotation_time = np.abs(
-            # (angle_between_assistant_facing_and_vector_to_player + rotation_angle_delta) / (
-            # rotate_per_second - delta_rotation_degree))
-            print(rotation_angle_delta)
+                nearing_position = [player_x, player_y]
 
-            if companion.moving_behaviour is Moving.FOLLOW:
-                if distance_to_player >= distance_delta:
+            rotation_angle_delta = np.rad2deg(np.arctan(maximum_angle_distance_to_player / distance_to_player))
+
+            if companion.combat_behavior_is(Combat.ASSIST):
+                if player_combat_status:
+                    companion.add_duty(Duty.HELP_IN_COMBAT)
+
+            ### define DUTIES again
+            if companion.moving_behavior_is(Moving.FOLLOW):
+                if distance_between_points(nearing_position, [assistant_x, assistant_y]) >= distance_delta:
                     companion.add_duty(Duty.NEARING)
 
                 if assistant_average_velocity < 0.001:
@@ -217,20 +227,25 @@ try:
                     elif angle_between_assistant_facing_and_vector_to_player > rotation_angle_delta:
                         companion.add_duty(Duty.ROTATE_RIGHT)
 
-            if companion.combat_behaviour is Combat.ASSIST:
-                if player_combat_status:
-                    companion.add_duty(Duty.HELP_IN_COMBAT)
+            # if not loot_command:
+            #     looting_position = None
+            # if not looting_position:
+            #     looting_position = [player_x, player_y]
+            # distance_to_looting_point = distance_between_points([assistant_x, assistant_y], looting_position)
+
+            ## define STATE
+            if companion.action_behavior_is(Action.LOOT) and not companion.state_is(State.LOOTING):
+                companion.set_state_to(State.LOOTING)
+            elif companion.has_duty(Duty.HELP_IN_COMBAT) and not companion.state_is(State.IN_COMBAT):
+                companion.set_state_to(State.IN_COMBAT)
+            else:
+                companion.set_state_to(State.NEUTRAL)
 
             logging.debug(f"Companion behaviours: {companion.get_behaviours()}")
             logging.debug(f"Companion duties: {companion.get_duties()}")
+            logging.debug(f"Companion state: {companion.get_state()}")
 
             ###### companion logic
-            ### answer to message and start the new iteration
-            if companion.action_behaviour is Action.ASK_TO_MESSAGE:
-                logging.info(f"Player message: {player_message}")
-                inputs.release_movement_keys()
-                assistant.assistant_response(player_message, context_file='context.txt')
-                continue
 
             ### initial actions
             if companion.has_duty(Duty.INITIALIZE):
@@ -244,36 +259,31 @@ try:
                 inputs.press_key("1", pause=0.1)
                 inputs.release_key('shift')
 
+            ### answer to message and start the new iteration
+            if companion.action_behavior_is(Action.RESPOND):
+                logging.info(f"Player message: {player_message}")
+                inputs.release_movement_keys()
+                assistant.assistant_response(player_message, context_file='context.txt')
+                continue
+
             ### movement
             # rotation
             if companion.has_duty(Duty.ROTATE_RIGHT) and not right_held:
                 right_held = True
                 right_released = False
                 inputs.hold_key("d")
-
             if not companion.has_duty(Duty.ROTATE_RIGHT) and not right_released:
                 right_held = False
                 right_released = True
                 inputs.release_key("d")
-
             if companion.has_duty(Duty.ROTATE_LEFT) and not left_held:
                 left_held = True
                 left_released = False
                 inputs.hold_key("a")
-
             if not companion.has_duty(Duty.ROTATE_LEFT) and not left_released:
                 left_held = False
                 left_released = True
                 inputs.release_key("a")
-
-            # rotation
-            # if companion.has_duty(Duty.ROTATE):
-            #     if companion.has_duty(Duty.ROTATE_RIGHT):
-            #         inputs.hold_key_for_time("d", rotation_time)
-            #     elif companion.has_duty(Duty.ROTATE_LEFT):
-            #         inputs.hold_key_for_time("a", rotation_time)
-            #     else:
-            #         inputs.release_key("a"), inputs.release_key("d")
 
             # moving
             if companion.has_duty(Duty.NEARING) and not forward_held:
@@ -291,7 +301,7 @@ try:
 
             ### chat-commands based logic
             # looting
-            if companion.action_behaviour is Action.LOOT:  # should_gather_resources or should_collect_loot:
+            if companion.action_behavior_is(Action.LOOT):  # should_gather_resources or should_collect_loot:
                 logging.debug("Going to collect resources.")
                 inputs.move_mouse_to_default_position(game_window)
                 if not companion.has_duty(Duty.NEARING) and not companion.has_duty(Duty.ROTATE):
@@ -314,9 +324,7 @@ try:
                         inputs.hold_key_for_time("d",
                                                  np.abs(angle_between_assistant_facing_and_player_facing / 180))
                 else:
-                    if companion.has_duty(
-                            Duty.HELP_IN_COMBAT) and assistant_state != 'combat':  # and companion.combat_behaviour is Combat.ASSIST
-                        assistant_state = 'combat'
+                    if companion.state_is(State.IN_COMBAT):
                         logging.debug("Enter the combat state!")
                         inputs.hold_key('shift')
                         inputs.press_key("F2", pause=0.1)
@@ -340,9 +348,6 @@ try:
 
                     inputs.press_key(spells_info['holysmite']["key"], pause=2.0)
                     logging.debug("Cast \"Holysmite!\"")
-
-            if not companion.has_duty(Duty.HELP_IN_COMBAT):
-                assistant_state = 'following'
 
             # spells timers
             if not penance_ready:
@@ -382,4 +387,3 @@ try:
 except KeyboardInterrupt:
     InputController().release_movement_keys()
     print("Monitoring stopped.")
-

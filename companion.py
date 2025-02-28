@@ -15,7 +15,7 @@ class Combat(Enum):
 class Action(Enum):
     NONE = auto()
     LOOT = auto()
-    ASK_TO_MESSAGE = auto()
+    RESPOND = auto()
 
 
 class Duty(Enum):
@@ -31,12 +31,52 @@ class Duty(Enum):
     HEAL_YOURSELF = auto()
 
 
+class State(Enum):
+    NEUTRAL = auto()
+    IN_COMBAT = auto()
+    LOOTING = auto()
+    RESPONDING = auto()
+
+
 class Companion(object):
     def __init__(self):
         self.moving_behaviour = Moving.STAY
         self.combat_behaviour = Combat.PASSIVE
         self.action_behaviour = Action.NONE
+        self.state = State.NEUTRAL
         self.duties = []
+
+    def set_moving_behaviour_to(self, new_moving_behaviour: Moving):
+        self.moving_behaviour = new_moving_behaviour
+
+    def set_combat_behaviour_to(self, new_combat_behaviour: Combat):
+        self.combat_behaviour = new_combat_behaviour
+
+    def set_action_behaviour_to(self, new_action_behaviour: Action):
+        self.action_behaviour = new_action_behaviour
+
+    def action_behavior_is(self, action_behavior: Action) -> bool:
+        if self.action_behaviour is action_behavior:
+            return True
+        return False
+
+    def set_default_behaviours(self):
+        self.moving_behaviour = Moving.STAY
+        self.combat_behaviour = Combat.PASSIVE
+        self.action_behaviour = Action.NONE
+
+    def moving_behavior_is(self, moving_behaviour: Moving) -> bool:
+        if self.moving_behaviour is moving_behaviour:
+            return True
+        return False
+
+    def combat_behavior_is(self, combat_behaviour: Combat) -> bool:
+        if self.combat_behaviour is combat_behaviour:
+            return True
+        return False
+
+    def get_behaviours(self):
+        return self.moving_behaviour, self.combat_behaviour, self.action_behaviour
 
     def add_duty(self, duty: Duty):
         self.duties.append(duty)
@@ -49,14 +89,16 @@ class Companion(object):
     def get_duties(self):
         return self.duties
 
-    def change_moving_behaviour_to(self, new_moving_behaviour: Moving):
-        self.moving_behaviour = new_moving_behaviour
+    def clear_duties(self):
+        self.duties = []
 
-    def change_combat_behaviour_to(self, new_combat_behaviour: Combat):
-        self.combat_behaviour = new_combat_behaviour
+    def set_state_to(self, state: State):
+        self.state = state
 
-    def change_action_behaviour_to(self, new_action_behaviour: Action):
-        self.action_behaviour = new_action_behaviour
+    def state_is(self, state: State) -> bool:
+        if self.state is state:
+            return True
+        return False
 
-    def get_behaviours(self):
-        return self.moving_behaviour, self.combat_behaviour, self.action_behaviour
+    def get_state(self):
+        return self.state
