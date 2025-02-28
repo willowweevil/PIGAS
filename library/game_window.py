@@ -91,8 +91,8 @@ class GameWindow:
             exit(1)
 
     def _get_screenshot_geometry(self):
-        if not self.window_position or not self.window_size:
-            self._define_window_geometry()
+        # if not self.window_position or not self.window_size:
+        #     self._define_window_geometry()
         position_x, position_y = self.window_position
         width = self.pixel_size['x'] * self.n_pixels['x']
         height = self.pixel_size['y'] * self.n_pixels['y']
