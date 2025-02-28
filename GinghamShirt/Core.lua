@@ -33,7 +33,7 @@ end
 
 local cursorObjectsPixelsData = {}
 cursorObjectsPixelsData[1] = { name = "CursorObjectMessageLengthPixel", xOffset = 0, yOffset = -45 }
-for i = 2, 200, 1 do
+for i = 2, 86, 1 do
     cursorObjectsPixelsData[i] = { name = string.format("CursorObjectPixel_%d", i - 1), xOffset = ginghamPixelSize * (i - 1), yOffset = -5 }
 end
 
@@ -449,7 +449,8 @@ function CursorObjectInfoPixelsColors()
     end
 
     if cursorObjectInfo then
-        local message = string.lower(cursorObjectInfo)
+        local message = string.sub(cursorObjectInfo, 1, 255)
+        message = string.lower(message)
         local messageLen1, messageLen23 = math.modf(#message / 100)
         local messageLen2, messageLen3 = math.modf(messageLen23 * 100 / 10)
         cursorObjectsPixelsData["CursorObjectMessageLengthPixel"].texture:SetTexture(messageLen1 / 10, messageLen2 / 10, messageLen3)
@@ -486,7 +487,7 @@ end
 
 function CleanCursorObjectPixels(cursorObjectMessageLengthPixel, cursorObjectPixel)
     cursorObjectsPixelsData[cursorObjectMessageLengthPixel].texture:SetTexture(0, 0, 0)
-    for i = 1, 199, 1 do
+    for i = 1, 85, 1 do
         cursorObjectsPixelsData[string.format("%s_%d", cursorObjectPixel, i)].texture:SetAlpha(0)
     end
 end
