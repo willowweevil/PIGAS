@@ -3,7 +3,6 @@ import logging
 import mss
 from PIL import Image
 from library.other import read_yaml_file
-import time
 
 
 def run_game():

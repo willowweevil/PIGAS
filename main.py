@@ -60,7 +60,7 @@ try:
     assistant = CompanionActions(game_window)
 
     # companion behaviours and states
-    companion = Companion()
+    companion = CompanionProfile()
     companion.set_state_to(State.NEUTRAL)
 
     time.sleep(1)
@@ -151,7 +151,6 @@ try:
 
             # assistant - nearing point
 
-
             angle_between_assistant_facing_and_vector_to_nearing_point = None
 
             last_assistant_coordinates.append(np.sqrt(assistant_x ** 2 + assistant_y ** 2))
@@ -176,10 +175,8 @@ try:
                 f"Assistant mean velocity for the last {number_of_calculation_frames} frames: {assistant_average_velocity}")
 
             ##### define companion activities
-            companion.set_default_behaviours()
-            companion.clear_duties()
-
             ### define BEHAVIOURS
+            companion.set_default_behaviours()
             if follow_command:
                 companion.set_moving_behaviour_to(Moving.FOLLOW)
 
@@ -196,33 +193,30 @@ try:
             if frame == 0:
                 companion.add_duty(Duty.INITIALIZE)
 
+            if companion.action_behavior_is(Action.RESPOND):
+                companion.add_duty(Duty.RESPOND)
+
             if companion.action_behavior_is(Action.LOOT):
+                companion.add_duty(Duty.LOOT)
                 distance_delta = 0.08  # if make it closer - companion will run past and run around in circles
                 maximum_angle_distance_to_player = 0.25 * distance_delta  # 0.01
                 if not companion.state_is(State.LOOTING):
-                    nearing_position = [player_x, player_y]
+                    nearing_position = player_position
             else:
                 distance_delta = 0.15
                 maximum_angle_distance_to_player = 1.2 * distance_delta
-                nearing_position = [player_x, player_y]
+                nearing_position = player_position
 
-            rotation_angle_delta = np.rad2deg(np.arctan(maximum_angle_distance_to_player / distance_from_assistant_to_player))
+            rotation_angle_delta = np.rad2deg(
+                np.arctan(maximum_angle_distance_to_player / distance_from_assistant_to_player))
 
             if companion.combat_behavior_is(Combat.ASSIST):
                 if player_combat_status:
                     companion.add_duty(Duty.HELP_IN_COMBAT)
 
-            ## define STATE
-            if companion.action_behavior_is(Action.LOOT) and not companion.state_is(State.LOOTING):
-                companion.set_state_to(State.LOOTING)
-            elif companion.has_duty(Duty.HELP_IN_COMBAT) and not companion.state_is(State.IN_COMBAT):
-                companion.set_state_to(State.IN_COMBAT)
-            else:
-                companion.set_state_to(State.NEUTRAL)
-
             ### define geometry-based DUTIES
             if companion.moving_behavior_is(Moving.FOLLOW):
-                if distance_between_points(nearing_position, [assistant_x, assistant_y]) >= distance_delta:
+                if distance_between_points(nearing_position, assistant_position) >= distance_delta:
                     companion.add_duty(Duty.NEARING)
 
                 if assistant_average_velocity < 0.001:
@@ -236,14 +230,25 @@ try:
                     elif angle_between_assistant_facing_and_vector_to_player > rotation_angle_delta:
                         companion.add_duty(Duty.ROTATE_RIGHT)
 
+            ## define STATE
+            companion.set_default_state()
+            if companion.has_duty(Duty.INITIALIZE):
+                companion.set_state_to(State.BUFFING)
+            elif companion.has_duty(Duty.RESPOND):
+                companion.set_state_to(State.RESPONDING)
+            elif companion.has_duty(Duty.LOOT) and not companion.state_is(State.LOOTING):
+                companion.set_state_to(State.LOOTING)
+            elif companion.has_duty(Duty.HELP_IN_COMBAT) and not (
+                    companion.state_is(State.IN_COMBAT) or companion.state_is(State.LOOTING)):
+                companion.set_state_to(State.IN_COMBAT)
+
             logging.debug(f"Companion behaviours: {companion.get_behaviours()}")
             logging.debug(f"Companion duties: {companion.get_duties()}")
             logging.debug(f"Companion state: {companion.get_state()}")
 
             ###### companion logic
-
             ### initial actions
-            if companion.has_duty(Duty.INITIALIZE):
+            if companion.state_is(State.BUFFING):
                 # buffs
                 inputs.hold_key('shift')
                 inputs.press_key("2", pause=0.1)
@@ -253,52 +258,53 @@ try:
                 inputs.hold_key('shift')
                 inputs.press_key("1", pause=0.1)
                 inputs.release_key('shift')
+                continue
 
             ### answer to message and start the new iteration
-            if companion.action_behavior_is(Action.RESPOND):
-                logging.info(f"Player message: {player_message}")
+            if companion.state_is(State.RESPONDING):
                 inputs.release_movement_keys()
-                assistant.ai_companion_response(player_message,
-                                                context_file='context.txt')
+                logging.info(f"Player message: {player_message}")
+                assistant.ai_companion_response(player_message)
                 continue
 
             ### movement
             # rotation
-            if companion.has_duty(Duty.ROTATE_RIGHT) and not right_held:
-                right_held = True
-                right_released = False
-                inputs.hold_key("d")
-            if not companion.has_duty(Duty.ROTATE_RIGHT) and not right_released:
-                right_held = False
-                right_released = True
-                inputs.release_key("d")
-            if companion.has_duty(Duty.ROTATE_LEFT) and not left_held:
-                left_held = True
-                left_released = False
-                inputs.hold_key("a")
-            if not companion.has_duty(Duty.ROTATE_LEFT) and not left_released:
-                left_held = False
-                left_released = True
-                inputs.release_key("a")
+            if companion.state_is_one_of([State.NEUTRAL, State.LOOTING, State.IN_COMBAT]):
+                if companion.has_duty(Duty.ROTATE_RIGHT) and not right_held:
+                    right_held = True
+                    right_released = False
+                    inputs.hold_key("d")
+                if not companion.has_duty(Duty.ROTATE_RIGHT) and not right_released:
+                    right_held = False
+                    right_released = True
+                    inputs.release_key("d")
+                if companion.has_duty(Duty.ROTATE_LEFT) and not left_held:
+                    left_held = True
+                    left_released = False
+                    inputs.hold_key("a")
+                if not companion.has_duty(Duty.ROTATE_LEFT) and not left_released:
+                    left_held = False
+                    left_released = True
+                    inputs.release_key("a")
 
-            # moving
-            if companion.has_duty(Duty.NEARING) and not forward_held:
-                forward_held = True
-                forward_released = False
-                inputs.hold_key("w")
-            if not companion.has_duty(Duty.NEARING) and not forward_released:
-                forward_held = False
-                forward_released = True
-                inputs.release_key("w")
+                # moving
+                if companion.has_duty(Duty.NEARING) and not forward_held:
+                    forward_held = True
+                    forward_released = False
+                    inputs.hold_key("w")
+                if not companion.has_duty(Duty.NEARING) and not forward_released:
+                    forward_held = False
+                    forward_released = True
+                    inputs.release_key("w")
 
-            # avoid low obstacles
-            if companion.has_duty(Duty.NEARING) and companion.has_duty(Duty.AVOID_LOW_OBSTACLE):
-                inputs.press_key('space', pause=1.5)
+                # avoid low obstacles
+                if companion.has_duty(Duty.NEARING) and companion.has_duty(Duty.AVOID_LOW_OBSTACLE):
+                    inputs.press_key('space', pause=1.5)
 
             ### chat-commands based logic
             # looting
-            if companion.action_behavior_is(Action.LOOT):  # should_gather_resources or should_collect_loot:
-                logging.debug("Going to collect resources.")
+            if companion.state_is(State.LOOTING):
+                logging.debug("Going to loot.")
                 inputs.move_mouse_to_default_position(game_window)
                 if not companion.has_duty(Duty.NEARING) and not companion.has_duty(Duty.ROTATE):
                     scan_area_geometry = {'x_length': 200, 'y_length': 200,

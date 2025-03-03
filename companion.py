@@ -25,6 +25,8 @@ class Duty(Enum):
     ROTATE = auto()
     ROTATE_LEFT = auto()
     ROTATE_RIGHT = auto()
+    LOOT = auto()
+    RESPOND = auto()
     HELP_IN_COMBAT = auto()
     HEAL = auto()
     HEAL_PLAYER = auto()
@@ -36,15 +38,24 @@ class State(Enum):
     IN_COMBAT = auto()
     LOOTING = auto()
     RESPONDING = auto()
+    BUFFING = auto()
 
 
-class Companion(object):
+class CompanionProfile(object):
     def __init__(self):
         self.moving_behaviour = Moving.STAY
         self.combat_behaviour = Combat.PASSIVE
         self.action_behaviour = Action.NONE
         self.state = State.NEUTRAL
         self.duties = []
+
+    def set_default_behaviours(self):
+        self.moving_behaviour = Moving.STAY
+        self.combat_behaviour = Combat.PASSIVE
+        self.action_behaviour = Action.NONE
+
+    def get_behaviours(self):
+        return self.moving_behaviour, self.combat_behaviour, self.action_behaviour
 
     def set_moving_behaviour_to(self, new_moving_behaviour: Moving):
         self.moving_behaviour = new_moving_behaviour
@@ -60,11 +71,6 @@ class Companion(object):
             return True
         return False
 
-    def set_default_behaviours(self):
-        self.moving_behaviour = Moving.STAY
-        self.combat_behaviour = Combat.PASSIVE
-        self.action_behaviour = Action.NONE
-
     def moving_behavior_is(self, moving_behaviour: Moving) -> bool:
         if self.moving_behaviour is moving_behaviour:
             return True
@@ -75,8 +81,11 @@ class Companion(object):
             return True
         return False
 
-    def get_behaviours(self):
-        return self.moving_behaviour, self.combat_behaviour, self.action_behaviour
+    def clear_duties(self):
+        self.duties = []
+
+    def get_duties(self):
+        return self.duties
 
     def add_duty(self, duty: Duty):
         self.duties.append(duty)
@@ -86,11 +95,11 @@ class Companion(object):
             return True
         return False
 
-    def get_duties(self):
-        return self.duties
+    def set_default_state(self):
+        self.state = State.NEUTRAL
 
-    def clear_duties(self):
-        self.duties = []
+    def get_state(self):
+        return self.state
 
     def set_state_to(self, state: State):
         self.state = state
@@ -100,5 +109,8 @@ class Companion(object):
             return True
         return False
 
-    def get_state(self):
-        return self.state
+    def state_is_one_of(self, states_list: list[State]) -> bool:
+        if self.state in states_list:
+            return True
+        return False
+

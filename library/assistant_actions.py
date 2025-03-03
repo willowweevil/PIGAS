@@ -110,7 +110,7 @@ class CompanionActions(HardwareInputSimulator, GameWindow):
         self.type_text(full_message, key_delay=key_delay, pause=0.2)
         self.press_key("Return", pause=pause)
 
-    def ai_companion_response(self, player_message, context_file):
+    def ai_companion_response(self, player_message, context_file='context.txt'):
         with open(context_file, 'r') as file:
             context = file.read()
             file.close()
