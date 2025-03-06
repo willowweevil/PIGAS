@@ -1,19 +1,19 @@
 import openai
 import logging
-import time
+from library.other import read_yaml_file
 
 def get_response(input_message):
+    connection_parameters = read_yaml_file('config.yaml')
     client = openai.OpenAI(
         api_key="sk-mbOK4BfoIlrsKFPzAe534e4506E34055815c582e6fFc270c",
         base_url="https://api.aiguoguo199.com/v1"
     )
     try:
         response = client.chat.completions.create(
-            model="gpt-4o-mini",  # 4
+            model="gpt-4o-mini",
             messages=[
-                # {"role": "system", "content": context},
                 {"role": "user", "content": input_message},
-            ], temperature=0.7)
+            ], temperature=0.9)
         return response.choices[0].message.content
     except openai.InternalServerError as e:
         logging.error(e)

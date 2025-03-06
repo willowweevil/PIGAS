@@ -564,12 +564,6 @@ function InteractionCommandsSquareColor(self, event, message, sender, ...)
     if lootColor == nil then
         lootColor = 0
     end
-    if gatherColor == nil then
-        gatherColor = 0
-    end
-    if questColor == nil then
-        questColor = 0
-    end
     if containCommand(message, commands.loot) then
         if lootColor == 0 then
             --SendChatMessage("Going to loot", "PARTY")
@@ -580,18 +574,8 @@ function InteractionCommandsSquareColor(self, event, message, sender, ...)
             assistantState = nil
             lootColor = 0
         end
-    elseif containCommand(message, commands.gather) then
-        if gatherColor == 0 then
-            --SendChatMessage("Going to collect resources", "PARTY")
-            assistantState = states.looting
-            gatherColor = 1
-        else
-            --SendChatMessage("Stop to gather", "PARTY")
-            assistantState = nil
-            gatherColor = 0
-        end
     end
-    squares["InteractionCommandsSquare"].texture:SetTexture(lootColor, gatherColor, questColor)
+    squares["InteractionCommandsSquare"].texture:SetTexture(lootColor, 0, 0)
 end
 
 function SetCoordinates(character)

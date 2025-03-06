@@ -1,3 +1,5 @@
+import logging
+
 import numpy as np
 import re
 from collections import Counter
@@ -17,7 +19,11 @@ def get_image_array(data,
         y_from_to = {'from': 0, 'to': -1}
     if x_from_to is None:
         x_from_to = {'from': 0, 'to': -1}
-    img = data.convert("RGB")
+    try:
+        img = data.convert("RGB")
+    except AttributeError:
+        logging.error("No screenshot for processing.")
+        exit(1)
     img_array = np.array(img)[x_from_to['from']:x_from_to['to'], y_from_to['from']:y_from_to['to'], :]
     if rotate_90:
         img_array = np.rot90(img_array, 1)

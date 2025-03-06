@@ -7,9 +7,10 @@ from library.hardware_input import HardwareInputSimulator
 from library.game_window import GameWindow
 from library.gingham_processing import pixels_analysis, get_message
 from library.ai_openai import get_response
+from companion_profile import *
 
 
-class CompanionActions(HardwareInputSimulator, GameWindow):
+class CompanionActions(HardwareInputSimulator, GameWindow, CompanionProfile):
     def __init__(self, game_window: GameWindow):
         super().__init__()
         self.window_position = game_window.window_position
@@ -17,29 +18,18 @@ class CompanionActions(HardwareInputSimulator, GameWindow):
         self.pixel_size = game_window.pixel_size
         self.n_pixels = game_window.n_pixels
         self.screenshot_shift = game_window.screenshot_shift
+        self.forward_held = False
+        self.forward_released = True
+        self.left_held = False
+        self.left_released = True
+        self.right_held = False
+        self.right_released = True
 
     @property
     def get_companion_position(self):
         position_x = self.window_position[0] + self.window_size[0] / 2
         position_y = self.window_position[1] + self.window_size[1] / 3 * 2
         return position_x, position_y
-
-    def find_and_click(self, area_geometry):
-
-        keywords = {'break': {
-            'gathering': ['herbalism', 'mining'],
-            'looting': ['corpse', 'skivvy', 'requires']
-        },
-            'pass': ['player']
-        }
-
-        cursor_message, break_reason = self._scan_area_with_break(area_geometry, keywords)
-        if break_reason:
-            self.click_mouse()
-            if break_reason == 'gather':
-                time.sleep(3)
-        else:
-            logging.info("Didn't find anything during the scan.")
 
     def _scan_area_with_break(self, area_geometry, keywords):
         pass_keywords = keywords['pass']
@@ -97,11 +87,22 @@ class CompanionActions(HardwareInputSimulator, GameWindow):
                                    endpoint=True, dtype=int)
         return scan_array_x, scan_array_y
 
-    # to Companion main class
-    # def loot
-    # def move
-    # def rotate
-    # def attack
+    def find_and_click(self, area_geometry):
+
+        keywords = {'break': {
+            'gathering': ['herbalism', 'mining', 'skinning'],
+            'looting': ['corpse', 'skivvy', 'requires']
+        },
+            'pass': ['player']
+        }
+
+        cursor_message, break_reason = self._scan_area_with_break(area_geometry, keywords)
+        if break_reason:
+            self.click_mouse()
+            if break_reason == 'gather':
+                time.sleep(3)
+        else:
+            logging.info("Didn't find anything during the scan.")
 
     def send_message_to_chat(self, message, channel="/p", receiver=None, key_delay=20, pause=1):
         full_message = f"{channel} {receiver} {message}" if receiver is not None else f"{channel} {message}"
@@ -110,7 +111,7 @@ class CompanionActions(HardwareInputSimulator, GameWindow):
         self.type_text(full_message, key_delay=key_delay, pause=0.2)
         self.press_key("Return", pause=pause)
 
-    def ai_companion_response(self, player_message, context_file):
+    def ai_companion_response(self, player_message, context_file='context.txt'):
         with open(context_file, 'r') as file:
             context = file.read()
             file.close()
@@ -132,3 +133,85 @@ class CompanionActions(HardwareInputSimulator, GameWindow):
         else:
             self.send_message_to_chat("I'm too tired to speak now..", key_delay=20)
         logging.info(f"Companion answer time was {round(time.time() - assistant_answer_start_time, 2)} seconds.")
+
+    def cast_spell(self, spell_data):
+        if spell_data['cooldown']:
+            if spell_data['ready']:
+                self._perform_casting_actions_sequence(spell_data)
+                spell_data["timestamp_of_cast"] = time.time()
+                spell_data['ready'] = False
+        else:
+            self._perform_casting_actions_sequence(spell_data)
+
+    def _perform_casting_actions_sequence(self, spell_data):
+        action_page_number = str(spell_data['action_page_number'])
+        action_button = str(spell_data['action_button'])
+        self.hold_key('shift')
+        self.press_key(action_page_number, pause=0.1)
+        self.release_key('shift')
+        self.press_key(action_button, pause=2.0)
+        self.hold_key('shift')
+        self.press_key("1", pause=0.1)
+        self.release_key('shift')
+
+    @staticmethod
+    def check_spell_timer(input_spell):
+        spell_ready = input_spell['ready']
+        if not spell_ready:
+            if time.time() - input_spell['timestamp_of_cast'] < input_spell["cooldown"]:
+                logging.debug(
+                    f"Penance cooldown. "
+                    f"Should wait for {round(np.abs(time.time() - input_spell['timestamp_of_cast'] - input_spell["cooldown"]), 2)} seconds")
+                input_spell['ready'] = False
+            else:
+                logging.debug("Penance ready")
+                input_spell['ready'] = True
+
+    def target_the_ally(self, target='player'):
+        if target == 'player_pet':
+            self.hold_key('shift')
+        self.press_key("F2", pause=0.1)
+        if target == 'player_pet':
+            self.release_key('shift')
+
+    def target_the_enemy(self):
+        self.press_key("F2")
+        self.press_key("F", pause=0.5)
+
+    def start_rotating_to_the_left(self):
+        self.left_held = True
+        self.left_released = False
+        self.hold_key("a")
+
+    def start_rotation_clockwise(self):
+        self.right_held = True
+        self.right_released = False
+        self.hold_key("d")
+
+    def stop_rotating_to_the_left(self):
+        self.left_held = False
+        self.left_released = True
+        self.release_key("a")
+
+    def stop_rotating_to_the_right(self):
+        self.right_held = False
+        self.right_released = True
+        self.release_key("d")
+
+    def start_moving_forward(self):
+        self.forward_held = True
+        self.forward_released = False
+        self.hold_key("w")
+
+    def stop_moving_forward(self):
+        self.forward_held = False
+        self.forward_released = True
+        self.release_key("w")
+
+    def jump(self):
+        self.press_key('space')  # , pause=1.5)
+
+    def looting(self, looting_area):
+        self.find_and_click(looting_area)
+        self.send_message_to_chat(message="Just finished to " + "#loot".lower(),
+                                  channel="/p".lower(), pause=1)
