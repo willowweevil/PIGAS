@@ -12,6 +12,8 @@ def coordinates_recalculation(input_data):
 
 
 def angle_between_vectors(v1, v2):
+    if v1 is None or v2 is None:
+        return None
     v1 = v1 / np.linalg.norm(v1) if np.linalg.norm(v1) != 0 else v1
     v2 = v2 / np.linalg.norm(v2) if np.linalg.norm(v2) != 0 else v2
 

@@ -22,9 +22,12 @@ class Duty(Enum):
     NEARING = auto()
     INITIALIZE = auto()
     AVOID_LOW_OBSTACLE = auto()
-    ROTATE = auto()
-    ROTATE_LEFT = auto()
-    ROTATE_RIGHT = auto()
+    ROTATE_TO_PLAYER = auto()
+    ROTATE_TO_PLAYER_LEFT = auto()
+    ROTATE_TO_PLAYER_RIGHT = auto()
+    ROTATE_TO_PLAYER_FACING = auto()
+    ROTATE_TO_PLAYER_FACING_RIGHT = auto()
+    ROTATE_TO_PLAYER_FACING_LEFT = auto()
     LOOT = auto()
     RESPOND = auto()
     HELP_IN_COMBAT = auto()
@@ -35,7 +38,9 @@ class Duty(Enum):
 
 class State(Enum):
     NEUTRAL = auto()
-    IN_COMBAT = auto()
+    ENTERING_COMBAT = auto()
+    ATTACKING = auto()
+    HEALING = auto()
     LOOTING = auto()
     RESPONDING = auto()
     BUFFING = auto()
@@ -66,17 +71,17 @@ class CompanionProfile(object):
     def set_action_behaviour_to(self, new_action_behaviour: Action):
         self.action_behaviour = new_action_behaviour
 
-    def action_behavior_is(self, action_behavior: Action) -> bool:
+    def action_behaviour_is(self, action_behavior: Action) -> bool:
         if self.action_behaviour is action_behavior:
             return True
         return False
 
-    def moving_behavior_is(self, moving_behaviour: Moving) -> bool:
+    def moving_behaviour_is(self, moving_behaviour: Moving) -> bool:
         if self.moving_behaviour is moving_behaviour:
             return True
         return False
 
-    def combat_behavior_is(self, combat_behaviour: Combat) -> bool:
+    def combat_behaviour_is(self, combat_behaviour: Combat) -> bool:
         if self.combat_behaviour is combat_behaviour:
             return True
         return False
