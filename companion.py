@@ -1,5 +1,4 @@
 import numpy as np
-import subprocess
 import time
 import logging
 
@@ -7,7 +6,86 @@ from library.hardware_input import HardwareInputSimulator
 from library.game_window import GameWindow
 from library.gingham_processing import pixels_analysis, get_message
 from library.ai_openai import get_response
-from companion_profile import *
+from library.library_of_states import Action, Moving, Combat, Duty, State
+
+
+class CompanionProfile(object):
+    def __init__(self):
+        self.moving_behaviour = Moving.STAY
+        self.combat_behaviour = Combat.PASSIVE
+        self.action_behaviour = Action.NONE
+        self.state = State.NEUTRAL
+        self.duties = []
+
+    def set_default_behaviours(self):
+        self.moving_behaviour = Moving.STAY
+        self.combat_behaviour = Combat.PASSIVE
+        self.action_behaviour = Action.NONE
+
+    def get_behaviours(self):
+        return self.moving_behaviour, self.combat_behaviour, self.action_behaviour
+
+    def set_moving_behaviour_to(self, new_moving_behaviour: Moving):
+        self.moving_behaviour = new_moving_behaviour
+
+    def set_combat_behaviour_to(self, new_combat_behaviour: Combat):
+        self.combat_behaviour = new_combat_behaviour
+
+    def set_action_behaviour_to(self, new_action_behaviour: Action):
+        self.action_behaviour = new_action_behaviour
+
+    def action_behaviour_is(self, action_behavior: Action) -> bool:
+        if self.action_behaviour is action_behavior:
+            return True
+        return False
+
+    def moving_behaviour_is(self, moving_behaviour: Moving) -> bool:
+        if self.moving_behaviour is moving_behaviour:
+            return True
+        return False
+
+    def combat_behaviour_is(self, combat_behaviour: Combat) -> bool:
+        if self.combat_behaviour is combat_behaviour:
+            return True
+        return False
+
+    def clear_duties(self):
+        self.duties = []
+
+    def get_duties(self):
+        return self.duties
+
+    def add_duty(self, duty: Duty):
+        self.duties.append(duty)
+
+    def has_duty(self, duty: Duty) -> bool:
+        if duty in self.duties:
+            return True
+        return False
+
+    def has_one_of_duties(self, duties: list[Duty]) -> bool:
+        if any(duty in self.duties for duty in duties):
+            return True
+        return False
+
+    def set_default_state(self):
+        self.state = State.NEUTRAL
+
+    def get_state(self):
+        return self.state
+
+    def set_state_to(self, state: State):
+        self.state = state
+
+    def state_is(self, state: State) -> bool:
+        if self.state is state:
+            return True
+        return False
+
+    def state_is_one_of(self, states_list: list[State]) -> bool:
+        if self.state in states_list:
+            return True
+        return False
 
 
 class CompanionActions(HardwareInputSimulator, GameWindow, CompanionProfile):
@@ -104,7 +182,7 @@ class CompanionActions(HardwareInputSimulator, GameWindow, CompanionProfile):
         else:
             logging.info("Didn't find anything during the scan.")
 
-    def send_message_to_chat(self, message, channel="/p", receiver=None, key_delay=20, pause=1):
+    def send_message_to_chat(self, message, channel="/p", receiver=None, key_delay=20, pause=1.0):
         full_message = f"{channel} {receiver} {message}" if receiver is not None else f"{channel} {message}"
         self.release_movement_keys()
         self.press_key("enter", pause=0.2)
@@ -178,25 +256,25 @@ class CompanionActions(HardwareInputSimulator, GameWindow, CompanionProfile):
         self.press_key("F2")
         self.press_key("F", pause=0.5)
 
-    def start_rotating_to_the_left(self):
-        self.left_held = True
-        self.left_released = False
-        self.hold_key("a")
-
     def start_rotation_clockwise(self):
         self.right_held = True
         self.right_released = False
         self.hold_key("d")
 
-    def stop_rotating_to_the_left(self):
-        self.left_held = False
-        self.left_released = True
-        self.release_key("a")
+    def start_rotation_counterclockwise(self):
+        self.left_held = True
+        self.left_released = False
+        self.hold_key("a")
 
-    def stop_rotating_to_the_right(self):
+    def stop_rotation_clockwise(self):
         self.right_held = False
         self.right_released = True
         self.release_key("d")
+
+    def stop_rotation_counterclockwise(self):
+        self.left_held = False
+        self.left_released = True
+        self.release_key("a")
 
     def start_moving_forward(self):
         self.forward_held = True
@@ -211,7 +289,58 @@ class CompanionActions(HardwareInputSimulator, GameWindow, CompanionProfile):
     def jump(self):
         self.press_key('space')  # , pause=1.5)
 
-    def looting(self, looting_area):
+    def loot(self, looting_area):
         self.find_and_click(looting_area)
         self.send_message_to_chat(message="Just finished to " + "#loot".lower(),
                                   channel="/p".lower(), pause=1)
+
+    def rotate(self, duty=None):
+        if not duty:
+            logging.error("Cannot rotate: rotation duty not set.")
+            return False
+        if duty == Duty.ROTATE_TO_PLAYER:
+            clockwise_rotation_duty = Duty.ROTATE_TO_PLAYER_RIGHT
+            counterclockwise_rotation_duty = Duty.ROTATE_TO_PLAYER_LEFT
+        elif duty == Duty.ROTATE_TO_PLAYER_FACING:
+            clockwise_rotation_duty = Duty.ROTATE_TO_PLAYER_FACING_RIGHT
+            counterclockwise_rotation_duty = Duty.ROTATE_TO_PLAYER_FACING_LEFT
+        else:
+            logging.error(f"Cannot rotate: rotation duty ({duty}) not found.")
+            return False
+        if self.has_duty(clockwise_rotation_duty) and not self.right_held:
+            self.start_rotation_clockwise()
+            logging.debug(f"Start clockwise rotation: {clockwise_rotation_duty}.")
+        if not self.has_duty(clockwise_rotation_duty) and not self.right_released:
+            self.stop_rotation_clockwise()
+            logging.debug(f"Stop clockwise rotation: {clockwise_rotation_duty}.")
+        if self.has_duty(counterclockwise_rotation_duty) and not self.left_held:
+            self.start_rotation_counterclockwise()
+            logging.debug(f"Start counterclockwise rotation: {counterclockwise_rotation_duty}.")
+        if not self.has_duty(counterclockwise_rotation_duty) and not self.left_released:
+            self.stop_rotation_counterclockwise()
+            logging.debug(f"Stop counterclockwise rotation: {counterclockwise_rotation_duty}.")
+        return True
+
+    def move_to(self, duty=None):
+        if not duty:
+            logging.error("Cannot move: nearing duty not set.")
+            return False
+        if self.has_duty(duty) and not self.forward_held:
+            self.start_moving_forward()
+        if not self.has_duty(duty) and not self.forward_released:
+            self.stop_moving_forward()
+        return True
+
+    def hands_away_from_keyboard(self):
+        self.release_movement_keys()
+        self.forward_held = False
+        self.forward_released = True
+        self.left_held = False
+        self.left_released = True
+        self.right_held = False
+        self.right_released = True
+
+    def entering_the_game(self):
+        logging.info("Control script is active.")
+        self.press_key("F2")
+        self.send_message_to_chat(message="/salute", channel='/s', pause=3.0)
