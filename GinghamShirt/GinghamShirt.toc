@@ -1,6 +1,5 @@
-## Interface: 43400
+## Interface: 40300
 ## Title: Gingham Shirt
 ## Notes: Export some player data to a plaid format
 ## Author: willowweevil
 Core.lua
-Pixels.lua

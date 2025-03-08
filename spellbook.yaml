@@ -1,0 +1,57 @@
+---
+Penance:
+  action_button: "-"
+  cooldown: 12
+  cast_time: 0
+  action_page_number: 1
+  ready: true
+  timestamp_of_cast: null
+"Power Word: Shield":
+  action_button: "="
+  cooldown: 15
+  cast_time: 0
+  action_page_number: 1
+  ready: true
+  timestamp_of_cast: null
+Smite:
+  action_button: "1"
+  cooldown: 0
+  cast_time: 0
+  action_page_number: 1
+  ready: true
+  timestamp_of_cast: null
+"Physic Scream":
+  action_button: "0"
+  cooldown: 30
+  cast_time: 0
+  action_page_number: 1
+  ready: true
+  timestamp_of_cast: null
+"Inner Fire":
+  action_button: "1"
+  cooldown: 0
+  cast_time: 0
+  action_page_number: 2
+  ready: true
+  timestamp_of_cast: null
+"Power Word: Fortitude":
+  action_button: "2"
+  cooldown: 0
+  cast_time: 0
+  action_page_number: 2
+  ready: true
+  timestamp_of_cast: null
+Flash Heal:
+  action_button: "3"
+  cooldown: 0
+  cast_time: 1.5
+  action_page_number: 2
+  ready: true
+  timestamp_of_cast: null
+Renew:
+  action_button: "4"
+  cooldown: 0
+  cast_time: 0
+  action_page_number: 2
+  ready: true
+  timestamp_of_cast: null

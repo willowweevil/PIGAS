@@ -46,8 +46,13 @@ local squares = {}
 local commands = {
     loot = "#loot",
     gather = "#gather",
-    moving = "#stay-follow",
-    combat = "#assist-passive",
+    stay = "#stay",
+    follow = "#follow",
+    step_by_step = "#step-by-step",
+    assist = "#assist",
+    defend = "#defend",
+    passive = "#passive",
+    only_heal = "#only-heal",
     calibrate = "#calibrate",
     pause = "#pause",
     disable = "#disable",
@@ -505,11 +510,11 @@ function CompanionControlSquareColor(self, event, message, sender, ...)
     if programControlColor == nil then
         programControlColor = 0.0
     end
-    ---- moving control (follow = 1.0, stay = 0.0)
+    ---- moving control (follow = 1.0, step-by-step = 0.5, stay = 0.0)
     if movingControlColor == nil then
         movingControlColor = 0.0
     end
-    ---- combat control (assist = 1.0, passive = 0.0)
+    ---- combat control (assist = 1.0, defend = 0.75, only-heal = 0.5, passive = 0.0)
     if combatControlColor == nil then
         combatControlColor = 1.0
     end
@@ -534,29 +539,51 @@ function CompanionControlSquareColor(self, event, message, sender, ...)
             SendChatMessage("The pause is unavailable! The control script was disabled!", "PARTY")
         end
     end
-    if containCommand(message, commands.moving) then
-        if movingControlColor == 0.0 then
-            SendChatMessage("I'm following you!", "PARTY")
-            movingControlColor = 1.0
-        elseif movingControlColor == 1.0 then
-            SendChatMessage("Ok, I'll be wait here..", "PARTY")
-            movingControlColor = 0.0
-        else
-            print("ERROR: Cannot recognize movingColorControl!")
-        end
+    --if containCommand(message, commands.moving) then
+    --    if movingControlColor == 0.0 then
+    --        SendChatMessage("I'm following you!", "PARTY")
+    --        movingControlColor = 1.0
+    --    elseif movingControlColor == 1.0 then
+    --        SendChatMessage("Ok, I'll be wait here..", "PARTY")
+    --        movingControlColor = 0.0
+    --    else
+    --        print("ERROR: Cannot recognize movingColorControl!")
+    --    end
+    --end
+    if containCommand(message, commands.follow) then
+        SendChatMessage("I'm following you!", "PARTY")
+        movingControlColor = 1.0
+    elseif containCommand(message, commands.step_by_step) then
+        SendChatMessage("I'm following you on your steps!", "PARTY")
+        movingControlColor = 0.5
+    elseif containCommand(message, commands.stay) then
+        SendChatMessage("Ok, I'll be here..", "PARTY")
+        movingControlColor = 0.0
     end
-    if containCommand(message, commands.combat) then
-        if combatControlColor == 0.0 then
-            SendChatMessage("I'll assist!", "PARTY")
-            combatControlColor = 1.0
-        elseif combatControlColor == 1.0 then
-            SendChatMessage("Ok, just look, don't touch..", "PARTY")
-            combatControlColor = 0.0
-        else
-            print("ERROR: Cannot recognize combatColorControl!")
-        end
+    if containCommand(message, commands.assist) then
+        SendChatMessage("I'll assist!", "PARTY")
+        combatControlColor = 1.0
+    elseif containCommand(message, commands.defend) then
+        SendChatMessage("I'll defend you and me!", "PARTY")
+        combatControlColor = 0.75
+    elseif containCommand(message, commands.only_heal) then
+        SendChatMessage("Just healing!", "PARTY")
+        combatControlColor = 0.5
+    elseif containCommand(message, commands.passive) then
+        SendChatMessage("Ok, just look, don't touch..", "PARTY")
+        combatControlColor = 0.0
     end
-
+    --if containCommand(message, commands.combat) then
+    --    if combatControlColor == 0.0 then
+    --        SendChatMessage("I'll assist!", "PARTY")
+    --        combatControlColor = 1.0
+    --    elseif combatControlColor == 1.0 then
+    --        SendChatMessage("Ok, just look, don't touch..", "PARTY")
+    --        combatControlColor = 0.0
+    --    else
+    --        print("ERROR: Cannot recognize combatColorControl!")
+    --    end
+    --end
     squares["CompanionControlSquare"].texture:SetTexture(programControlColor, movingControlColor, combatControlColor)
 end
 
