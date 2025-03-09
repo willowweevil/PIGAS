@@ -1,5 +1,6 @@
 import numpy as np
 import logging
+import time
 
 
 class BasicGeometry:
@@ -49,12 +50,14 @@ class BasicGeometry:
         return np.linalg.norm(np.array(point2) - np.array(point1))
 
 
-class InGameGeometry(BasicGeometry):
+class Navigator(BasicGeometry):
     def __init__(self, n_frames):
         super().__init__()
         self.n_frames = n_frames
         self.last_companion_coordinates = [(0, 0)] * n_frames
         self.last_player_coordinates = [(0, 0)] * n_frames
+        self.last_companion_time = [0] * n_frames
+        self.last_player_time = [0] * n_frames
 
         self.logger = logging.getLogger('ingame_geometry')
         if not self.logger.hasHandlers():
@@ -62,11 +65,24 @@ class InGameGeometry(BasicGeometry):
             self.logger.addHandler(handler)
             self.logger.propagate = False
 
+    def calculate_velocity(self, position, coordinates_array, times_array):
+        times_array.append(time.time())
+        times_array.pop(0)
+        coordinates_array.append(position)
+        coordinates_array.pop(0)
+
+        average_coord_delta = np.average(
+            np.abs(np.diff([np.sqrt(coord[0] ** 2 + coord[1] ** 2) for coord in self.last_companion_coordinates])))
+        time_delta = times_array[-1] - times_array[0]
+        average_velocity = average_coord_delta / time_delta
+
+        return average_velocity
+
     def game_state_geometry(self, data):
         companion_data = self._calculate_companion(data)
         player_data = self._calculate_player(data)
         companion_player_data = self._calculate_companion_player(companion_data, player_data)
-        nearing_and_rotations_data = self._define_nearing_and_rotations(companion_player_data)
+        nearing_and_rotations_data = self._define_moving_constants(companion_player_data)
 
         output_data = {}
         for d in [player_data, companion_data, companion_player_data, nearing_and_rotations_data]:
@@ -85,10 +101,14 @@ class InGameGeometry(BasicGeometry):
                                                              self.second_point_of_vector(companion_position,
                                                                                          companion_facing))
 
-        self.last_companion_coordinates.append(companion_position)
-        self.last_companion_coordinates.pop(0)
-        companion_average_velocity = np.average(
-            np.abs(np.diff([np.sqrt(coord[0] ** 2 + coord[1] ** 2) for coord in self.last_companion_coordinates])))
+        # self.last_companion_coordinates.append(companion_position)
+        # self.last_companion_coordinates.pop(0)
+        # companion_average_velocity = np.average(
+        #     np.abs(np.diff([np.sqrt(coord[0] ** 2 + coord[1] ** 2) for coord in self.last_companion_coordinates])))
+
+        companion_average_velocity = self.calculate_velocity(companion_position,
+                                                             self.last_companion_coordinates,
+                                                             self.last_companion_time)
 
         return {
             'companion_x': companion_x, 'companion_y': companion_y,
@@ -113,8 +133,11 @@ class InGameGeometry(BasicGeometry):
         player_facing_vector = None if player_facing_vector == [0, 0] else player_facing_vector
 
         if None not in self.last_player_coordinates:
-            player_average_velocity = np.average(
-                np.abs(np.diff([np.sqrt(coord[0] ** 2 + coord[1] ** 2) for coord in self.last_player_coordinates])))
+            # player_average_velocity = np.average(
+            #     np.abs(np.diff([np.sqrt(coord[0] ** 2 + coord[1] ** 2) for coord in self.last_player_coordinates])))
+            player_average_velocity = self.calculate_velocity(player_position,
+                                                              self.last_player_coordinates,
+                                                              self.last_player_time)
         else:
             player_average_velocity = None
 
@@ -148,19 +171,33 @@ class InGameGeometry(BasicGeometry):
         }
 
     @staticmethod
-    def _define_nearing_and_rotations(input_data,
-                                      distance_to_player_delta=0.15,
-                                      rotation_to_player_angle_delta_min=10,
-                                      rotation_to_player_angle_delta_max=35):
-        rotation_to_player_angle_delta = rotation_to_player_angle_delta_max
+    def _define_moving_constants(input_data):
+        # distances
+        distance_to_player_delta = 0.15
+        looting_distance_to_player_delta = 0.075
+        distance_to_start_avoid_obstacles = distance_to_player_delta * 3
+        max_distance_from_companion_to_player = 5.0 # distance to start waiting for player
+
+        # angles
+        rotation_to_player_angle_delta_min = 10 # min angle (degrees in one side of rotation)
+        rotation_to_player_angle_delta_max = 35 # max angle (degrees in one side of rotation)
+        rotation_to_player_angle_delta = rotation_to_player_angle_delta_max # defined by distance to player
         if input_data['distance_from_companion_to_player'] and input_data['distance_from_companion_to_player'] > 0:
             rotation_to_player_angle_delta = np.rad2deg(
                 np.arctan(distance_to_player_delta / input_data['distance_from_companion_to_player']))
             rotation_to_player_angle_delta = np.clip(rotation_to_player_angle_delta,
                                                      rotation_to_player_angle_delta_min,
                                                      rotation_to_player_angle_delta_max)
+
+        # velocities
+        minimum_velocity_for_nearing = 0.001  # ingame meters per second
+
         return {'distance_to_player_delta': distance_to_player_delta,
-                'rotation_to_player_angle_delta': rotation_to_player_angle_delta}
+                'rotation_to_player_angle_delta': rotation_to_player_angle_delta,
+                'minimum_velocity_for_nearing': minimum_velocity_for_nearing,
+                'distance_to_start_avoid_obstacles': distance_to_start_avoid_obstacles,
+                'looting_distance_to_player_delta': looting_distance_to_player_delta,
+                'max_distance_from_companion_to_player': max_distance_from_companion_to_player}
 
     def _geometry_logging(self, data):
         self.logger.debug(f"Companion coordinates: {data['companion_x']}, {data['companion_y']}")

@@ -2,12 +2,12 @@ import numpy as np
 import time
 import logging
 
-from library.other import read_yaml_file
-from library.hardware_input import HardwareInputSimulator
-from library.game_window import GameWindow
-from library.gingham_processing import GinghamProcessor
-from library.ai_openai import get_response
-from library.library_of_states import Action, Moving, Combat, Duty, State
+from functions.miscellaneous import read_yaml_file
+from hardware_input import HardwareInputSimulator
+from game_window import GameWindow
+from gingham_processing import GinghamProcessor
+from functions.miscellaneous import get_response
+from functions.entity_attributes import Action, Moving, Combat, Duty, State
 
 
 class CompanionProfile(object):
@@ -89,7 +89,7 @@ class CompanionProfile(object):
         return False
 
 
-class CompanionActions(HardwareInputSimulator, GameWindow, CompanionProfile):
+class CompanionControlLoop(HardwareInputSimulator, GameWindow, CompanionProfile):
     def __init__(self, game_window: GameWindow):
         super().__init__()
         self.window_position = game_window.window_position
@@ -103,7 +103,9 @@ class CompanionActions(HardwareInputSimulator, GameWindow, CompanionProfile):
         self.left_released = True
         self.right_held = False
         self.right_released = True
-        self.spellbook = self.get_spellbook
+        self.waiting_announced = False
+        self.spellbook = {}
+        self.get_spellbook()
         self.companion_position_on_screen = self.get_companion_position
 
         self.logger = logging.getLogger('companion_actions')
@@ -112,9 +114,8 @@ class CompanionActions(HardwareInputSimulator, GameWindow, CompanionProfile):
             self.logger.addHandler(handler)
             self.logger.propagate = False
 
-    @property
     def get_spellbook(self, spellbook_file='spellbook.yaml'):
-        return read_yaml_file(spellbook_file)
+        self.spellbook = read_yaml_file(spellbook_file)
 
     @property
     def get_companion_position(self):
@@ -126,7 +127,7 @@ class CompanionActions(HardwareInputSimulator, GameWindow, CompanionProfile):
     Area scanning and looting
     '''
 
-    def announce_looting(self, was_found):
+    def announce_looting_result(self, was_found):
         if was_found:
             message_suffix = "."
             if was_found == 'gathering':
@@ -139,12 +140,12 @@ class CompanionActions(HardwareInputSimulator, GameWindow, CompanionProfile):
 
     def loot(self, looting_area):
         cursor_message, was_found = self.find_and_click(looting_area)
-        self.announce_looting(was_found)
+        self.announce_looting_result(was_found)
 
     def find_and_click(self, area_geometry):
         keywords = {
             'break': {
-                'gathering': ['herbalism', 'mining', 'skinning'],
+                'gathering': ['herbalism', 'mining', 'skinnable'],
                 'looting': ['corpse', 'skivvy', 'requires']
             },
             'pass': ['player']
@@ -316,6 +317,14 @@ class CompanionActions(HardwareInputSimulator, GameWindow, CompanionProfile):
     '''
     Moving
     '''
+
+    def stay(self):
+        if self.forward_held:
+            self.stop_moving_forward()
+        if self.right_held:
+            self.stop_rotation_clockwise()
+        if self.left_held:
+            self.stop_rotation_counterclockwise()
 
     def move_to(self, duty=None):
         if not duty:

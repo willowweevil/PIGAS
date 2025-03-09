@@ -30,6 +30,7 @@ class Duty(Enum):
     ROTATE_TO_PLAYER_FACING = auto()
     ROTATE_TO_PLAYER_FACING_RIGHT = auto()
     ROTATE_TO_PLAYER_FACING_LEFT = auto()
+    WAITING_FOR_PLAYER = auto()
     LOOT = auto()
     RESPOND = auto()
     HELP_IN_COMBAT = auto()
@@ -40,6 +41,7 @@ class Duty(Enum):
 
 
 class State(Enum):
+    WAITING_FOR_PLAYER = auto()
     NEUTRAL = auto()
     ENTERING_COMBAT_TO_HELP = auto()
     ENTERING_COMBAT_TO_DEFEND = auto()
@@ -50,7 +52,4 @@ class State(Enum):
     LOOTING = auto()
     RESPONDING = auto()
     BUFFING = auto()
-
-
-
-
+    INITIALIZING = auto()

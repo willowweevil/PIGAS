@@ -2,7 +2,7 @@ import subprocess
 import logging
 import mss
 from PIL import Image
-from library.other import read_yaml_file
+from functions.miscellaneous import read_yaml_file
 
 
 def run_game():

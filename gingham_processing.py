@@ -113,6 +113,23 @@ class GinghamProcessor:
         return message
 
     @staticmethod
+    def cursor_message_parser(message):
+        object_type, object_info = message.split(" | ")
+        object_data = {}
+        if object_type == "unit":
+            object_data[object_type] = {}
+            object_info = object_info.split('; ')
+            for info in object_info:
+                object_data[object_type][info.split(':')[0]] = info.split(':')[1].lstrip().rstrip()
+        elif object_type == "gameobject":
+            if 'requires' in object_info:
+                name, profession = object_info.split(', ')
+                object_data[object_type] = {'name': name, 'requires': profession.split(' ')[-1]}
+            else:
+                object_data[object_type] = {'info': object_info}
+        return object_data
+
+    @staticmethod
     def _convert_links_to_text(message):
         matches = re.findall(r'\[([^\]]+)\]', message)
         for match in matches:
@@ -140,6 +157,9 @@ class GinghamProcessor:
         player_combat_status, player_health, player_mana = data_pixels[7]
         player_message = self.get_message(player_message_pixels)
         cursor_message = self.get_message(cursor_message_pixels)
+
+        # if cursor_message:
+        #     print(self.cursor_message_parser(cursor_message))
 
         return {'pause_script': pause_script,
                 'disable_script': disable_script,
