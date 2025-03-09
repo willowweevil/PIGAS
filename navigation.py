@@ -59,7 +59,7 @@ class Navigator(BasicGeometry):
         self.last_companion_time = [0] * n_frames
         self.last_player_time = [0] * n_frames
 
-        self.logger = logging.getLogger('ingame_geometry')
+        self.logger = logging.getLogger('navigation')
         if not self.logger.hasHandlers():
             handler = logging.StreamHandler()
             self.logger.addHandler(handler)

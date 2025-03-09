@@ -1,5 +1,6 @@
 import time
 import subprocess
+import logging
 from pynput.keyboard import Controller as KeyboardController, Key
 from pynput.mouse import Controller as MouseController, Button
 
@@ -8,6 +9,12 @@ class HardwareInputSimulator:
     def __init__(self):
         self.keyboard = KeyboardController()
         self.mouse = MouseController()
+
+        self.logger = logging.getLogger('hardware_input')
+        if not self.logger.hasHandlers():
+            handler = logging.StreamHandler()
+            self.logger.addHandler(handler)
+            self.logger.propagate = False
 
     @staticmethod
     def _transform_input_key_or_button(input_key):
@@ -43,6 +50,8 @@ class HardwareInputSimulator:
 
     def move_mouse_to(self, x, y, pause=0):
         self.mouse.position = (x, y)
+        if x < 0 or y < 0:
+            self.logger.error(f"Incorrect mouse position {x}, {y}")
         time.sleep(pause)
 
     def click_mouse(self, button='right', click_count=1, pause=0):

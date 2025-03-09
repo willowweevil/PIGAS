@@ -318,7 +318,7 @@ function FormLootMessage(self, event, message)
     return lootMessage
 end
 
--- functions without events
+-- library without events
 function ExtractSubstrings(input)
     local results = {}
     for substring in input:gmatch("%[(.-)%]") do
@@ -512,7 +512,7 @@ function CompanionControlSquareColor(self, event, message, sender, ...)
     end
     ---- moving control (follow = 1.0, step-by-step = 0.5, stay = 0.0)
     if movingControlColor == nil then
-        movingControlColor = 0.0
+        movingControlColor = 1.0
     end
     ---- combat control (assist = 1.0, defend = 0.75, only-heal = 0.5, passive = 0.0)
     if combatControlColor == nil then

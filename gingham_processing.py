@@ -137,6 +137,11 @@ class GinghamProcessor:
             message = re.sub(pattern, f'[{match}]', message)
         return message
 
+    @staticmethod
+    def session_constants():
+        health_to_start_healing = 0.6
+        return {'health_to_start_healing': health_to_start_healing}
+
     def to_dictionary(self, all_pixels):
         data_pixels, player_message_pixels, cursor_message_pixels = all_pixels[0], all_pixels[1], all_pixels[2]
 
@@ -161,21 +166,25 @@ class GinghamProcessor:
         # if cursor_message:
         #     print(self.cursor_message_parser(cursor_message))
 
-        return {'pause_script': pause_script,
-                'disable_script': disable_script,
-                'follow_command': follow_command,
-                'step-by-step_command': step_by_step_command,
-                'assist_command': assist_command,
-                'defend_command': defend_command,
-                'only_heal_command': only_heal_command,
-                'loot_command': loot_command,
-                'player_coordinates_pixels': player_coordinates_pixels,
-                'player_combat_status': player_combat_status,
-                'player_health': player_health,
-                'player_mana': player_mana,
-                'companion_coordinates_pixels': companion_coordinates_pixels,
-                'companion_combat_status': companion_combat_status,
-                'companion_health': companion_health,
-                'companion_mana': companion_mana,
-                'player_message': player_message,
-                'cursor_message': cursor_message}
+        session_data = {'pause_script': pause_script,
+                        'disable_script': disable_script,
+                        'follow_command': follow_command,
+                        'step-by-step_command': step_by_step_command,
+                        'assist_command': assist_command,
+                        'defend_command': defend_command,
+                        'only_heal_command': only_heal_command,
+                        'loot_command': loot_command,
+                        'player_coordinates_pixels': player_coordinates_pixels,
+                        'player_combat_status': player_combat_status,
+                        'player_health': player_health,
+                        'player_mana': player_mana,
+                        'companion_coordinates_pixels': companion_coordinates_pixels,
+                        'companion_combat_status': companion_combat_status,
+                        'companion_health': companion_health,
+                        'companion_mana': companion_mana,
+                        'player_message': player_message,
+                        'cursor_message': cursor_message}
+
+        session_data.update(self.session_constants())
+
+        return session_data

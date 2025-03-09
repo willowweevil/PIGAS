@@ -2,12 +2,12 @@ import numpy as np
 import time
 import logging
 
-from functions.miscellaneous import read_yaml_file
+from library.miscellaneous import read_yaml_file
 from hardware_input import HardwareInputSimulator
 from game_window import GameWindow
 from gingham_processing import GinghamProcessor
-from functions.miscellaneous import get_response
-from functions.entity_attributes import Action, Moving, Combat, Duty, State
+from library.miscellaneous import get_response
+from library.entity_attributes import Action, Moving, Combat, Duty, State
 
 
 class CompanionProfile(object):
@@ -19,7 +19,7 @@ class CompanionProfile(object):
         self.duties = []
 
     def set_default_behaviours(self):
-        self.moving_behaviour = Moving.STAY
+        self.moving_behaviour = Moving.FOLLOW
         self.combat_behaviour = Combat.PASSIVE
         self.action_behaviour = Action.NONE
 
@@ -59,6 +59,10 @@ class CompanionProfile(object):
     def add_duty(self, duty: Duty):
         self.duties.append(duty)
 
+    def remove_duty(self, duty: Duty):
+        if self.has_duty(duty):
+            self.duties.remove(duty)
+
     def has_duty(self, duty: Duty) -> bool:
         if duty in self.duties:
             return True
@@ -88,10 +92,32 @@ class CompanionProfile(object):
             return True
         return False
 
+    def define_state(self):
+        duty_to_state_mapping = {
+            Duty.INITIALIZE: State.INITIALIZING,
+            Duty.RESPOND: State.RESPONDING,
+            Duty.WAITING_FOR_PLAYER: State.WAITING_FOR_PLAYER,
+            Duty.NEARING_TO_LOOT: State.NEARING_FOR_LOOTING,
+            Duty.LOOT: State.LOOTING,
+            Duty.NEARING_TO_HEAL_PLAYER: State.NEARING_TO_HEAL_PLAYER,
+            Duty.HEAL_PLAYER: State.HEALING_PLAYER,
+            Duty.HEAL_YOURSELF: State.HEALING_YOURSELF,
+            Duty.NEARING_TO_HELP_IN_COMBAT: State.NEARING_TO_HELP_IN_COMBAT,
+            Duty.HELP_IN_COMBAT: State.ATTACKING_TO_HELP,
+            Duty.DEFEND_YOURSELF: State.ATTACKING_TO_DEFEND,
+        }
+        for duty, state in duty_to_state_mapping.items():
+            if self.has_duty(duty):
+                self.set_state_to(state)
+                break
+        else:
+            self.set_state_to(State.NEUTRAL)
+
 
 class CompanionControlLoop(HardwareInputSimulator, GameWindow, CompanionProfile):
     def __init__(self, game_window: GameWindow):
         super().__init__()
+        self.game_window = game_window
         self.window_position = game_window.window_position
         self.window_size = game_window.window_size
         self.pixel_size = game_window.pixel_size
@@ -104,8 +130,10 @@ class CompanionControlLoop(HardwareInputSimulator, GameWindow, CompanionProfile)
         self.right_held = False
         self.right_released = True
         self.waiting_announced = False
-        self.spellbook = {}
-        self.get_spellbook()
+        self.looting_announced = False
+        self.helping_in_combat_announced = False
+        self.healing_player_announced = False
+        self.spellbook = self.get_spellbook
         self.companion_position_on_screen = self.get_companion_position
 
         self.logger = logging.getLogger('companion_actions')
@@ -114,8 +142,9 @@ class CompanionControlLoop(HardwareInputSimulator, GameWindow, CompanionProfile)
             self.logger.addHandler(handler)
             self.logger.propagate = False
 
+    @property
     def get_spellbook(self, spellbook_file='spellbook.yaml'):
-        self.spellbook = read_yaml_file(spellbook_file)
+        return read_yaml_file(spellbook_file)
 
     @property
     def get_companion_position(self):
@@ -126,6 +155,12 @@ class CompanionControlLoop(HardwareInputSimulator, GameWindow, CompanionProfile)
     '''
     Area scanning and looting
     '''
+
+    def perform_prelooting_actions(self):
+        if not self.looting_announced:
+            self.logger.debug("Going to loot.")
+            self.move_mouse_to_default_position(self.game_window)
+        self.looting_announced = True
 
     def announce_looting_result(self, was_found):
         if was_found:
@@ -138,11 +173,13 @@ class CompanionControlLoop(HardwareInputSimulator, GameWindow, CompanionProfile)
         else:
             self.send_message_to_chat("I didn't find anything during the #looting!")
 
-    def loot(self, looting_area):
-        cursor_message, was_found = self.find_and_click(looting_area)
+    def do_loot_actions(self, looting_area):
+        self.freeze()
+        cursor_message, was_found = self.search_and_click(looting_area)
+        self.move_mouse_to_default_position(self.game_window)
         self.announce_looting_result(was_found)
 
-    def find_and_click(self, area_geometry):
+    def search_and_click(self, area_geometry):
         keywords = {
             'break': {
                 'gathering': ['herbalism', 'mining', 'skinnable'],
@@ -152,7 +189,7 @@ class CompanionControlLoop(HardwareInputSimulator, GameWindow, CompanionProfile)
         }
         cursor_message, break_reason = self._scan_area(area_geometry, keywords, should_break=True)
         if break_reason:
-            self.click_mouse()
+            self.click_mouse(button='left', pause=1)
             return cursor_message, break_reason
         return None, None
 
@@ -216,6 +253,8 @@ class CompanionControlLoop(HardwareInputSimulator, GameWindow, CompanionProfile)
     '''
 
     def ai_companion_response(self, player_message, context_file='context.txt'):
+        self.freeze()
+
         with open(context_file, 'r') as file:
             context = file.read()
             file.close()
@@ -243,7 +282,7 @@ class CompanionControlLoop(HardwareInputSimulator, GameWindow, CompanionProfile)
     def send_message_to_chat(self, message, channel="/p", receiver=None, key_delay=20, pause=1.0):
         full_message = f"{channel} {receiver} {message}" if receiver is not None else f"{channel} {message}"
         self.logger.debug(f"Going to send a message \"{full_message}\" to the chat.")
-        self.release_movement_keys()
+        self.freeze()
         self.press_key("enter", pause=0.2)
         self.type_text(full_message, key_delay=key_delay, pause=0.2)
         self.press_key("Return", pause=pause)
@@ -251,6 +290,23 @@ class CompanionControlLoop(HardwareInputSimulator, GameWindow, CompanionProfile)
     '''
     Spells and casting
     '''
+
+    def apply_combat_rotation(self, ally_target=None, enemy_is_target_of=None):
+        if self.spellbook['Power Word: Shield']['ready']:
+            self.target_the_ally(target=ally_target)
+            self.cast_spell('Power Word: Shield')
+        self.target_the_enemy(target_of=enemy_is_target_of)
+        if self.spellbook['Penance']['ready']:
+            self.cast_spell('Penance')
+        else:
+            self.cast_spell('Smite')
+
+    def apply_healing_rotation(self, ally_target=None):
+        self.target_the_ally(target=ally_target)
+        if self.spellbook['Power Word: Shield']['ready']:
+            self.cast_spell('Power Word: Shield')
+        else:
+            self.cast_spell('Flash Heal')
 
     def cast_spell(self, spell):
         spell_data = self.spellbook[spell]
@@ -276,19 +332,6 @@ class CompanionControlLoop(HardwareInputSimulator, GameWindow, CompanionProfile)
         self.hold_key('shift')
         self.press_key("1", pause=0.1)
         self.release_key('shift')
-
-    def check_spell_readiness(self, spell_name):
-        input_spell = self.spellbook[spell_name]
-        spell_ready = input_spell['ready']
-        if not spell_ready:
-            if time.time() - input_spell['timestamp_of_cast'] < input_spell["cooldown"]:
-                self.logger.debug(
-                    f"{spell_name} cooldown. "
-                    f"Should wait for {round(np.abs(time.time() - input_spell['timestamp_of_cast'] - input_spell["cooldown"]), 2)} seconds")
-                input_spell['ready'] = False
-            else:
-                self.logger.debug(f"{spell_name} is ready")
-                input_spell['ready'] = True
 
     '''
     Targeting
@@ -318,7 +361,7 @@ class CompanionControlLoop(HardwareInputSimulator, GameWindow, CompanionProfile)
     Moving
     '''
 
-    def stay(self):
+    def freeze(self):
         if self.forward_held:
             self.stop_moving_forward()
         if self.right_held:
@@ -403,19 +446,42 @@ class CompanionControlLoop(HardwareInputSimulator, GameWindow, CompanionProfile)
     Other activities
     '''
 
+    def waiting_for_player(self):
+        if not self.waiting_announced:
+            self.send_message_to_chat("Hey! I don't see you! I'll be waiting for you here..")
+        self.waiting_announced = True
+
     def entering_the_game(self):
         self.logger.info("Companion is active.")
         self.press_key("F2")
         self.send_message_to_chat(message="/salute", channel='/s', pause=3.0)
 
-    def hands_away_from_keyboard(self):
-        self.release_movement_keys()
-        self.forward_held = False
-        self.forward_released = True
-        self.left_held = False
-        self.left_released = True
-        self.right_held = False
-        self.right_released = True
+    def check_spellbook_cooldowns(self):
+        for spell in self.spellbook.keys():
+            if self.spellbook[spell]['cooldown']:
+                self.check_spell_readiness(spell)
+
+    def check_spell_readiness(self, spell_name):
+        input_spell = self.spellbook[spell_name]
+        spell_ready = input_spell['ready']
+        if not spell_ready:
+            if time.time() - input_spell['timestamp_of_cast'] < input_spell["cooldown"]:
+                self.logger.debug(
+                    f"{spell_name} cooldown. "
+                    f"Should wait for {round(np.abs(time.time() - input_spell['timestamp_of_cast'] - input_spell["cooldown"]), 2)} seconds")
+                input_spell['ready'] = False
+            else:
+                self.logger.debug(f"{spell_name} is ready")
+                input_spell['ready'] = True
+
+    # def hands_away_from_keyboard(self):
+    #     self.release_movement_keys()
+    #     self.forward_held = False
+    #     self.forward_released = True
+    #     self.left_held = False
+    #     self.left_released = True
+    #     self.right_held = False
+    #     self.right_released = True
 
     # def healing_rotation(self, target):
     #     self.target_the_ally(target)
