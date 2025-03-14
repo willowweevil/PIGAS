@@ -36,9 +36,16 @@ class HardwareInputSimulator:
             output_key = Key.enter
         return output_key
 
-    @staticmethod
-    def type_text(message, key_delay=20, pause=1.0):
-        subprocess.run(["ydotool", "type", "--key-delay", f"{key_delay}", message], stderr=subprocess.DEVNULL)
+    def type_text(self, message, key_delay=20, pause=1.0):
+        shift_characters = "!@#$%^&*()_+{}:\"<>?|~"
+        for character in message:
+            if character in shift_characters or character.isupper():
+                self.hold_key("shift")
+            self.keyboard.press(character)
+            self.keyboard.release(character)
+            if character in shift_characters or character.isupper():
+                self.release_key("shift")
+            time.sleep(key_delay/1000)
         time.sleep(pause)
 
     def move_mouse_to_default_position(self, game_window):
@@ -94,6 +101,11 @@ class HardwareInputSimulator:
         subprocess.run(["ydotool", "type", "--key-delay", f"{key_delay}", full_message])
         time.sleep(0.2)
         self.keyboard.tap(Key.enter)
+        time.sleep(pause)
+
+    @staticmethod
+    def type_text_with_ydotool(message, key_delay=20, pause=1.0):
+        subprocess.run(["ydotool", "type", "--key-delay", f"{key_delay}", message], stderr=subprocess.DEVNULL)
         time.sleep(pause)
 
     def release_movement_keys(self):

@@ -19,15 +19,9 @@ logging.getLogger('navigation').setLevel(logging.INFO)
 logging.getLogger('companion').setLevel(logging.INFO)
 
 try:
-    # keyboard inputs backend
-    subprocess.run(["pkill", "ydotoold"])
-    subprocess.Popen(["nohup", "ydotoold", "&"], stdout=subprocess.PIPE,
-                     stderr=subprocess.PIPE)  # pipes are using to suppress ydotoold info logging
-
     # game window
     game_window = GameWindow()
-    game_window.activate_window("World of Warcraft")
-    logging.info("WoW In-Game Companion activated.")
+    game_window.initialize_window_parameters("World of Warcraft")
 
     # keyboard and mouse
     inputs = HardwareInputSimulator()
@@ -48,8 +42,11 @@ try:
     controller = TotalController()
     # session_data = controller.session_data
 
+    logging.info("WoW In-Game Companion is ready to start.")
     time.sleep(1)
     while True:
+        game_window.set_window_to_active_state()
+
         frame_start_time = time.time()
 
         screenshot = game_window.take_screenshot(savefig=False)
