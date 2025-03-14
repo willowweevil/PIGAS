@@ -174,9 +174,10 @@ class Navigator(BasicGeometry):
     def _define_moving_constants(input_data):
         # distances
         distance_to_player_delta = 0.15
-        looting_distance_to_player_delta = 0.075
+        mounted_distance_to_player_delta = distance_to_player_delta * 1.25
+        looting_distance_to_player_delta = distance_to_player_delta / 2
         distance_to_start_avoid_obstacles = distance_to_player_delta * 3
-        max_distance_from_companion_to_player = 5.0 # distance to start waiting for player
+        max_distance_from_companion_to_player = 7.5 # distance to start waiting for player
 
         # angles
         rotation_to_player_angle_delta_min = 10 # min angle (degrees in one side of rotation)
@@ -192,7 +193,8 @@ class Navigator(BasicGeometry):
         # velocities
         minimum_velocity_for_nearing = 0.001  # ingame meters per second
 
-        return {'distance_to_player_delta': distance_to_player_delta,
+        return {'mounted_distance_to_player_delta': mounted_distance_to_player_delta,
+                'distance_to_player_delta': distance_to_player_delta,
                 'rotation_to_player_angle_delta': rotation_to_player_angle_delta,
                 'minimum_velocity_for_nearing': minimum_velocity_for_nearing,
                 'distance_to_start_avoid_obstacles': distance_to_start_avoid_obstacles,

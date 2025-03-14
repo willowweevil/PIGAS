@@ -7,11 +7,12 @@ from hardware_input import HardwareInputSimulator
 from game_window import GameWindow
 from gingham_processing import GinghamProcessor
 from library.miscellaneous import get_response
-from library.entity_attributes import Action, Moving, Combat, Duty, State
+from library.entity_attributes import Action, Moving, Combat, Mount, Duty, State
 
 
 class CompanionProfile(object):
     def __init__(self):
+        self.mount_behaviour = Mount.UNMOUNTED
         self.moving_behaviour = Moving.STAY
         self.combat_behaviour = Combat.PASSIVE
         self.action_behaviour = Action.NONE
@@ -19,12 +20,20 @@ class CompanionProfile(object):
         self.duties = []
 
     def set_default_behaviours(self):
+        self.mount_behaviour = Mount.UNMOUNTED
         self.moving_behaviour = Moving.FOLLOW
         self.combat_behaviour = Combat.PASSIVE
         self.action_behaviour = Action.NONE
 
+    @property
+    def movement_restricted_states(self):
+        return [State.INITIALIZING, State.RESPONDING, State.WAITING_FOR_PLAYER, State.MOUNTING, State.UNMOUNTING]
+
     def get_behaviours(self):
-        return self.moving_behaviour, self.combat_behaviour, self.action_behaviour
+        return self.mount_behaviour, self.moving_behaviour, self.combat_behaviour, self.action_behaviour
+
+    def set_mount_behaviour_to(self, new_mount_behaviour: Mount):
+        self.mount_behaviour = new_mount_behaviour
 
     def set_moving_behaviour_to(self, new_moving_behaviour: Moving):
         self.moving_behaviour = new_moving_behaviour
@@ -34,6 +43,11 @@ class CompanionProfile(object):
 
     def set_action_behaviour_to(self, new_action_behaviour: Action):
         self.action_behaviour = new_action_behaviour
+
+    def mount_behaviour_is(self, mount_behaviour: Mount) -> bool:
+        if self.mount_behaviour is mount_behaviour:
+            return True
+        return False
 
     def action_behaviour_is(self, action_behavior: Action) -> bool:
         if self.action_behaviour is action_behavior:
@@ -92,13 +106,144 @@ class CompanionProfile(object):
             return True
         return False
 
+
+class CompanionControlLoop(HardwareInputSimulator, GameWindow, CompanionProfile):
+    def __init__(self):
+        super().__init__()
+        self.game_window = None
+        self.window_position = None
+        self.window_size = None
+        self.pixel_size = None
+        self.n_pixels = None
+        self.screenshot_shift = None
+
+        self.session_data = {}
+
+        self.spellbook_file = None
+        self.rotations_file = None
+
+        self.forward_held = False
+        self.forward_released = True
+        self.left_held = False
+        self.left_released = True
+        self.right_held = False
+        self.right_released = True
+
+        self.waiting_announced = False
+        self.looting_announced = False
+        self.helping_in_combat_announced = False
+        self.healing_player_announced = False
+
+        self.spellbook = None
+        self.battle_rotation = None
+        self.healing_rotation = None
+        self.buffing_rotation = None
+
+        self.logger = logging.getLogger('companion')
+        if not self.logger.hasHandlers():
+            handler = logging.StreamHandler()
+            self.logger.addHandler(handler)
+            self.logger.propagate = False
+
+    def initialize_values(self, game_window, spellbook_file, rotations_file):
+        self.game_window = game_window
+        self.window_position = game_window.window_position
+        self.window_size = game_window.window_size
+        self.pixel_size = game_window.pixel_size
+        self.n_pixels = game_window.n_pixels
+        self.screenshot_shift = game_window.screenshot_shift
+        self.spellbook_file = spellbook_file
+        self.rotations_file = rotations_file
+        self.initialize_spellbook()
+        self.get_rotations()
+
+    def update_session(self, session_data):
+        self.session_data = session_data
+
+    @property
+    def companion_position_on_screen(self):
+        position_x = self.window_position[0] + self.window_size[0] / 2
+        position_y = self.window_position[1] + self.window_size[1] / 3 * 2
+        return position_x, position_y
+
+    def initialize_spellbook(self):
+        spellbook = read_yaml_file(self.spellbook_file)
+        for _, spell_info in spellbook.items():
+            spell_info['ready'] = True
+            spell_info['timestamp_of_cast'] = None
+        self.spellbook = spellbook
+
+    def get_rotations(self):
+        rotations = read_yaml_file(self.rotations_file)
+        self.battle_rotation = rotations["Battle Rotation"]
+        self.healing_rotation = rotations["Healing Rotation"]
+        self.buffing_rotation = rotations["Buffing Rotation"]
+
+    '''
+    Companion Session Profile
+    '''
+    def define_moving_behaviour(self):
+        moving_behaviour_mapping = {
+            'follow_command': Moving.FOLLOW,
+            'step_by_step_command': Moving.STEP_BY_STEP,
+            'stay_command': Moving.STAY,
+        }
+        for command, behaviour in moving_behaviour_mapping.items():
+            if self.session_data[command]:
+                self.set_moving_behaviour_to(behaviour)
+                break
+        else:
+            self.logger.error(f"Moving behaviour is not defined. Use \"{Moving.STAY}\" as default.")
+            self.set_moving_behaviour_to(Moving.STAY)
+
+    def define_combat_behaviour(self):
+        combat_behaviour_mapping = {
+            'assist_command': Combat.ASSIST,
+            'defend_command': Combat.DEFEND,
+            'only_heal_command': Combat.ONLY_HEAL,
+            'passive_command': Combat.PASSIVE
+        }
+        for command, behaviour in combat_behaviour_mapping.items():
+            if self.session_data[command]:
+                self.set_combat_behaviour_to(behaviour)
+                break
+        else:
+            self.logger.error(f"Combat behaviour is not defined. Use \"{Combat.PASSIVE}\" as default.")
+            self.set_combat_behaviour_to(Combat.PASSIVE)
+
+    def define_action_behaviour(self):
+        action_behaviour_mapping = {
+            'player_message': Action.RESPOND,
+            'loot_command': Action.LOOT
+        }
+        for command, behaviour in action_behaviour_mapping.items():
+            if self.session_data[command]:
+                self.set_action_behaviour_to(behaviour)
+                break
+        else:
+            self.set_action_behaviour_to(Action.NONE)
+
+    def define_mount_behaviour(self):
+        if self.session_data['mount_command']:
+            self.set_mount_behaviour_to(Mount.MOUNTED)
+        else:
+            self.set_mount_behaviour_to(Mount.UNMOUNTED)
+
+    def define_behaviour(self, ):
+        self.define_moving_behaviour()
+        self.define_combat_behaviour()
+        self.define_action_behaviour()
+        self.define_mount_behaviour()
+
     def define_state(self):
         duty_to_state_mapping = {
             Duty.INITIALIZE: State.INITIALIZING,
             Duty.RESPOND: State.RESPONDING,
+            Duty.MOUNT: State.MOUNTING,
+            Duty.UNMOUNT: State.UNMOUNTING,
+            Duty.LOOT: State.LOOTING,
             Duty.WAITING_FOR_PLAYER: State.WAITING_FOR_PLAYER,
             Duty.NEARING_TO_LOOT: State.NEARING_FOR_LOOTING,
-            Duty.LOOT: State.LOOTING,
             Duty.NEARING_TO_HEAL_PLAYER: State.NEARING_TO_HEAL_PLAYER,
             Duty.HEAL_PLAYER: State.HEALING_PLAYER,
             Duty.HEAL_YOURSELF: State.HEALING_YOURSELF,
@@ -112,45 +257,6 @@ class CompanionProfile(object):
                 break
         else:
             self.set_state_to(State.NEUTRAL)
-
-
-class CompanionControlLoop(HardwareInputSimulator, GameWindow, CompanionProfile):
-    def __init__(self, game_window: GameWindow):
-        super().__init__()
-        self.game_window = game_window
-        self.window_position = game_window.window_position
-        self.window_size = game_window.window_size
-        self.pixel_size = game_window.pixel_size
-        self.n_pixels = game_window.n_pixels
-        self.screenshot_shift = game_window.screenshot_shift
-        self.forward_held = False
-        self.forward_released = True
-        self.left_held = False
-        self.left_released = True
-        self.right_held = False
-        self.right_released = True
-        self.waiting_announced = False
-        self.looting_announced = False
-        self.helping_in_combat_announced = False
-        self.healing_player_announced = False
-        self.spellbook = self.get_spellbook
-        self.companion_position_on_screen = self.get_companion_position
-
-        self.logger = logging.getLogger('companion_actions')
-        if not self.logger.hasHandlers():
-            handler = logging.StreamHandler()
-            self.logger.addHandler(handler)
-            self.logger.propagate = False
-
-    @property
-    def get_spellbook(self, spellbook_file='spellbook.yaml'):
-        return read_yaml_file(spellbook_file)
-
-    @property
-    def get_companion_position(self):
-        position_x = self.window_position[0] + self.window_size[0] / 2
-        position_y = self.window_position[1] + self.window_size[1] / 3 * 2
-        return position_x, position_y
 
     '''
     Area scanning and looting
@@ -263,9 +369,10 @@ class CompanionControlLoop(HardwareInputSimulator, GameWindow, CompanionProfile)
         assistant_answer_start_time = time.time()
         self.logger.info(f"Got player message: {player_message}")
         self.logger.info("Getting response..")
-        response = get_response(context).strip()
+        response = get_response(context)
         if response:
             self.logger.info(f"Companion response: {response}")
+            response = response.strip()
             context += f"{response}\n\n"
             with open(context_file, "w") as f:
                 f.write(context)
@@ -291,44 +398,48 @@ class CompanionControlLoop(HardwareInputSimulator, GameWindow, CompanionProfile)
     Spells and casting
     '''
 
+    def apply_buffing_rotation(self, ally_target=None):
+        self.target_the_ally(ally_target)
+        for spell in self.buffing_rotation:
+            self.cast_spell(spell)
+
     def apply_combat_rotation(self, ally_target=None, enemy_is_target_of=None):
         if self.spellbook['Power Word: Shield']['ready']:
             self.target_the_ally(target=ally_target)
             self.cast_spell('Power Word: Shield')
-        self.target_the_enemy(target_of=enemy_is_target_of)
-        if self.spellbook['Penance']['ready']:
-            self.cast_spell('Penance')
         else:
-            self.cast_spell('Smite')
+            self.target_the_enemy(target_of=enemy_is_target_of)
+            if self.spellbook['Penance']['ready']:
+                self.cast_spell('Penance')
+            elif self.spellbook['Smite']['ready']:
+                self.cast_spell('Smite')
 
     def apply_healing_rotation(self, ally_target=None):
         self.target_the_ally(target=ally_target)
-        if self.spellbook['Power Word: Shield']['ready']:
-            self.cast_spell('Power Word: Shield')
-        else:
-            self.cast_spell('Flash Heal')
+        for spell in self.healing_rotation:
+            self.cast_spell(spell)
 
-    def cast_spell(self, spell):
-        spell_data = self.spellbook[spell]
-        if spell_data['cooldown']:
-            if spell_data['ready']:
+    def cast_spell(self, spell, pause=2.0):
+        if self.spellbook[spell]['ready']:
+            pause_after_cast = pause if self.spellbook[spell]['cast_time'] <= pause else self.spellbook[spell][
+                'cast_time']
+            if self.spellbook[spell]['cooldown']:
                 self.logger.debug(
-                    f"Going to cast a {spell} (cooldown is {spell_data['cooldown']} seconds).")
-                self._perform_casting_actions_sequence(spell_data)
-                spell_data["timestamp_of_cast"] = time.time()
-                spell_data['ready'] = False
+                    f"Going to cast a {spell} (cooldown is {self.spellbook[spell]['cooldown']} seconds).")
+                self._perform_casting_actions_sequence(self.spellbook[spell], pause=pause_after_cast)
+                self.spellbook[spell]["timestamp_of_cast"] = time.time()
+                self.spellbook[spell]['ready'] = False
+            else:
+                self.logger.debug(f"Going to cast a {spell}.")
+                self._perform_casting_actions_sequence(self.spellbook[spell], pause=pause_after_cast)
 
-        else:
-            self.logger.debug(f"Going to cast a {spell}")
-            self._perform_casting_actions_sequence(spell_data)
-
-    def _perform_casting_actions_sequence(self, spell_data):
+    def _perform_casting_actions_sequence(self, spell_data, pause):
         action_page_number = str(spell_data['action_page_number'])
         action_button = str(spell_data['action_button'])
         self.hold_key('shift')
         self.press_key(action_page_number, pause=0.1)
         self.release_key('shift')
-        self.press_key(action_button, pause=2.0)
+        self.press_key(action_button, pause=pause)
         self.hold_key('shift')
         self.press_key("1", pause=0.1)
         self.release_key('shift')
@@ -446,6 +557,14 @@ class CompanionControlLoop(HardwareInputSimulator, GameWindow, CompanionProfile)
     Other activities
     '''
 
+    def mounting(self):
+        self.send_message_to_chat("I'm going to mount!")
+        self.cast_spell("Mount", pause=3.0)
+
+    def unmounting(self):
+        self.send_message_to_chat("I'm going to unmount!")
+        self.cast_spell("Mount")
+
     def waiting_for_player(self):
         if not self.waiting_announced:
             self.send_message_to_chat("Hey! I don't see you! I'll be waiting for you here..")
@@ -473,6 +592,7 @@ class CompanionControlLoop(HardwareInputSimulator, GameWindow, CompanionProfile)
             else:
                 self.logger.debug(f"{spell_name} is ready")
                 input_spell['ready'] = True
+                input_spell['timestamp_of_cast'] = None
 
     # def hands_away_from_keyboard(self):
     #     self.release_movement_keys()

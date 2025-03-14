@@ -1,0 +1,13 @@
+---
+"Healing Rotation":
+  - "Power Word: Shield"
+  - "Flash Heal"
+"Buffing Rotation":
+  - "Power Word: Fortitude"
+  - "Inner Fire"
+"Battle Rotation":
+  Support:
+    - "Power Word: Shield"
+  Attack:
+    - "Penance"
+    - "Smite"

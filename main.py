@@ -9,16 +9,14 @@ from gingham_processing import GinghamProcessor
 from game_window import GameWindow
 from navigation import Navigator
 from companion import CompanionControlLoop
+from total import TotalController
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 
 logging.getLogger('game_window').setLevel(logging.INFO)
 logging.getLogger('hardware_input').setLevel(logging.INFO)
 logging.getLogger('navigation').setLevel(logging.INFO)
-logging.getLogger('companion_actions').setLevel(logging.INFO)
-
-pause_frame = None
-frame = 0
+logging.getLogger('companion').setLevel(logging.INFO)
 
 try:
     # keyboard inputs backend
@@ -31,14 +29,24 @@ try:
     game_window.activate_window("World of Warcraft")
     logging.info("WoW In-Game Companion activated.")
 
-    # keys and buttons
+    # keyboard and mouse
     inputs = HardwareInputSimulator()
-
-    # companion actions
-    companion = CompanionControlLoop(game_window)
 
     # geometry and navigation
     navigator = Navigator(n_frames=20)
+
+    # companion actions
+    companion_spellbook = './database/game_classes/cataclysm/priest/spellbook.yaml'
+    companion_rotations = './database/game_classes/cataclysm/priest/rotations.yaml'
+    companion = CompanionControlLoop()
+    companion.initialize_values(game_window,
+                                spellbook_file=companion_spellbook,
+                                rotations_file=companion_rotations)
+    session_data = companion.session_data
+
+    # script controller
+    controller = TotalController()
+    # session_data = controller.session_data
 
     time.sleep(1)
     while True:
@@ -50,29 +58,31 @@ try:
         gingham_pixels = gingham.pixels_analysis(n_monitoring_pixels=game_window.n_pixels['y'],
                                                  pixel_height=game_window.pixel_size['y'],
                                                  pixel_width=game_window.pixel_size['x'])
-        session_data = gingham.to_dictionary(gingham_pixels)
+
+
+        session_data.update(gingham.to_dictionary(gingham_pixels))
 
         ### program workflow control
         # disable script from game
         if session_data['disable_script']:
             logging.warning("Control script was disabled from game.")
-            if frame == 0:
+            if controller.frame == 0:
                 logging.warning("Enable it by sending \'disable\' in the party chat.")
             companion.freeze()
             exit(0)
         # pause script
         elif session_data['pause_script']:
-            if not pause_frame:
-                pause_frame = frame
-            if pause_frame == frame:
+            if not controller.pause_frame:
+                controller.pause_frame = controller.frame
+            if controller.pause_frame == controller.frame:
                 logging.info("Control script was paused.")
                 companion.freeze()
-            pause_frame += 1
+            controller.pause_frame += 1
             continue
         else:
-            logging.debug(f"Frame #{frame}")
+            logging.debug(f"Frame #{controller.frame}")
         # end of the pause
-        if not session_data['pause_script'] and pause_frame:
+        if not session_data['pause_script'] and controller.pause_frame:
             companion.entering_the_game()
 
         ##### companion workflow
@@ -80,33 +90,10 @@ try:
         session_geometry = navigator.game_state_geometry(session_data)
         session_data.update(session_geometry)
 
-        ##### BEHAVIOURS
-        ##### defined by player commands
-        # moving
-        if session_data['follow_command']:
-            companion.set_moving_behaviour_to(Moving.FOLLOW)
-        elif session_data['step-by-step_command']:
-            companion.set_moving_behaviour_to(Moving.STEP_BY_STEP)
-        else:
-            companion.set_moving_behaviour_to(Moving.STAY)
+        companion.update_session(session_data)
 
-        # combat
-        if session_data['assist_command']:
-            companion.set_combat_behaviour_to(Combat.ASSIST)
-        elif session_data['defend_command']:
-            companion.set_combat_behaviour_to(Combat.DEFEND)
-        elif session_data['only_heal_command']:
-            companion.set_combat_behaviour_to(Combat.ONLY_HEAL)
-        else:
-            companion.set_combat_behaviour_to(Combat.PASSIVE)
-
-        # actions
-        if session_data['player_message']:
-            companion.set_action_behaviour_to(Action.RESPOND)
-        elif session_data['loot_command']:
-            companion.set_action_behaviour_to(Action.LOOT)
-        else:
-            companion.set_action_behaviour_to(Action.NONE)
+        ##### BEHAVIOURS (defined by player commands)
+        companion.define_behaviour()
 
         ##### DUTIES
         ##### defined by commands, statuses and navigation (positions and angles)
@@ -114,15 +101,27 @@ try:
 
         ### define autonomic DUTIES
         # actions at script start
-        if frame == 0:
+        if controller.frame == 0:
             companion.add_duty(Duty.INITIALIZE)
 
         # response to a player message
         if companion.action_behaviour_is(Action.RESPOND):
             companion.add_duty(Duty.RESPOND)
 
+        # mount
+        if companion.mount_behaviour_is(Mount.MOUNTED):
+            session_data['distance_to_player_delta'] = session_data['mounted_distance_to_player_delta']
+            if not session_data['companion_mounted']:
+                companion.add_duty(Duty.MOUNT)
+
+        # unmount
+        if companion.mount_behaviour_is(Mount.UNMOUNTED):
+            if session_data['companion_mounted']:
+                companion.add_duty(Duty.UNMOUNT)
+
         # looting
         if companion.action_behaviour_is(Action.LOOT):
+            # if not session_data['companion_mounted']:
             session_data['distance_to_player_delta'] = session_data['looting_distance_to_player_delta']
             companion.add_duty(Duty.LOOT)
 
@@ -229,7 +228,8 @@ try:
         ###### companion logic
         ### movement
         # doesn't move if WAITING_FOR_PLAYER, RESPONDING or INITIALIZING
-        if not companion.state_is_one_of([State.INITIALIZING, State.RESPONDING, State.WAITING_FOR_PLAYER]):
+        if not companion.state_is_one_of(companion.movement_restricted_states):
+            # not companion.state_is_one_of([State.INITIALIZING, State.RESPONDING, State.WAITING_FOR_PLAYER]):
             companion.rotate_to(Duty.ROTATE_TO_PLAYER)
             companion.move_to(Duty.NEARING_WITH_PLAYER)
             if companion.has_duty(Duty.AVOID_LOW_OBSTACLE):
@@ -238,13 +238,19 @@ try:
         ### some actions at entering the game (buffing will be the other state)
         if companion.state_is(State.INITIALIZING):
             companion.entering_the_game()
-            companion.target_the_ally(target='companion')
-            companion.cast_spell('Power Word: Fortitude')
-            companion.cast_spell('Inner Fire')
+            companion.apply_buffing_rotation(ally_target='companion')
 
         ### respond to message
         if companion.state_is(State.RESPONDING):
             companion.ai_companion_response(session_data['player_message'])
+
+        ### mounting
+        if companion.state_is(State.MOUNTING):
+            companion.mounting()
+
+        ### unmounting
+        if companion.state_is(State.UNMOUNTING):
+            companion.unmounting()
 
         ### announce if should to wait for the player
         if companion.state_is(State.WAITING_FOR_PLAYER):
@@ -285,8 +291,8 @@ try:
         companion.check_spellbook_cooldowns()
 
         if not session_data['pause_script']:
-            pause_frame = None
-            frame += 1
+            controller.pause_frame = None
+            controller.frame += 1
 
         logging.debug(f"Loop time was {round(time.time() - frame_start_time, 2)}s per frame.")
 

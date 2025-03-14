@@ -1,6 +1,11 @@
 from enum import Enum, auto
 
 
+class Mount(Enum):
+    MOUNTED = auto()
+    UNMOUNTED = auto()
+
+
 class Moving(Enum):
     STAY = auto()
     STEP_BY_STEP = auto
@@ -44,6 +49,9 @@ class Duty(Enum):
     ROTATE_TO_PLAYER_FACING = auto()
     ROTATE_TO_PLAYER_FACING_RIGHT = auto()
     ROTATE_TO_PLAYER_FACING_LEFT = auto()
+    # mounting
+    MOUNT = auto()
+    UNMOUNT = auto()
 
 
 class State(Enum):
@@ -60,6 +68,5 @@ class State(Enum):
     ATTACKING_TO_DEFEND = auto()
     NEUTRAL = auto()
     BUFFING = auto()
-
-
-
+    MOUNTING = auto()
+    UNMOUNTING = auto()

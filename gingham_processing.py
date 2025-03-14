@@ -142,24 +142,35 @@ class GinghamProcessor:
         health_to_start_healing = 0.6
         return {'health_to_start_healing': health_to_start_healing}
 
+    @staticmethod
+    def check_bool_pixel(pixel, pixel_value):
+        return True if round(pixel, 2) == pixel_value else False
+
     def to_dictionary(self, all_pixels):
         data_pixels, player_message_pixels, cursor_message_pixels = all_pixels[0], all_pixels[1], all_pixels[2]
 
         pause_script = True if 0.0 < data_pixels[0][0] < 1.0 else False
-        disable_script = True if data_pixels[0][0] == 1.0 else False
+        disable_script = self.check_bool_pixel(data_pixels[0][0], 1.0) #True if data_pixels[0][0] == 1.0 else False
 
-        follow_command = True if round(data_pixels[0][1], 2) == 1.0 else False
-        step_by_step_command = True if round(data_pixels[0][1], 2) == 0.5 else False
+        follow_command = self.check_bool_pixel(data_pixels[0][1], 1.0) #True if round(data_pixels[0][1], 2) == 1.0 else False
+        step_by_step_command = self.check_bool_pixel(data_pixels[0][1], 0.5) #True if round(data_pixels[0][1], 2) == 0.5 else False
+        stay_command = self.check_bool_pixel(data_pixels[0][1], 0.0)
 
-        assist_command = True if round(data_pixels[0][2], 2) == 1.0 else False
-        defend_command = True if round(data_pixels[0][2], 2) == 0.75 else False
-        only_heal_command = True if round(data_pixels[0][2], 2) == 0.5 else False
+        assist_command = self.check_bool_pixel(data_pixels[0][2], 1.0) #True if round(data_pixels[0][2], 2) == 1.0 else False
+        defend_command = self.check_bool_pixel(data_pixels[0][2], 0.75) #True if round(data_pixels[0][2], 2) == 0.75 else False
+        only_heal_command = self.check_bool_pixel(data_pixels[0][2], 0.5) #True if round(data_pixels[0][2], 2) == 0.5 else False
+        passive_command = self.check_bool_pixel(data_pixels[0][2], 0.0)
 
-        loot_command, _, _ = [val // 1.0 for val in data_pixels[1]]
+        loot_command = self.check_bool_pixel(data_pixels[1][0], 1.0) # , _, _ = [val // 1.0 for val in data_pixels[1]]
+        mount_command = self.check_bool_pixel(data_pixels[1][1], 1.0)
+
         companion_coordinates_pixels = data_pixels[2:4]
         companion_combat_status, companion_health, companion_mana = data_pixels[4]
         player_coordinates_pixels = data_pixels[5:7]
         player_combat_status, player_health, player_mana = data_pixels[7]
+
+        companion_mounted, companion_breath_level, _ = data_pixels[8]
+
         player_message = self.get_message(player_message_pixels)
         cursor_message = self.get_message(cursor_message_pixels)
 
@@ -169,11 +180,14 @@ class GinghamProcessor:
         session_data = {'pause_script': pause_script,
                         'disable_script': disable_script,
                         'follow_command': follow_command,
-                        'step-by-step_command': step_by_step_command,
+                        'step_by_step_command': step_by_step_command,
+                        'stay_command': stay_command,
                         'assist_command': assist_command,
                         'defend_command': defend_command,
                         'only_heal_command': only_heal_command,
+                        'passive_command': passive_command,
                         'loot_command': loot_command,
+                        'mount_command': mount_command,
                         'player_coordinates_pixels': player_coordinates_pixels,
                         'player_combat_status': player_combat_status,
                         'player_health': player_health,
@@ -182,6 +196,8 @@ class GinghamProcessor:
                         'companion_combat_status': companion_combat_status,
                         'companion_health': companion_health,
                         'companion_mana': companion_mana,
+                        'companion_mounted': companion_mounted,
+                        'companion_breath_level': companion_breath_level,
                         'player_message': player_message,
                         'cursor_message': cursor_message}
 

@@ -21,7 +21,7 @@ class GameWindow:
     def __init__(self):
 
         self.pixel_size = {'x': 5, 'y': 5}
-        self.n_pixels = {'x': 201, 'y': 10}
+        self.n_pixels = {'x': 201, 'y': 11}
         self.screenshot_shift = {'x': 14, 'y': 49}
 
         self.window_title = None
