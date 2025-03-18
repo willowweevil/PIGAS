@@ -1,3 +1,5 @@
+import os.path
+
 import numpy as np
 import time
 import logging
@@ -107,7 +109,7 @@ class CompanionProfile(object):
         return False
 
 
-class CompanionControlLoop(HardwareInputSimulator, GameWindow, CompanionProfile):
+class CompanionControlLoop(HardwareInputSimulator, GameWindow, CompanionProfile, GinghamProcessor):
     def __init__(self):
         super().__init__()
         self.game_window = None
@@ -119,8 +121,7 @@ class CompanionControlLoop(HardwareInputSimulator, GameWindow, CompanionProfile)
 
         self.session_data = {}
 
-        self.spellbook_file = None
-        self.rotations_file = None
+        self.companion_directory = None
 
         self.forward_held = False
         self.forward_released = True
@@ -145,15 +146,14 @@ class CompanionControlLoop(HardwareInputSimulator, GameWindow, CompanionProfile)
             self.logger.addHandler(handler)
             self.logger.propagate = False
 
-    def initialize_values(self, game_window, spellbook_file, rotations_file):
+    def initialize(self, game_window, companion_directory):
         self.game_window = game_window
         self.window_position = game_window.window_position
         self.window_size = game_window.window_size
         self.pixel_size = game_window.pixel_size
         self.n_pixels = game_window.n_pixels
         self.screenshot_shift = game_window.screenshot_shift
-        self.spellbook_file = spellbook_file
-        self.rotations_file = rotations_file
+        self.companion_directory = companion_directory
         self.initialize_spellbook()
         self.get_rotations()
 
@@ -167,14 +167,16 @@ class CompanionControlLoop(HardwareInputSimulator, GameWindow, CompanionProfile)
         return position_x, position_y
 
     def initialize_spellbook(self):
-        spellbook = read_yaml_file(self.spellbook_file)
+        spellbook_file = os.path.join(self.companion_directory, "spellbook.yaml")
+        spellbook = read_yaml_file(spellbook_file)
         for _, spell_info in spellbook.items():
             spell_info['ready'] = True
             spell_info['timestamp_of_cast'] = None
         self.spellbook = spellbook
 
     def get_rotations(self):
-        rotations = read_yaml_file(self.rotations_file)
+        rotations_file = os.path.join(self.companion_directory, "rotations.yaml")
+        rotations = read_yaml_file(rotations_file)
         self.battle_rotation = rotations["Battle Rotation"]
         self.healing_rotation = rotations["Healing Rotation"]
         self.buffing_rotation = rotations["Buffing Rotation"]
@@ -336,12 +338,12 @@ class CompanionControlLoop(HardwareInputSimulator, GameWindow, CompanionProfile)
         self.move_mouse_to(cursor_x, cursor_y)
         time.sleep(0.1)  # the pause must be here, because new gingham shirts pixels are updating some time
         scan_gingham_shirt = self.take_screenshot(savefig=False, savefig_prefix='scan')
-        gingham = GinghamProcessor(scan_gingham_shirt)
-        _, _, cursor_pixels = gingham.pixels_analysis(
+        _, _, cursor_pixels = self.pixels_analysis(
+            data=scan_gingham_shirt,
             n_monitoring_pixels=self.n_pixels['y'],
             pixel_height=self.pixel_size['y'],
             pixel_width=self.pixel_size['x'])
-        scan_message = gingham.get_message(cursor_pixels).lower()
+        scan_message = self.get_message(cursor_pixels).lower()
         return scan_message
 
     @staticmethod

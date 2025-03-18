@@ -1,298 +1,273 @@
-import time
 import logging
-import subprocess
 
 from library.entity_attributes import *
 
-from hardware_input import HardwareInputSimulator
 from gingham_processing import GinghamProcessor
 from game_window import GameWindow
 from navigation import Navigator
 from companion import CompanionControlLoop
 from total import TotalController
 
-logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
+logging.basicConfig(level=logging.INFO,
+                    format="%(asctime)s %(levelname)s %(message)s")
 
+logging.getLogger('script_control').setLevel(logging.DEBUG)
 logging.getLogger('game_window').setLevel(logging.INFO)
 logging.getLogger('hardware_input').setLevel(logging.INFO)
 logging.getLogger('navigation').setLevel(logging.INFO)
 logging.getLogger('companion').setLevel(logging.INFO)
 
-try:
-    # game window
-    game_window = GameWindow()
-    game_window.initialize_window_parameters("World of Warcraft")
+if __name__ == '__main__':
 
-    # keyboard and mouse
-    inputs = HardwareInputSimulator()
+    try:
+        # script controller
+        controller = TotalController()
+        game_title = "World of Warcraft"
+        companion_game_class_directory = "./database/game_classes/cataclysm/priest/"
 
-    # geometry and navigation
-    navigator = Navigator(n_frames=20)
+        # game window
+        game_window = GameWindow()
+        game_window.set_window_parameters(game_window_title=game_title)
 
-    # companion actions
-    companion_spellbook = './database/game_classes/cataclysm/priest/spellbook.yaml'
-    companion_rotations = './database/game_classes/cataclysm/priest/rotations.yaml'
-    companion = CompanionControlLoop()
-    companion.initialize_values(game_window,
-                                spellbook_file=companion_spellbook,
-                                rotations_file=companion_rotations)
-    session_data = companion.session_data
+        # gingham analyzer
+        gingham = GinghamProcessor()
 
-    # script controller
-    controller = TotalController()
-    # session_data = controller.session_data
+        # geometry and navigation
+        navigator = Navigator()
 
-    logging.info("WoW In-Game Companion is ready to start.")
-    time.sleep(1)
-    while True:
-        game_window.set_window_to_active_state()
+        # companion actions
+        companion = CompanionControlLoop()
+        companion.initialize(game_window=game_window,
+                             companion_directory=companion_game_class_directory)
+        session_data = companion.session_data
 
-        frame_start_time = time.time()
+        controller.start()
 
-        screenshot = game_window.take_screenshot(savefig=False)
+        while True:
+            controller.set_frame()
+            game_window.ensure_window_active()
 
-        gingham = GinghamProcessor(screenshot)
-        gingham_pixels = gingham.pixels_analysis(n_monitoring_pixels=game_window.n_pixels['y'],
-                                                 pixel_height=game_window.pixel_size['y'],
-                                                 pixel_width=game_window.pixel_size['x'])
+            screenshot = game_window.take_screenshot(savefig=False)
+            gingham_pixels = gingham.pixels_analysis(data=screenshot,
+                                                     n_monitoring_pixels=game_window.n_pixels['y'],
+                                                     pixel_height=game_window.pixel_size['y'],
+                                                     pixel_width=game_window.pixel_size['x'])
 
+            session_data.update(gingham.to_dictionary(gingham_pixels))
+            controller.get_companion(companion)
 
-        session_data.update(gingham.to_dictionary(gingham_pixels))
+            # script workflow control
+            controller.program_workflow_control()
+            if controller.pause:
+                continue
 
-        ### program workflow control
-        # disable script from game
-        if session_data['disable_script']:
-            logging.warning("Control script was disabled from game.")
-            if controller.frame == 0:
-                logging.warning("Enable it by sending \'disable\' in the party chat.")
-            companion.freeze()
-            exit(0)
-        # pause script
-        elif session_data['pause_script']:
-            if not controller.pause_frame:
-                controller.pause_frame = controller.frame
-            if controller.pause_frame == controller.frame:
-                logging.info("Control script was paused.")
-                companion.freeze()
-            controller.pause_frame += 1
-            continue
-        else:
-            logging.debug(f"Frame #{controller.frame}")
-        # end of the pause
-        if not session_data['pause_script'] and controller.pause_frame:
-            companion.entering_the_game()
+            ##### companion workflow
+            ### extend session data with calculated geometry
+            session_geometry = navigator.game_state_geometry(session_data)
+            session_data.update(session_geometry)
 
-        ##### companion workflow
-        ### extend session data with calculated geometry
-        session_geometry = navigator.game_state_geometry(session_data)
-        session_data.update(session_geometry)
+            companion.update_session(session_data)
 
-        companion.update_session(session_data)
+            ##### BEHAVIOURS (defined by player commands)
+            companion.define_behaviour()
 
-        ##### BEHAVIOURS (defined by player commands)
-        companion.define_behaviour()
+            ##### DUTIES
+            ##### defined by commands, statuses and navigation (positions and angles)
+            companion.clear_duties()
 
-        ##### DUTIES
-        ##### defined by commands, statuses and navigation (positions and angles)
-        companion.clear_duties()
+            ### define autonomic DUTIES
+            # actions at script start
+            if controller.frame == controller.initial_frame:
+                companion.add_duty(Duty.INITIALIZE)
 
-        ### define autonomic DUTIES
-        # actions at script start
-        if controller.frame == 0:
-            companion.add_duty(Duty.INITIALIZE)
+            # response to a player message
+            if companion.action_behaviour_is(Action.RESPOND):
+                companion.add_duty(Duty.RESPOND)
 
-        # response to a player message
-        if companion.action_behaviour_is(Action.RESPOND):
-            companion.add_duty(Duty.RESPOND)
+            # mount
+            if companion.mount_behaviour_is(Mount.MOUNTED):
+                session_data['distance_to_player_delta'] = session_data['mounted_distance_to_player_delta']
+                if not session_data['companion_mounted']:
+                    companion.add_duty(Duty.MOUNT)
 
-        # mount
-        if companion.mount_behaviour_is(Mount.MOUNTED):
-            session_data['distance_to_player_delta'] = session_data['mounted_distance_to_player_delta']
-            if not session_data['companion_mounted']:
-                companion.add_duty(Duty.MOUNT)
+            # unmount
+            if companion.mount_behaviour_is(Mount.UNMOUNTED):
+                if session_data['companion_mounted']:
+                    companion.add_duty(Duty.UNMOUNT)
 
-        # unmount
-        if companion.mount_behaviour_is(Mount.UNMOUNTED):
-            if session_data['companion_mounted']:
-                companion.add_duty(Duty.UNMOUNT)
+            # looting
+            if companion.action_behaviour_is(Action.LOOT):
+                # if not session_data['companion_mounted']:
+                session_data['distance_to_player_delta'] = session_data['looting_distance_to_player_delta']
+                companion.add_duty(Duty.LOOT)
 
-        # looting
-        if companion.action_behaviour_is(Action.LOOT):
-            # if not session_data['companion_mounted']:
-            session_data['distance_to_player_delta'] = session_data['looting_distance_to_player_delta']
-            companion.add_duty(Duty.LOOT)
-
-        # heal yourself
-        if not companion.combat_behaviour_is(Combat.PASSIVE):
-            if 0.0 < session_data['companion_health'] <= session_data['health_to_start_healing']:
-                companion.add_duty(Duty.HEAL_YOURSELF)
-
-        # defend yourself
-        if companion.combat_behaviour_is(Combat.DEFEND):
-            if session_data['companion_combat_status']:
-                companion.add_duty(Duty.DEFEND_YOURSELF)
-
-        ### define DUTIES which depend on the player (player should be nearby)
-        if session_data['player_position'] and session_data['distance_from_companion_to_player'] < session_data[
-            'max_distance_from_companion_to_player']:
-            companion.waiting_announced = False
-
-            # heal player
+            # heal yourself
             if not companion.combat_behaviour_is(Combat.PASSIVE):
-                if 0.0 < session_data['player_health'] <= session_data['health_to_start_healing']:
-                    companion.add_duty(Duty.HEAL_PLAYER)
+                if 0.0 < session_data['companion_health'] <= session_data['health_to_start_healing']:
+                    companion.add_duty(Duty.HEAL_YOURSELF)
 
-            # assist to player in combat
-            if companion.combat_behaviour_is(Combat.ASSIST):
-                if session_data['player_combat_status']:
-                    companion.add_duty(Duty.HELP_IN_COMBAT)
-
-            # defend player
+            # defend yourself
             if companion.combat_behaviour_is(Combat.DEFEND):
-                if session_data['player_combat_status'] and 0.0 < session_data['player_health'] < 1.0:
-                    companion.add_duty(Duty.HELP_IN_COMBAT)
+                if session_data['companion_combat_status']:
+                    companion.add_duty(Duty.DEFEND_YOURSELF)
 
-            # nearing
-            if companion.moving_behaviour_is(Moving.FOLLOW):
-                if session_data['distance_from_companion_to_player'] >= session_data['distance_to_player_delta']:
-                    companion.add_duty(Duty.NEARING_WITH_PLAYER)
+            ### define DUTIES which depend on the player (player should be nearby)
+            if session_data['player_position'] and session_data['distance_from_companion_to_player'] < session_data[
+                'max_distance_from_companion_to_player']:
+                companion.waiting_announced = False
 
-            # nearing for looting
-            if companion.has_duty(Duty.NEARING_WITH_PLAYER):
-                if companion.has_duty(Duty.LOOT):
-                    companion.add_duty(Duty.NEARING_TO_LOOT)
-                    companion.remove_duty(Duty.LOOT)
-                else:
-                    companion.looting_announced = False
+                # heal player
+                if not companion.combat_behaviour_is(Combat.PASSIVE):
+                    if 0.0 < session_data['player_health'] <= session_data['health_to_start_healing']:
+                        companion.add_duty(Duty.HEAL_PLAYER)
 
-            # nearing for helping in combat
-            if companion.has_duty(Duty.NEARING_WITH_PLAYER):
-                if companion.has_duty(Duty.HELP_IN_COMBAT):
-                    companion.add_duty(Duty.NEARING_TO_HELP_IN_COMBAT)
-                    companion.remove_duty(Duty.HELP_IN_COMBAT)
-                else:
-                    companion.helping_in_combat_announced = False
+                # assist to player in combat
+                if companion.combat_behaviour_is(Combat.ASSIST):
+                    if session_data['player_combat_status']:
+                        companion.add_duty(Duty.HELP_IN_COMBAT)
 
-            # nearing for healing player
-            if companion.has_duty(Duty.NEARING_WITH_PLAYER):
-                if companion.has_duty(Duty.HEAL_PLAYER):
-                    companion.add_duty(Duty.NEARING_TO_HEAL_PLAYER)
-                    companion.remove_duty(Duty.HEAL_PLAYER)
-                else:
-                    companion.healing_player_announced = False
+                # defend player
+                if companion.combat_behaviour_is(Combat.DEFEND):
+                    if session_data['player_combat_status'] and 0.0 < session_data['player_health'] < 1.0:
+                        companion.add_duty(Duty.HELP_IN_COMBAT)
 
-            # avoid a low obstacle
-            if companion.has_duty(Duty.NEARING_WITH_PLAYER):
-                if session_data['companion_average_velocity'] < session_data['minimum_velocity_for_nearing'] and \
-                        session_data['distance_from_companion_to_player'] > session_data[
-                    'distance_to_start_avoid_obstacles']:
-                    companion.add_duty(Duty.AVOID_LOW_OBSTACLE)
+                # nearing
+                if companion.moving_behaviour_is(Moving.FOLLOW):
+                    if session_data['distance_from_companion_to_player'] >= session_data['distance_to_player_delta']:
+                        companion.add_duty(Duty.NEARING_WITH_PLAYER)
 
-            # rotation to player facing ONLY in combat
-            if companion.has_duty(Duty.HELP_IN_COMBAT) and not companion.has_duty(Duty.NEARING_WITH_PLAYER):
-                if session_data['angle_between_companion_facing_and_player_facing']:
-                    if abs(session_data['angle_between_companion_facing_and_player_facing']) > session_data[
-                        'rotation_to_player_angle_delta']:
-                        companion.add_duty(Duty.ROTATE_TO_PLAYER_FACING)
-                        if session_data['angle_between_companion_facing_and_player_facing'] <= -session_data[
+                # nearing for looting
+                if companion.has_duty(Duty.NEARING_WITH_PLAYER):
+                    if companion.has_duty(Duty.LOOT):
+                        companion.add_duty(Duty.NEARING_TO_LOOT)
+                        companion.remove_duty(Duty.LOOT)
+                    else:
+                        companion.looting_announced = False
+
+                # nearing for helping in combat
+                if companion.has_duty(Duty.NEARING_WITH_PLAYER):
+                    if companion.has_duty(Duty.HELP_IN_COMBAT):
+                        companion.add_duty(Duty.NEARING_TO_HELP_IN_COMBAT)
+                        companion.remove_duty(Duty.HELP_IN_COMBAT)
+                    else:
+                        companion.helping_in_combat_announced = False
+
+                # nearing for healing player
+                if companion.has_duty(Duty.NEARING_WITH_PLAYER):
+                    if companion.has_duty(Duty.HEAL_PLAYER):
+                        companion.add_duty(Duty.NEARING_TO_HEAL_PLAYER)
+                        companion.remove_duty(Duty.HEAL_PLAYER)
+                    else:
+                        companion.healing_player_announced = False
+
+                # avoid a low obstacle
+                if companion.has_duty(Duty.NEARING_WITH_PLAYER):
+                    if session_data['companion_average_velocity'] < session_data['minimum_velocity_for_nearing'] and \
+                            session_data['distance_from_companion_to_player'] > session_data[
+                        'distance_to_start_avoid_obstacles']:
+                        companion.add_duty(Duty.AVOID_LOW_OBSTACLE)
+
+                # rotation to player facing ONLY in combat
+                if companion.has_duty(Duty.HELP_IN_COMBAT) and not companion.has_duty(Duty.NEARING_WITH_PLAYER):
+                    if session_data['angle_between_companion_facing_and_player_facing']:
+                        if abs(session_data['angle_between_companion_facing_and_player_facing']) > session_data[
                             'rotation_to_player_angle_delta']:
-                            companion.add_duty(Duty.ROTATE_TO_PLAYER_FACING_LEFT)
-                        elif session_data['angle_between_companion_facing_and_player_facing'] > session_data[
+                            companion.add_duty(Duty.ROTATE_TO_PLAYER_FACING)
+                            if session_data['angle_between_companion_facing_and_player_facing'] <= -session_data[
+                                'rotation_to_player_angle_delta']:
+                                companion.add_duty(Duty.ROTATE_TO_PLAYER_FACING_LEFT)
+                            elif session_data['angle_between_companion_facing_and_player_facing'] > session_data[
+                                'rotation_to_player_angle_delta']:
+                                companion.add_duty(Duty.ROTATE_TO_PLAYER_FACING_RIGHT)
+
+                # rotation to player if not in should rotate to facing
+                if companion.moving_behaviour_is(Moving.FOLLOW) and not companion.has_duty(
+                        Duty.ROTATE_TO_PLAYER_FACING):
+                    if abs(session_data['angle_between_companion_facing_and_vector_to_player']) > session_data[
+                        'rotation_to_player_angle_delta']:
+                        companion.add_duty(Duty.ROTATE_TO_PLAYER)
+                        if session_data['angle_between_companion_facing_and_vector_to_player'] <= -session_data[
                             'rotation_to_player_angle_delta']:
-                            companion.add_duty(Duty.ROTATE_TO_PLAYER_FACING_RIGHT)
+                            companion.add_duty(Duty.ROTATE_TO_PLAYER_LEFT)
+                        elif session_data['angle_between_companion_facing_and_vector_to_player'] > session_data[
+                            'rotation_to_player_angle_delta']:
+                            companion.add_duty(Duty.ROTATE_TO_PLAYER_RIGHT)
+            else:
+                companion.add_duty(Duty.WAITING_FOR_PLAYER)
 
-            # rotation to player if not in should rotate to facing
-            if companion.moving_behaviour_is(Moving.FOLLOW) and not companion.has_duty(Duty.ROTATE_TO_PLAYER_FACING):
-                if abs(session_data['angle_between_companion_facing_and_vector_to_player']) > session_data[
-                    'rotation_to_player_angle_delta']:
-                    companion.add_duty(Duty.ROTATE_TO_PLAYER)
-                    if session_data['angle_between_companion_facing_and_vector_to_player'] <= -session_data[
-                        'rotation_to_player_angle_delta']:
-                        companion.add_duty(Duty.ROTATE_TO_PLAYER_LEFT)
-                    elif session_data['angle_between_companion_facing_and_vector_to_player'] > session_data[
-                        'rotation_to_player_angle_delta']:
-                        companion.add_duty(Duty.ROTATE_TO_PLAYER_RIGHT)
-        else:
-            companion.add_duty(Duty.WAITING_FOR_PLAYER)
+            ### define STATE based on DUTIES
+            companion.define_state()
 
-        ### define STATE based on DUTIES
-        companion.define_state()
+            logging.debug(f"Companion behaviours: {companion.get_behaviours()}")
+            logging.debug(f"Companion duties: {companion.get_duties()}")
+            logging.debug(f"Companion state: {companion.get_state()}")
 
-        logging.debug(f"Companion behaviours: {companion.get_behaviours()}")
-        logging.debug(f"Companion duties: {companion.get_duties()}")
-        logging.debug(f"Companion state: {companion.get_state()}")
+            ###### companion logic
+            ### movement
+            # doesn't move if WAITING_FOR_PLAYER, RESPONDING or INITIALIZING
+            if not companion.state_is_one_of(companion.movement_restricted_states):
+                # not companion.state_is_one_of([State.INITIALIZING, State.RESPONDING, State.WAITING_FOR_PLAYER]):
+                companion.rotate_to(Duty.ROTATE_TO_PLAYER)
+                companion.move_to(Duty.NEARING_WITH_PLAYER)
+                if companion.has_duty(Duty.AVOID_LOW_OBSTACLE):
+                    companion.jump()
 
-        ###### companion logic
-        ### movement
-        # doesn't move if WAITING_FOR_PLAYER, RESPONDING or INITIALIZING
-        if not companion.state_is_one_of(companion.movement_restricted_states):
-            # not companion.state_is_one_of([State.INITIALIZING, State.RESPONDING, State.WAITING_FOR_PLAYER]):
-            companion.rotate_to(Duty.ROTATE_TO_PLAYER)
-            companion.move_to(Duty.NEARING_WITH_PLAYER)
-            if companion.has_duty(Duty.AVOID_LOW_OBSTACLE):
-                companion.jump()
+            ### some actions at entering the game (buffing will be the other state)
+            if companion.state_is(State.INITIALIZING):
+                companion.entering_the_game()
+                companion.apply_buffing_rotation(ally_target='companion')
 
-        ### some actions at entering the game (buffing will be the other state)
-        if companion.state_is(State.INITIALIZING):
-            companion.entering_the_game()
-            companion.apply_buffing_rotation(ally_target='companion')
+            ### respond to message
+            if companion.state_is(State.RESPONDING):
+                companion.ai_companion_response(session_data['player_message'])
 
-        ### respond to message
-        if companion.state_is(State.RESPONDING):
-            companion.ai_companion_response(session_data['player_message'])
+            ### mounting
+            if companion.state_is(State.MOUNTING):
+                companion.mounting()
 
-        ### mounting
-        if companion.state_is(State.MOUNTING):
-            companion.mounting()
+            ### unmounting
+            if companion.state_is(State.UNMOUNTING):
+                companion.unmounting()
 
-        ### unmounting
-        if companion.state_is(State.UNMOUNTING):
-            companion.unmounting()
+            ### announce if should to wait for the player
+            if companion.state_is(State.WAITING_FOR_PLAYER):
+                companion.waiting_for_player()
 
-        ### announce if should to wait for the player
-        if companion.state_is(State.WAITING_FOR_PLAYER):
-            companion.waiting_for_player()
+            ### looting
+            # performs prelooting actions
+            if companion.state_is(State.NEARING_FOR_LOOTING):
+                companion.perform_prelooting_actions()
 
-        ### looting
-        # performs prelooting actions
-        if companion.state_is(State.NEARING_FOR_LOOTING):
-            companion.perform_prelooting_actions()
+            # perform looting
+            if companion.state_is(State.LOOTING):
+                companion.do_loot_actions(looting_area={'x_length': 200, 'y_length': 200,
+                                                        'x_step': 35, 'y_step': 50})
 
-        # perform looting
-        if companion.state_is(State.LOOTING):
-            companion.do_loot_actions(looting_area={'x_length': 200, 'y_length': 200,
-                                                    'x_step': 35, 'y_step': 50})
+            ### healing
+            # player
+            if companion.state_is(State.HEALING_PLAYER):
+                companion.apply_healing_rotation(ally_target='player')
 
-        ### healing
-        # player
-        if companion.state_is(State.HEALING_PLAYER):
-            companion.apply_healing_rotation(ally_target='player')
+            # yourself
+            if companion.state_is(State.HEALING_YOURSELF):
+                companion.apply_healing_rotation(ally_target='companion')
 
-        # yourself
-        if companion.state_is(State.HEALING_YOURSELF):
-            companion.apply_healing_rotation(ally_target='companion')
+            ### combat
+            # help to player
+            if companion.state_is(State.ATTACKING_TO_HELP):
+                companion.rotate_to(Duty.ROTATE_TO_PLAYER_FACING)
+                if not companion.has_duty(Duty.ROTATE_TO_PLAYER_FACING):
+                    companion.apply_combat_rotation(ally_target='player_pet',
+                                                    enemy_is_target_of='player')
 
-        ### combat
-        # help to player
-        if companion.state_is(State.ATTACKING_TO_HELP):
-            companion.rotate_to(Duty.ROTATE_TO_PLAYER_FACING)
-            if not companion.has_duty(Duty.ROTATE_TO_PLAYER_FACING):
-                companion.apply_combat_rotation(ally_target='player_pet',
-                                                enemy_is_target_of='player')
+            # defend
+            if companion.state_is(State.ATTACKING_TO_DEFEND):
+                companion.apply_combat_rotation(ally_target='companion',
+                                                enemy_is_target_of='companion')
 
-        # defend
-        if companion.state_is(State.ATTACKING_TO_DEFEND):
-            companion.apply_combat_rotation(ally_target='companion',
-                                            enemy_is_target_of='companion')
+            companion.check_spellbook_cooldowns()
 
-        companion.check_spellbook_cooldowns()
+            controller.set_loop_control_execution_time()
 
-        if not session_data['pause_script']:
-            controller.pause_frame = None
-            controller.frame += 1
-
-        logging.debug(f"Loop time was {round(time.time() - frame_start_time, 2)}s per frame.")
-
-except KeyboardInterrupt:
-    HardwareInputSimulator().release_movement_keys()
-    logging.info("Monitoring stopped.")
+    except KeyboardInterrupt:
+        TotalController().end()

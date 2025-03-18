@@ -51,7 +51,7 @@ class BasicGeometry:
 
 
 class Navigator(BasicGeometry):
-    def __init__(self, n_frames):
+    def __init__(self, n_frames=20):
         super().__init__()
         self.n_frames = n_frames
         self.last_companion_coordinates = [(0, 0)] * n_frames

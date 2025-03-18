@@ -23,8 +23,8 @@ class GameWindow:
             self.logger.addHandler(handler)
             self.logger.propagate = False
 
-    def initialize_window_parameters(self, window_title):
-        self.window_title = window_title
+    def set_window_parameters(self, game_window_title):
+        self.window_title = game_window_title
         if not self.window_id:
             self._set_window_id()
         if not self.window_position or not self.window_size:
@@ -83,7 +83,7 @@ class GameWindow:
             self.logger.error(f"An unexpected error occurred: {e}")
             exit(1)
 
-    def set_window_to_active_state(self):
+    def ensure_window_active(self):
         current_active_window = self._get_current_active_window()
         if current_active_window != self.window_title:
             if self.window_id:
@@ -91,7 +91,6 @@ class GameWindow:
                 self.activate_window()
             else:
                 self.logger.error(f"Cannot activate window {self.window_title}. No windows found.")
-                exit(1)
 
     def _get_screenshot_geometry(self):
         position_x, position_y = self.window_position

@@ -11,10 +11,9 @@ mpl.use('TkAgg')
 
 
 class GinghamProcessor:
-    def __init__(self, data):
-        self.data = data
 
-    def _get_image_array(self,
+    @staticmethod
+    def _get_image_array(data,
                          n_pixels=None,
                          x_from_to=None,
                          y_from_to=None,
@@ -24,7 +23,7 @@ class GinghamProcessor:
         if x_from_to is None:
             x_from_to = {'from': 0, 'to': -1}
         try:
-            img = self.data.convert("RGB")
+            img = data.convert("RGB")
         except AttributeError:
             logging.error("No screenshot for processing.")
             exit(1)
@@ -43,8 +42,9 @@ class GinghamProcessor:
         dominant_color = [color / 255.0 for color in dominant_color]
         return dominant_color
 
-    def pixels_analysis(self, n_monitoring_pixels=None, pixel_height=None, pixel_width=None):
-        img_array, array_length = self._get_image_array(n_monitoring_pixels,
+    def pixels_analysis(self, data, n_monitoring_pixels=None, pixel_height=None, pixel_width=None):
+        img_array, array_length = self._get_image_array(data,
+                                                        n_monitoring_pixels,
                                                         x_from_to={'from': 0,
                                                                    'to': pixel_height * (n_monitoring_pixels + 1)},
                                                         y_from_to={'from': 0,
@@ -62,7 +62,8 @@ class GinghamProcessor:
         player_message_colors = []
         if player_message_length > 0:
             n_player_message_pixels = player_message_length // 3 + bool(player_message_length % 3)
-            img_array, array_length = self._get_image_array(n_player_message_pixels,
+            img_array, array_length = self._get_image_array(data,
+                                                            n_player_message_pixels,
                                                             x_from_to={'from': 0,
                                                                        'to': pixel_height},
                                                             y_from_to={'from': pixel_width,
@@ -75,7 +76,8 @@ class GinghamProcessor:
         cursor_message_colors = []
         if cursor_message_length > 0:
             n_cursor_message_pixels = cursor_message_length // 3 + bool(cursor_message_length % 3)
-            img_array, array_length = self._get_image_array(n_cursor_message_pixels,
+            img_array, array_length = self._get_image_array(data,
+                                                            n_cursor_message_pixels,
                                                             x_from_to={'from': pixel_height,
                                                                        'to': 2 * pixel_height},
                                                             y_from_to={'from': pixel_width,
