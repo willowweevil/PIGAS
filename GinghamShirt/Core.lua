@@ -7,8 +7,7 @@ local math = getfenv(0).math
 local EventFrame = CreateFrame("Frame")
 local AcceptPartyLogicFrame = CreateFrame("Frame")
 local LootingFrame = CreateFrame("Frame")
-local UpdateCursorFrame = CreateFrame("Frame")
-local autoGreedFrame = CreateFrame("Frame")
+local AutoGreedFrame = CreateFrame("Frame")
 
 local ginghamPixelSize = 5
 
@@ -21,18 +20,19 @@ local squareData = {
     { name = "MainCharacterCoordinatesSquare1", yOffset = -25 },
     { name = "MainCharacterCoordinatesSquare2", yOffset = -30 },
     { name = "MainCharacterConditionSquare1", yOffset = -35 },
+    { name = "AssistantConditionSquare2", yOffset = -40 },
 
     { name = "AssistantPositionCalibrationSquare", xOffset = 807, yOffset = -690 }
 }
 
 local lettersSquaresData = {}
-lettersSquaresData[1] = { name = "MessageLengthPixel", xOffset = 0, yOffset = -40 }
+lettersSquaresData[1] = { name = "MessageLengthPixel", xOffset = 0, yOffset = -45 }
 for i = 2, 86, 1 do
     lettersSquaresData[i] = { name = string.format("LettersSquare_%d", i - 1), xOffset = ginghamPixelSize * (i - 1), yOffset = 0 }
 end
 
 local cursorObjectsPixelsData = {}
-cursorObjectsPixelsData[1] = { name = "CursorObjectMessageLengthPixel", xOffset = 0, yOffset = -45 }
+cursorObjectsPixelsData[1] = { name = "CursorObjectMessageLengthPixel", xOffset = 0, yOffset = -50 }
 for i = 2, 86, 1 do
     cursorObjectsPixelsData[i] = { name = string.format("CursorObjectPixel_%d", i - 1), xOffset = ginghamPixelSize * (i - 1), yOffset = -5 }
 end
@@ -44,13 +44,20 @@ local lettersSquares = {}
 local squares = {}
 
 local commands = {
-    loot = "#loot",
-    gather = "#gather",
-    moving = "#stay-follow",
-    combat = "#assist-passive",
-    calibrate = "#calibrate",
     pause = "#pause",
     disable = "#disable",
+    mount = "#mount",
+    unmount = "#unmount",
+    loot = "#loot",
+    stay = "#stay",
+    follow = "#follow",
+    step_by_step = "#step-by-step",
+    assist = "#assist",
+    defend = "#defend",
+    passive = "#passive",
+    only_heal = "#only-heal",
+    calibrate = "#calibrate",
+
     clean = "#clean",
     clear = "#clear"
 }
@@ -116,8 +123,8 @@ function EventFrame:PLAYER_LOGIN()
     LootingFrame:RegisterEvent("CHAT_MSG_MONEY")
     LootingFrame:SetScript("OnEvent", FormLootMessage)
 
-    autoGreedFrame:RegisterEvent("START_LOOT_ROLL")
-    autoGreedFrame:SetScript("OnEvent", AcceptLoot)
+    AutoGreedFrame:RegisterEvent("START_LOOT_ROLL")
+    AutoGreedFrame:SetScript("OnEvent", AcceptLoot)
 
     GameTooltip:HookScript("OnShow", GetUnitsInfo)
     GameTooltip:HookScript("OnShow", GetGameObjectsInfo)
@@ -146,7 +153,7 @@ function EventFrame:OnUpdate()
 
     CursorObjectInfoPixelsColors()
 
-    AnnounceLoot()
+    --AnnounceLoot()
 
     LettersSquareColors()
 
@@ -313,7 +320,18 @@ function FormLootMessage(self, event, message)
     return lootMessage
 end
 
--- functions without events
+-- library without events
+function CheckBreathLevel()
+    for i = 1, MIRRORTIMER_NUMTIMERS do
+        local timerName, value, maxValue, scale, paused, label = GetMirrorTimerInfo(i)
+        if timerName == "BREATH" then
+            local breathLevel = GetMirrorTimerProgress("BREATH")
+            return breathLevel / maxValue
+        end
+    end
+    return 1.0
+end
+
 function ExtractSubstrings(input)
     local results = {}
     for substring in input:gmatch("%[(.-)%]") do
@@ -505,11 +523,11 @@ function CompanionControlSquareColor(self, event, message, sender, ...)
     if programControlColor == nil then
         programControlColor = 0.0
     end
-    ---- moving control (follow = 1.0, stay = 0.0)
+    ---- moving control (follow = 1.0, step-by-step = 0.5, stay = 0.0)
     if movingControlColor == nil then
-        movingControlColor = 0.0
+        movingControlColor = 1.0
     end
-    ---- combat control (assist = 1.0, passive = 0.0)
+    ---- combat control (assist = 1.0, defend = 0.75, only-heal = 0.5, passive = 0.0)
     if combatControlColor == nil then
         combatControlColor = 1.0
     end
@@ -534,29 +552,40 @@ function CompanionControlSquareColor(self, event, message, sender, ...)
             SendChatMessage("The pause is unavailable! The control script was disabled!", "PARTY")
         end
     end
-    if containCommand(message, commands.moving) then
-        if movingControlColor == 0.0 then
-            SendChatMessage("I'm following you!", "PARTY")
-            movingControlColor = 1.0
-        elseif movingControlColor == 1.0 then
-            SendChatMessage("Ok, I'll be wait here..", "PARTY")
-            movingControlColor = 0.0
-        else
-            print("ERROR: Cannot recognize movingColorControl!")
-        end
+    if containCommand(message, commands.follow) then
+        SendChatMessage("I'm following you!", "PARTY")
+        movingControlColor = 1.0
+    elseif containCommand(message, commands.step_by_step) then
+        SendChatMessage("I'm following you on your steps!", "PARTY")
+        movingControlColor = 0.5
+    elseif containCommand(message, commands.stay) then
+        SendChatMessage("Ok, I'll be here..", "PARTY")
+        movingControlColor = 0.0
     end
-    if containCommand(message, commands.combat) then
-        if combatControlColor == 0.0 then
-            SendChatMessage("I'll assist!", "PARTY")
-            combatControlColor = 1.0
-        elseif combatControlColor == 1.0 then
-            SendChatMessage("Ok, just look, don't touch..", "PARTY")
-            combatControlColor = 0.0
-        else
-            print("ERROR: Cannot recognize combatColorControl!")
-        end
+    if containCommand(message, commands.assist) then
+        SendChatMessage("I'll assist!", "PARTY")
+        combatControlColor = 1.0
+    elseif containCommand(message, commands.defend) then
+        SendChatMessage("I'll defend you and me!", "PARTY")
+        combatControlColor = 0.75
+    elseif containCommand(message, commands.only_heal) then
+        SendChatMessage("Just healing!", "PARTY")
+        combatControlColor = 0.5
+    elseif containCommand(message, commands.passive) then
+        SendChatMessage("Ok, just look, don't touch..", "PARTY")
+        combatControlColor = 0.0
     end
-
+    --if containCommand(message, commands.combat) then
+    --    if combatControlColor == 0.0 then
+    --        SendChatMessage("I'll assist!", "PARTY")
+    --        combatControlColor = 1.0
+    --    elseif combatControlColor == 1.0 then
+    --        SendChatMessage("Ok, just look, don't touch..", "PARTY")
+    --        combatControlColor = 0.0
+    --    else
+    --        print("ERROR: Cannot recognize combatColorControl!")
+    --    end
+    --end
     squares["CompanionControlSquare"].texture:SetTexture(programControlColor, movingControlColor, combatControlColor)
 end
 
@@ -564,18 +593,25 @@ function InteractionCommandsSquareColor(self, event, message, sender, ...)
     if lootColor == nil then
         lootColor = 0
     end
+    if mountColor == nil then
+        mountColor = 0
+    end
     if containCommand(message, commands.loot) then
         if lootColor == 0 then
-            --SendChatMessage("Going to loot", "PARTY")
             assistantState = states.looting
             lootColor = 1
         else
-            --SendChatMessage("Stop looting", "PARTY")
             assistantState = nil
             lootColor = 0
         end
     end
-    squares["InteractionCommandsSquare"].texture:SetTexture(lootColor, 0, 0)
+    if containCommand(message, commands.mount) then
+        mountColor = 1
+    end
+    if containCommand(message, commands.unmount) then
+        mountColor = 0
+    end
+    squares["InteractionCommandsSquare"].texture:SetTexture(lootColor, mountColor, 0)
 end
 
 function SetCoordinates(character)
@@ -596,14 +632,25 @@ function SetCoordinates(character)
 end
 
 function SetConditionStatus(character)
+    -- combat status
     local inCombat = 0
     if UnitAffectingCombat(character) then
         inCombat = 1
     end
+    -- health and mana
     local healthPercent = UnitHealth(character) / UnitHealthMax(character)
     local manaPercent = UnitMana(character) / UnitManaMax(character)
+    -- mounted
+    local isMounted = IsMounted()
+    if isMounted == nil then
+        isMounted = 0
+    end
+    -- breath level
+    local breathLevel = CheckBreathLevel()
+
     if character == "player" then
         squares["AssistantConditionSquare1"].texture:SetTexture(inCombat, healthPercent, manaPercent)
+        squares["AssistantConditionSquare2"].texture:SetTexture(isMounted, breathLevel, 0)
     elseif character == "party1" then
         squares["MainCharacterConditionSquare1"].texture:SetTexture(inCombat, healthPercent, manaPercent)
     else

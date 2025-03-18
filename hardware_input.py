@@ -1,5 +1,6 @@
 import time
 import subprocess
+import logging
 from pynput.keyboard import Controller as KeyboardController, Key
 from pynput.mouse import Controller as MouseController, Button
 
@@ -8,6 +9,12 @@ class HardwareInputSimulator:
     def __init__(self):
         self.keyboard = KeyboardController()
         self.mouse = MouseController()
+
+        self.logger = logging.getLogger('hardware_input')
+        if not self.logger.hasHandlers():
+            handler = logging.StreamHandler()
+            self.logger.addHandler(handler)
+            self.logger.propagate = False
 
     @staticmethod
     def _transform_input_key_or_button(input_key):
@@ -29,9 +36,16 @@ class HardwareInputSimulator:
             output_key = Key.enter
         return output_key
 
-    @staticmethod
-    def type_text(message, key_delay=20, pause=1.0):
-        subprocess.run(["ydotool", "type", "--key-delay", f"{key_delay}", message], stderr=subprocess.DEVNULL)
+    def type_text(self, message, key_delay=20, pause=1.0):
+        shift_characters = "!@#$%^&*()_+{}:\"<>?|~"
+        for character in message:
+            if character in shift_characters or character.isupper():
+                self.hold_key("shift")
+            self.keyboard.press(character)
+            self.keyboard.release(character)
+            if character in shift_characters or character.isupper():
+                self.release_key("shift")
+            time.sleep(key_delay/1000)
         time.sleep(pause)
 
     def move_mouse_to_default_position(self, game_window):
@@ -43,6 +57,8 @@ class HardwareInputSimulator:
 
     def move_mouse_to(self, x, y, pause=0):
         self.mouse.position = (x, y)
+        if x < 0 or y < 0:
+            self.logger.error(f"Incorrect mouse position {x}, {y}")
         time.sleep(pause)
 
     def click_mouse(self, button='right', click_count=1, pause=0):
@@ -85,6 +101,11 @@ class HardwareInputSimulator:
         subprocess.run(["ydotool", "type", "--key-delay", f"{key_delay}", full_message])
         time.sleep(0.2)
         self.keyboard.tap(Key.enter)
+        time.sleep(pause)
+
+    @staticmethod
+    def type_text_with_ydotool(message, key_delay=20, pause=1.0):
+        subprocess.run(["ydotool", "type", "--key-delay", f"{key_delay}", message], stderr=subprocess.DEVNULL)
         time.sleep(pause)
 
     def release_movement_keys(self):
