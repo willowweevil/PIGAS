@@ -112,16 +112,6 @@ class CompanionProfile(object):
 class CompanionControlLoop(HardwareInputSimulator, GameWindow, CompanionProfile, GinghamProcessor):
     def __init__(self):
         super().__init__()
-        self.game_window = None
-        self.window_position = None
-        self.window_size = None
-        self.pixel_size = None
-        self.n_pixels = None
-        self.screenshot_shift = None
-
-        self.session_data = {}
-
-        self.companion_directory = None
 
         self.forward_held = False
         self.forward_released = True
@@ -135,10 +125,21 @@ class CompanionControlLoop(HardwareInputSimulator, GameWindow, CompanionProfile,
         self.helping_in_combat_announced = False
         self.healing_player_announced = False
 
+        self.game_window = None
+        self.window_position = None
+        self.window_size = None
+        self.pixel_size = None
+        self.n_pixels = None
+        self.screenshot_shift = None
+
+        self.companion_directory = None
+
         self.spellbook = None
         self.battle_rotation = None
         self.healing_rotation = None
         self.buffing_rotation = None
+
+        self.session_data = {}
 
         self.logger = logging.getLogger('companion')
         if not self.logger.hasHandlers():
@@ -146,25 +147,22 @@ class CompanionControlLoop(HardwareInputSimulator, GameWindow, CompanionProfile,
             self.logger.addHandler(handler)
             self.logger.propagate = False
 
-    def initialize(self, game_window, companion_directory):
+    def initialize_companion(self, game_window, config_file=None):
         self.game_window = game_window
         self.window_position = game_window.window_position
         self.window_size = game_window.window_size
         self.pixel_size = game_window.pixel_size
         self.n_pixels = game_window.n_pixels
         self.screenshot_shift = game_window.screenshot_shift
-        self.companion_directory = companion_directory
+        self.set_companion_directory(config_file)
         self.initialize_spellbook()
         self.get_rotations()
 
-    def update_session(self, session_data):
-        self.session_data = session_data
-
-    @property
-    def companion_position_on_screen(self):
-        position_x = self.window_position[0] + self.window_size[0] / 2
-        position_y = self.window_position[1] + self.window_size[1] / 3 * 2
-        return position_x, position_y
+    def set_companion_directory(self, config):
+        config_data = read_yaml_file(config)
+        game_extension = config_data['game']['extension']
+        companion_class = config_data['companion']['class']
+        self.companion_directory = f"./database/game_classes/{game_extension}/{companion_class}"
 
     def initialize_spellbook(self):
         spellbook_file = os.path.join(self.companion_directory, "spellbook.yaml")
@@ -181,9 +179,42 @@ class CompanionControlLoop(HardwareInputSimulator, GameWindow, CompanionProfile,
         self.healing_rotation = rotations["Healing Rotation"]
         self.buffing_rotation = rotations["Buffing Rotation"]
 
+    @property
+    def companion_position_on_screen(self):
+        position_x = self.window_position[0] + self.window_size[0] / 2
+        position_y = self.window_position[1] + self.window_size[1] / 3 * 2
+        return position_x, position_y
+
     '''
-    Companion Session Profile
+    Session Updates
     '''
+    def update_session_data(self, session_data):
+        self.session_data = session_data
+
+    def check_movement_keys(self):
+        if 'w' in self.pressed_keys:
+            self.forward_held = True
+            self.forward_released = False
+        else:
+            self.forward_held = False
+            self.forward_released = True
+        if 'a' in self.pressed_keys:
+            self.left_held = True
+            self.left_released = False
+        else:
+            self.left_held = False
+            self.left_released = True
+        if 'd' in self.pressed_keys:
+            self.right_held = True
+            self.right_released = False
+        else:
+            self.right_held = False
+            self.right_released = True
+
+    '''
+    Session Profile
+    '''
+
     def define_moving_behaviour(self):
         moving_behaviour_mapping = {
             'follow_command': Moving.FOLLOW,
@@ -526,33 +557,21 @@ class CompanionControlLoop(HardwareInputSimulator, GameWindow, CompanionProfile,
         self.press_key('space')  # , pause=1.5)
 
     def start_rotation_clockwise(self):
-        self.right_held = True
-        self.right_released = False
         self.hold_key("d")
 
     def start_rotation_counterclockwise(self):
-        self.left_held = True
-        self.left_released = False
         self.hold_key("a")
 
     def stop_rotation_clockwise(self):
-        self.right_held = False
-        self.right_released = True
         self.release_key("d")
 
     def stop_rotation_counterclockwise(self):
-        self.left_held = False
-        self.left_released = True
         self.release_key("a")
 
     def start_moving_forward(self):
-        self.forward_held = True
-        self.forward_released = False
         self.hold_key("w")
 
     def stop_moving_forward(self):
-        self.forward_held = False
-        self.forward_released = True
         self.release_key("w")
 
     '''
@@ -596,14 +615,6 @@ class CompanionControlLoop(HardwareInputSimulator, GameWindow, CompanionProfile,
                 input_spell['ready'] = True
                 input_spell['timestamp_of_cast'] = None
 
-    # def hands_away_from_keyboard(self):
-    #     self.release_movement_keys()
-    #     self.forward_held = False
-    #     self.forward_released = True
-    #     self.left_held = False
-    #     self.left_released = True
-    #     self.right_held = False
-    #     self.right_released = True
 
     # def healing_rotation(self, target):
     #     self.target_the_ally(target)

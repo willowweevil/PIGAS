@@ -5,6 +5,8 @@ import time
 import mss
 from PIL import Image
 
+from library.miscellaneous import read_yaml_file
+
 
 class GameWindow:
     def __init__(self):
@@ -23,8 +25,12 @@ class GameWindow:
             self.logger.addHandler(handler)
             self.logger.propagate = False
 
-    def set_window_parameters(self, game_window_title):
-        self.window_title = game_window_title
+    def set_window_title_from_config(self, config=None):
+        config_data = read_yaml_file(config)
+        self.window_title = config_data['game']['window-title']
+
+    def set_window_parameters(self, config_file=None):
+        self.set_window_title_from_config(config_file)
         if not self.window_id:
             self._set_window_id()
         if not self.window_position or not self.window_size:

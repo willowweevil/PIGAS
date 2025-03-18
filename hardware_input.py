@@ -3,6 +3,7 @@ import subprocess
 import logging
 from pynput.keyboard import Controller as KeyboardController, Key
 from pynput.mouse import Controller as MouseController, Button
+from pynput import keyboard
 
 
 class HardwareInputSimulator:
@@ -10,11 +11,38 @@ class HardwareInputSimulator:
         self.keyboard = KeyboardController()
         self.mouse = MouseController()
 
+        self.pressed_keys = set()
+        self.listener = keyboard.Listener(on_press=self.on_key_press, on_release=self.on_key_release)
+        self.listener.start()
+
         self.logger = logging.getLogger('hardware_input')
         if not self.logger.hasHandlers():
             handler = logging.StreamHandler()
             self.logger.addHandler(handler)
             self.logger.propagate = False
+
+    def on_key_press(self, key):
+        """Handle the key press event."""
+        try:
+            self.pressed_keys.add(key.char)  # Regular key
+        except AttributeError:
+            self.pressed_keys.add(str(key))
+
+        self.logger.debug(f'Pressed keys: {self.pressed_keys}')
+
+    def on_key_release(self, key):
+        """Handle the key release event."""
+        try:
+            self.pressed_keys.remove(key.char)
+        except (AttributeError, KeyError):
+            try:
+                self.pressed_keys.remove(str(key))
+            except KeyError:
+                pass
+
+    def stop_keyboard_listener(self):
+        """Stop the keyboard listener."""
+        self.listener.stop()
 
     @staticmethod
     def _transform_input_key_or_button(input_key):
@@ -45,7 +73,7 @@ class HardwareInputSimulator:
             self.keyboard.release(character)
             if character in shift_characters or character.isupper():
                 self.release_key("shift")
-            time.sleep(key_delay/1000)
+            time.sleep(key_delay / 1000)
         time.sleep(pause)
 
     def move_mouse_to_default_position(self, game_window):
