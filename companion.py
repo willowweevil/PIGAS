@@ -132,10 +132,11 @@ class CompanionControlLoop(HardwareInputSimulator, GameWindow, CompanionProfile,
         self.n_pixels = None
         self.screenshot_shift = None
 
-        self.companion_directory = None
+        self.directory = None
 
+        self.name = None
         self.spellbook = None
-        self.battle_rotation = None
+        self.combat_rotation = None
         self.healing_rotation = None
         self.buffing_rotation = None
 
@@ -155,29 +156,34 @@ class CompanionControlLoop(HardwareInputSimulator, GameWindow, CompanionProfile,
         self.n_pixels = game_window.n_pixels
         self.screenshot_shift = game_window.screenshot_shift
         self.set_companion_directory(config_file)
+        self.set_companion_name(config_file)
         self.initialize_spellbook()
-        self.get_rotations()
+        self.set_rotations()
 
     def set_companion_directory(self, config):
         config_data = read_yaml_file(config)
         game_extension = config_data['game']['extension']
         companion_class = config_data['companion']['class']
-        self.companion_directory = f"./database/game_classes/{game_extension}/{companion_class}"
+        self.directory = f"./database/game_classes/{game_extension}/{companion_class}"
 
     def initialize_spellbook(self):
-        spellbook_file = os.path.join(self.companion_directory, "spellbook.yaml")
+        spellbook_file = os.path.join(self.directory, "spellbook.yaml")
         spellbook = read_yaml_file(spellbook_file)
         for _, spell_info in spellbook.items():
             spell_info['ready'] = True
             spell_info['timestamp_of_cast'] = None
         self.spellbook = spellbook
 
-    def get_rotations(self):
-        rotations_file = os.path.join(self.companion_directory, "rotations.yaml")
+    def set_rotations(self):
+        rotations_file = os.path.join(self.directory, "rotations.yaml")
         rotations = read_yaml_file(rotations_file)
-        self.battle_rotation = rotations["Battle Rotation"]
+        self.combat_rotation = rotations["Combat Rotation"]
         self.healing_rotation = rotations["Healing Rotation"]
         self.buffing_rotation = rotations["Buffing Rotation"]
+
+    def set_companion_name(self, config):
+        config_data = read_yaml_file(config)
+        self.name = config_data['companion']['name']
 
     @property
     def companion_position_on_screen(self):
@@ -476,7 +482,7 @@ class CompanionControlLoop(HardwareInputSimulator, GameWindow, CompanionProfile,
         keywords = {
             'break': {
                 'gathering': ['herbalism', 'mining', 'skinnable'],
-                'looting': ['corpse', 'skivvy', 'requires']
+                'looting': ['corpse', 'requires', self.name.lower()]
             },
             'pass': ['player']
         }
@@ -591,15 +597,13 @@ class CompanionControlLoop(HardwareInputSimulator, GameWindow, CompanionProfile,
             self.cast_spell(spell)
 
     def apply_combat_rotation(self, ally_target=None, enemy_is_target_of=None):
-        if self.spellbook['Power Word: Shield']['ready']:
-            self.target_the_ally(target=ally_target)
-            self.cast_spell('Power Word: Shield')
-        else:
-            self.target_the_enemy(target_of=enemy_is_target_of)
-            if self.spellbook['Penance']['ready']:
-                self.cast_spell('Penance')
-            elif self.spellbook['Smite']['ready']:
-                self.cast_spell('Smite')
+        for spell in self.combat_rotation["Support"]:
+            if self.spellbook[spell]['ready']:
+                self.target_the_ally(target=ally_target)
+                self.cast_spell(spell)
+        self.target_the_enemy(target_of=enemy_is_target_of)
+        for spell in self.combat_rotation["Attack"]:
+            self.cast_spell(spell)
 
     def apply_healing_rotation(self, ally_target=None):
         self.target_the_ally(target=ally_target)

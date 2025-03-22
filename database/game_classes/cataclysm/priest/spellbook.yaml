@@ -1,46 +1,46 @@
 ---
 Penance:
-  action_button: "5"
+  action_button: 5
   cooldown: 12
   cast_time: 0
   action_page_number: 1
 "Power Word: Shield":
-  action_button: "5"
+  action_button: 5
   cooldown: 15
   cast_time: 0
   action_page_number: 2
 Smite:
-  action_button: "1"
+  action_button: 1
   cooldown: 0
   cast_time: 2.5
   action_page_number: 1
 "Physic Scream":
-  action_button: "6"
+  action_button: 6
   cooldown: 30
   cast_time: 0
   action_page_number: 1
 "Inner Fire":
-  action_button: "1"
+  action_button: 1
   cooldown: 0
   cast_time: 0
   action_page_number: 2
 "Power Word: Fortitude":
-  action_button: "2"
+  action_button: 2
   cooldown: 0
   cast_time: 0
   action_page_number: 2
 Flash Heal:
-  action_button: "3"
+  action_button: 3
   cooldown: 0
   cast_time: 1.5
   action_page_number: 2
 Renew:
-  action_button: "4"
+  action_button: 4
   cooldown: 0
   cast_time: 0
   action_page_number: 2
 Mount:
-  action_button: "7"
+  action_button: 7
   cooldown: 0
   cast_time: 0
   action_page_number: 1
