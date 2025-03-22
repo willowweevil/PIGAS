@@ -188,6 +188,7 @@ class CompanionControlLoop(HardwareInputSimulator, GameWindow, CompanionProfile,
     '''
     Session Updates
     '''
+
     def update_session_data(self, session_data):
         self.session_data = session_data
 
@@ -215,7 +216,7 @@ class CompanionControlLoop(HardwareInputSimulator, GameWindow, CompanionProfile,
     Session Profile
     '''
 
-    def define_moving_behaviour(self):
+    def _define_moving_behaviour(self):
         moving_behaviour_mapping = {
             'follow_command': Moving.FOLLOW,
             'step_by_step_command': Moving.STEP_BY_STEP,
@@ -229,7 +230,7 @@ class CompanionControlLoop(HardwareInputSimulator, GameWindow, CompanionProfile,
             self.logger.error(f"Moving behaviour is not defined. Use \"{Moving.STAY}\" as default.")
             self.set_moving_behaviour_to(Moving.STAY)
 
-    def define_combat_behaviour(self):
+    def _define_combat_behaviour(self):
         combat_behaviour_mapping = {
             'assist_command': Combat.ASSIST,
             'defend_command': Combat.DEFEND,
@@ -244,7 +245,7 @@ class CompanionControlLoop(HardwareInputSimulator, GameWindow, CompanionProfile,
             self.logger.error(f"Combat behaviour is not defined. Use \"{Combat.PASSIVE}\" as default.")
             self.set_combat_behaviour_to(Combat.PASSIVE)
 
-    def define_action_behaviour(self):
+    def _define_action_behaviour(self):
         action_behaviour_mapping = {
             'player_message': Action.RESPOND,
             'loot_command': Action.LOOT
@@ -256,17 +257,165 @@ class CompanionControlLoop(HardwareInputSimulator, GameWindow, CompanionProfile,
         else:
             self.set_action_behaviour_to(Action.NONE)
 
-    def define_mount_behaviour(self):
+    def _define_mount_behaviour(self):
         if self.session_data['mount_command']:
             self.set_mount_behaviour_to(Mount.MOUNTED)
         else:
             self.set_mount_behaviour_to(Mount.UNMOUNTED)
 
     def define_behaviour(self, ):
-        self.define_moving_behaviour()
-        self.define_combat_behaviour()
-        self.define_action_behaviour()
-        self.define_mount_behaviour()
+        self._define_moving_behaviour()
+        self._define_combat_behaviour()
+        self._define_action_behaviour()
+        self._define_mount_behaviour()
+
+    def _define_initialize_duty(self):
+        if self.session_data['frame'] == 1:
+            self.add_duty(Duty.INITIALIZE)
+
+    def _define_response_to_message_duty(self):
+        if self.action_behaviour_is(Action.RESPOND):
+            self.add_duty(Duty.RESPOND)
+
+    def _define_mount_duty(self):
+        if self.mount_behaviour_is(Mount.MOUNTED):
+            self.session_data['distance_to_player_delta'] = self.session_data[
+                'mounted_distance_to_player_delta']
+            if not self.session_data['companion_mounted']:
+                self.add_duty(Duty.MOUNT)
+
+    def _define_unmount_duty(self):
+        if self.mount_behaviour_is(Mount.UNMOUNTED):
+            if self.session_data['companion_mounted']:
+                self.add_duty(Duty.UNMOUNT)
+
+    def _define_looting_duty(self):
+        if self.action_behaviour_is(Action.LOOT):
+            self.session_data['distance_to_player_delta'] = self.session_data[
+                'looting_distance_to_player_delta']
+            self.add_duty(Duty.LOOT)
+
+    def _define_heal_yourself_duty(self):
+        if not self.combat_behaviour_is(Combat.PASSIVE):
+            if 0.0 < self.session_data['companion_health'] <= self.session_data['health_to_start_healing']:
+                self.add_duty(Duty.HEAL_YOURSELF)
+
+    def _define_defend_yourself_duty(self):
+        if self.combat_behaviour_is(Combat.DEFEND):
+            if self.session_data['companion_combat_status']:
+                self.add_duty(Duty.DEFEND_YOURSELF)
+
+    def _define_heal_player_duty(self):
+        if not self.combat_behaviour_is(Combat.PASSIVE):
+            if 0.0 < self.session_data['player_health'] <= self.session_data[
+                'health_to_start_healing']:
+                self.add_duty(Duty.HEAL_PLAYER)
+
+    def _define_help_in_combat_duty(self):
+        # assist to player in combat
+        if self.combat_behaviour_is(Combat.ASSIST):
+            if self.session_data['player_combat_status']:
+                self.add_duty(Duty.HELP_IN_COMBAT)
+        # defend player
+        if self.combat_behaviour_is(Combat.DEFEND):
+            if self.session_data['player_combat_status'] and 0.0 < self.session_data[
+                'player_health'] < 1.0:
+                self.add_duty(Duty.HELP_IN_COMBAT)
+
+    def _define_nearing_with_player_duty(self):
+        if self.moving_behaviour_is(Moving.FOLLOW):
+            if self.session_data['distance_from_companion_to_player'] >= self.session_data[
+                'distance_to_player_delta']:
+                self.add_duty(Duty.NEARING_WITH_PLAYER)
+
+    def _define_nearing_for_looting_duty(self):
+        if self.has_duty(Duty.NEARING_WITH_PLAYER):
+            if self.has_duty(Duty.LOOT):
+                self.add_duty(Duty.NEARING_TO_LOOT)
+                self.remove_duty(Duty.LOOT)
+            else:
+                self.looting_announced = False
+
+    def _define_nearing_to_help_in_combat_duty(self):
+        if self.has_duty(Duty.NEARING_WITH_PLAYER):
+            if self.has_duty(Duty.HELP_IN_COMBAT):
+                self.add_duty(Duty.NEARING_TO_HELP_IN_COMBAT)
+                self.remove_duty(Duty.HELP_IN_COMBAT)
+            else:
+                self.helping_in_combat_announced = False
+
+    def _define_nearing_to_heal_player_duty(self):
+        if self.has_duty(Duty.NEARING_WITH_PLAYER):
+            if self.has_duty(Duty.HEAL_PLAYER):
+                self.add_duty(Duty.NEARING_TO_HEAL_PLAYER)
+                self.remove_duty(Duty.HEAL_PLAYER)
+            else:
+                self.healing_player_announced = False
+
+    def _define_avoid_low_obstacle_duty(self):
+        if self.has_duty(Duty.NEARING_WITH_PLAYER):
+            if self.session_data['companion_average_velocity'] < self.session_data[
+                'minimum_velocity_for_nearing'] and \
+                    self.session_data['distance_from_companion_to_player'] > self.session_data[
+                'distance_to_start_avoid_obstacles']:
+                self.add_duty(Duty.AVOID_LOW_OBSTACLE)
+
+    def _define_rotation_duty(self,
+                              rotation_condition: bool,
+                              checking_angle: float,
+                              angle_delta: float,
+                              rotation_duties: dict[str, Duty]):
+        if rotation_condition:
+            if checking_angle:
+                if abs(checking_angle) > angle_delta:
+                    self.add_duty(rotation_duties['main'])
+                    if checking_angle <= -angle_delta:
+                        self.add_duty(rotation_duties['counterclockwise'])
+                    elif checking_angle > angle_delta:
+                        self.add_duty(rotation_duties['clockwise'])
+
+    def define_duties(self):
+        self._define_initialize_duty()
+        self._define_response_to_message_duty()
+        self._define_mount_duty()
+        self._define_unmount_duty()
+        self._define_looting_duty()
+        self._define_heal_yourself_duty()
+        self._define_defend_yourself_duty()
+
+        ### define duties which depend on the player (player should be nearby)
+        if self.session_data['player_position'] and self.session_data['distance_from_companion_to_player'] < \
+                self.session_data['max_distance_from_companion_to_player']:
+            self.waiting_announced = False
+
+            self._define_heal_player_duty()
+            self._define_help_in_combat_duty()
+            self._define_nearing_with_player_duty()
+            self._define_nearing_for_looting_duty()
+            self._define_nearing_to_help_in_combat_duty()
+            self._define_nearing_to_heal_player_duty()
+            self._define_avoid_low_obstacle_duty()
+
+            # rotation to player facing ONLY in combat
+            self._define_rotation_duty(
+                rotation_condition=self.has_duty(Duty.HELP_IN_COMBAT) and not self.has_duty(Duty.NEARING_WITH_PLAYER),
+                checking_angle=self.session_data['angle_between_companion_facing_and_player_facing'],
+                angle_delta=self.session_data['rotation_to_player_angle_delta'],
+                rotation_duties={'main': Duty.ROTATE_TO_PLAYER_FACING,
+                                 'counterclockwise': Duty.ROTATE_TO_PLAYER_FACING_LEFT,
+                                 'clockwise': Duty.ROTATE_TO_PLAYER_FACING_RIGHT})
+
+            # rotation to player if not in should rotate to facing
+            self._define_rotation_duty(
+                rotation_condition=self.moving_behaviour_is(Moving.FOLLOW) and not self.has_duty(
+                    Duty.ROTATE_TO_PLAYER_FACING),
+                checking_angle=self.session_data['angle_between_companion_facing_and_vector_to_player'],
+                angle_delta=self.session_data['rotation_to_player_angle_delta'],
+                rotation_duties={'main': Duty.ROTATE_TO_PLAYER,
+                                 'counterclockwise': Duty.ROTATE_TO_PLAYER_LEFT,
+                                 'clockwise': Duty.ROTATE_TO_PLAYER_RIGHT})
+        else:
+            self.add_duty(Duty.WAITING_FOR_PLAYER)
 
     def define_state(self):
         duty_to_state_mapping = {
@@ -290,6 +439,11 @@ class CompanionControlLoop(HardwareInputSimulator, GameWindow, CompanionProfile,
                 break
         else:
             self.set_state_to(State.NEUTRAL)
+
+    def get_profile(self):
+        logging.debug(f"Companion behaviours: {self.get_behaviours()}")
+        logging.debug(f"Companion duties: {self.get_duties()}")
+        logging.debug(f"Companion state: {self.get_state()}")
 
     '''
     Area scanning and looting
@@ -614,7 +768,6 @@ class CompanionControlLoop(HardwareInputSimulator, GameWindow, CompanionProfile,
                 self.logger.debug(f"{spell_name} is ready")
                 input_spell['ready'] = True
                 input_spell['timestamp_of_cast'] = None
-
 
     # def healing_rotation(self, target):
     #     self.target_the_ally(target)

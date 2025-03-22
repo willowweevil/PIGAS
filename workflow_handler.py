@@ -31,6 +31,10 @@ class ScriptWorkflowHandler(HardwareInputSimulator):
             self.pause_frame = None
             self.frame += 1
 
+    @property
+    def set_session_data(self):
+        return {'frame': self.frame}
+
     def set_workflow_commands(self, session_data):
         self.pause_command = session_data['pause_script']
         self.disable_command = session_data['disable_script']
