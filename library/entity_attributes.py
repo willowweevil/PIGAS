@@ -8,8 +8,8 @@ class Mount(Enum):
 
 class Moving(Enum):
     STAY = auto()
-    STEP_BY_STEP = auto
     FOLLOW = auto()
+    STEP_BY_STEP = auto
 
 
 class Combat(Enum):

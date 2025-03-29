@@ -8,7 +8,9 @@ from navigation import Navigator
 from companion import CompanionControlLoop
 from workflow_handler import ScriptWorkflowHandler
 
-logging.basicConfig(level=logging.DEBUG,
+import sys
+
+logging.basicConfig(level=logging.INFO,
                     format="%(asctime)s %(levelname)s %(message)s")
 
 logging.getLogger('script_control').setLevel(logging.INFO)
@@ -48,7 +50,7 @@ if __name__ == '__main__':
             session_data = workflow_handler.set_session_data
 
             # extend session data with gingham data
-            screenshot = game_window.take_screenshot(savefig=False)
+            screenshot = game_window.take_screenshot(savefig=True)
             gingham_pixels = gingham.pixels_analysis(data=screenshot,
                                                      n_monitoring_pixels=game_window.n_pixels['y'],
                                                      pixel_height=game_window.pixel_size['y'],
