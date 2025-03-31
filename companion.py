@@ -447,9 +447,9 @@ class CompanionControlLoop(HardwareInputSimulator, GameWindow, CompanionProfile,
             self.set_state_to(State.NEUTRAL)
 
     def get_profile(self):
-        logging.debug(f"Companion behaviours: {self.get_behaviours()}")
-        logging.debug(f"Companion duties: {self.get_duties()}")
-        logging.debug(f"Companion state: {self.get_state()}")
+        self.logger.debug(f"Companion behaviours: {self.get_behaviours()}")
+        self.logger.debug(f"Companion duties: {self.get_duties()}")
+        self.logger.debug(f"Companion state: {self.get_state()}")
 
     '''
     Area scanning and looting
@@ -465,7 +465,6 @@ class CompanionControlLoop(HardwareInputSimulator, GameWindow, CompanionProfile,
         if was_found:
             message_suffix = "."
             if was_found == 'gathering':
-                time.sleep(3)
                 message_suffix = ' some resources!'
             self.send_message_to_chat(message="Just finished to #loot" + message_suffix,
                                       channel="/p", pause=1)

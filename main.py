@@ -17,7 +17,7 @@ logging.getLogger('script_control').setLevel(logging.INFO)
 logging.getLogger('game_window').setLevel(logging.INFO)
 logging.getLogger('hardware_input').setLevel(logging.INFO)
 logging.getLogger('navigation').setLevel(logging.INFO)
-logging.getLogger('companion').setLevel(logging.DEBUG)
+logging.getLogger('companion').setLevel(logging.INFO)
 
 if __name__ == '__main__':
     try:
