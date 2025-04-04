@@ -8,8 +8,6 @@ from navigation import Navigator
 from companion import CompanionControlLoop
 from workflow_handler import ScriptWorkflowHandler
 
-import sys
-
 logging.basicConfig(level=logging.INFO,
                     format="%(asctime)s %(levelname)s %(message)s")
 
@@ -44,7 +42,8 @@ if __name__ == '__main__':
             ### preparations
             # set frame and activate a window
             workflow_handler.set_frame()
-            game_window.ensure_window_active()
+            if not workflow_handler.pause_command:
+                game_window.ensure_window_active()
 
             # set session data
             session_data = workflow_handler.set_session_data
