@@ -514,8 +514,9 @@ class CompanionControlLoop(HardwareInputSimulator, GameWindow, CompanionProfile,
         return output_message, False
 
     def _get_scan_array_sides(self, area_geometry):
-        area_x, area_y = area_geometry['x_length'], area_geometry['y_length']
-        step_x, step_y = area_geometry['x_step'], area_geometry['y_step']
+
+        area_x, area_y = area_geometry['x_length']*self.window_size[0], area_geometry['y_length']*self.window_size[1]
+        step_x, step_y = area_geometry['x_step']*self.window_size[0], area_geometry['y_step']*self.window_size[1]
         shift_x = 0 if not 'x_shift' in area_geometry.keys() else area_geometry['x_shift']
         shift_y = 0 if not 'y_shift' in area_geometry.keys() else area_geometry['y_shift']
 

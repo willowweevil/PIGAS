@@ -130,10 +130,12 @@ if __name__ == '__main__':
             if companion.state_is(State.NEARING_FOR_LOOTING):
                 companion.perform_prelooting_actions()
 
+
             # perform looting
             if companion.state_is(State.LOOTING):
-                companion.do_loot_actions(looting_area={'x_length': 200, 'y_length': 200,
-                                                        'x_step': 35, 'y_step': 50})
+                # values - part of screen around the character
+                companion.do_loot_actions(looting_area={'x_length': 0.3, 'y_length': 0.3,
+                                                        'x_step': 0.025, 'y_step': 0.055})
 
             ### healing
             # player
