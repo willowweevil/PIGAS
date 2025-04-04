@@ -39,7 +39,7 @@ Wrath:
   action_button: 1
   cooldown: 0
   cast_time: 2
-  action_page_number: 2
+  action_page_number: 1
 
 Mount:
   action_button: "="
