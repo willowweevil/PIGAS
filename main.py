@@ -51,7 +51,7 @@ if __name__ == '__main__':
             session_data = workflow_handler.set_session_data
 
             # extend session data with gingham data
-            screenshot = game_window.take_screenshot(savefig=True)
+            screenshot = game_window.take_screenshot(savefig=False)
             gingham_pixels = gingham.pixels_analysis(data=screenshot,
                                                      n_monitoring_pixels=game_window.n_pixels['y'],
                                                      pixel_height=game_window.pixel_size['y'],
@@ -140,18 +140,18 @@ if __name__ == '__main__':
             ### healing
             # player
             if companion.state_is(State.HEALING_PLAYER):
-                companion.apply_healing_rotation(ally_target='player')
+                companion.apply_healing_rotation(target='player')
 
             # yourself
             if companion.state_is(State.HEALING_YOURSELF):
-                companion.apply_healing_rotation(ally_target='companion')
+                companion.apply_healing_rotation(target='companion')
 
             ### combat
             # help to player
             if companion.state_is(State.ATTACKING_TO_HELP):
                 companion.rotate_to(Duty.ROTATE_TO_PLAYER_FACING)
                 if not companion.has_duty(Duty.ROTATE_TO_PLAYER_FACING):
-                    companion.apply_combat_rotation(ally_target='player_pet',
+                    companion.apply_combat_rotation(ally_target=None,
                                                     enemy_is_target_of='player')
 
             # defend

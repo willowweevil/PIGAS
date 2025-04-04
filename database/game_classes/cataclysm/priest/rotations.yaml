@@ -1,13 +1,15 @@
 ---
 "Healing Rotation":
-  - "Power Word: Shield"
-  - "Flash Heal"
+  Spells:
+    - "Power Word: Shield"
+    - "Flash Heal"
 "Buffing Rotation":
   - "Power Word: Fortitude"
   - "Inner Fire"
 "Combat Rotation":
-  Support:
+  Support Target: "Player Pet"
+  Support Spells:
     - "Power Word: Shield"
-  Attack:
+  Attack Spells:
     - "Penance"
     - "Smite"

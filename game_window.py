@@ -61,7 +61,7 @@ class GameWindow:
             self.logger.error(f"Cannot define platform: {sys.platform}")
             exit(1)
         
-        self.logger.info(f"System platform was defined as {str(self.platform)[1]}")
+        self.logger.info(f"System platform was defined as {str(self.platform).split('.')[1]}.")
 
     def set_window_title_from_config(self, config=None):
         config_data = read_yaml_file(config)

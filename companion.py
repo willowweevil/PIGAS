@@ -633,17 +633,20 @@ class CompanionControlLoop(HardwareInputSimulator, GameWindow, CompanionProfile,
             self.cast_spell(spell)
 
     def apply_combat_rotation(self, ally_target=None, enemy_is_target_of=None):
-        for spell in self.combat_rotation["Support"]:
-            if self.spellbook[spell]['ready']:
-                self.target_the_ally(target=ally_target)
-                self.cast_spell(spell)
+        if ally_target is None:
+            ally_target = self.combat_rotation.get("Support Target")
+        if ally_target:
+            for spell in self.combat_rotation["Support Spells"]:
+                if self.spellbook[spell]['ready']:
+                    self.target_the_ally(target=ally_target)
+                    self.cast_spell(spell)
         self.target_the_enemy(target_of=enemy_is_target_of)
-        for spell in self.combat_rotation["Attack"]:
+        for spell in self.combat_rotation["Attack Spells"]:
             self.cast_spell(spell)
 
-    def apply_healing_rotation(self, ally_target=None):
-        self.target_the_ally(target=ally_target)
-        for spell in self.healing_rotation:
+    def apply_healing_rotation(self, target=None):
+        self.target_the_ally(target=target)
+        for spell in self.healing_rotation["Spells"]:
             self.cast_spell(spell)
 
     def cast_spell(self, spell, pause=2.0):
@@ -676,15 +679,15 @@ class CompanionControlLoop(HardwareInputSimulator, GameWindow, CompanionProfile,
     '''
 
     def target_the_ally(self, target='player'):
-        if target == 'player_pet':
+        if target.lower().replace('_', ' ') == 'player pet':
             self.hold_key('shift')
             self.press_key("F2", pause=0.1)
             self.release_key('shift')
             self.logger.debug("Got player's pet as a target.")
-        if target == 'player':
+        if target.lower() == 'player':
             self.press_key("F2", pause=0.1)
             self.logger.debug("Got player as a target.")
-        if target == 'companion':
+        if target.lower() == 'companion':
             self.press_key("F1", pause=0.1)
             self.logger.debug("Got myself as a target.")
 
@@ -700,12 +703,16 @@ class CompanionControlLoop(HardwareInputSimulator, GameWindow, CompanionProfile,
     '''
 
     def freeze(self):
-        if self.forward_held:
-            self.stop_moving_forward()
-        if self.right_held:
-            self.stop_rotation_clockwise()
-        if self.left_held:
-            self.stop_rotation_counterclockwise()
+        for key in self.pressed_keys:
+            self.release_key(key)
+
+        # if self.forward_held:
+        #     self.stop_moving_forward()
+        # if self.right_held:
+        #     self.stop_rotation_clockwise()
+        # if self.left_held:as
+        #     self.stop_rotation_counterclockwise()
+        # self.release_key('shift')
 
     def move_to(self, duty=None):
         if not duty:
@@ -787,6 +794,7 @@ class CompanionControlLoop(HardwareInputSimulator, GameWindow, CompanionProfile,
 
     def entering_the_game(self):
         self.logger.info("Companion is active.")
+        self.freeze()
         self.press_key("F2")
         self.send_message_to_chat(message="/salute", channel='/s', pause=3.0)
 
@@ -808,10 +816,3 @@ class CompanionControlLoop(HardwareInputSimulator, GameWindow, CompanionProfile,
                 self.logger.debug(f"{spell_name} is ready")
                 input_spell['ready'] = True
                 input_spell['timestamp_of_cast'] = None
-
-    # def healing_rotation(self, target):
-    #     self.target_the_ally(target)
-    #     if self.spellbook[spell]['ready']:
-    #         self.cast_spell(self.spellbook[spell])
-    #     else:
-    #         self.cast_spell(self.spellbook[spell])
