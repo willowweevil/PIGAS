@@ -1,0 +1,15 @@
+---
+"Healing Rotation":
+  Spells:
+    - "Regrowth"
+    - "Healing Touch"
+"Buffing Rotation":
+  - "Mark of the Wild"
+  - "Thorns"
+"Combat Rotation":
+  Support Target: "Player"
+  Support Spells:
+    - "Rejuvenation"
+  Attack Spells:
+    - "Moonfire"
+    - "Wrath"
