@@ -570,6 +570,8 @@ class CompanionControlLoop(HardwareInputSimulator, GameWindow, CompanionProfile,
     def respond_to_player(self):
         if "/" in self.session_data['player_message']:
             self.emotion_workflow()
+        elif self.session_data['player_message'].startswith("//"):
+            self.command_workflow()
         else:
             self.ai_response_workflow()
 
@@ -608,6 +610,17 @@ class CompanionControlLoop(HardwareInputSimulator, GameWindow, CompanionProfile,
         self.logger.info(
             f"Companion answer time was {round(time.time() - assistant_answer_start_time, 2)} seconds.")
 
+    def emotion_workflow(self):
+        message_words = self.session_data['player_message'].split(' ')
+        for word in message_words:
+            if '/' in word:
+                self.send_message_to_chat(f"Ok, I'm going to {word.replace('/', '')}!")
+                self.send_message_to_chat(f"{word}", channel="/p")
+
+    def command_workflow(self):
+        player_message = self.session_data['player_message'].replace('//', '').strip()
+        self.send_message_to_chat(f"{player_message}", channel="/p")
+
     def send_message_to_chat(self, message, channel="/p", receiver=None, key_delay=20, pause=1.0):
         full_message = f"{channel} {receiver} {message}" if receiver is not None else f"{channel} {message}"
         self.logger.debug(f"Going to send a message \"{full_message}\" to the chat.")
@@ -616,12 +629,7 @@ class CompanionControlLoop(HardwareInputSimulator, GameWindow, CompanionProfile,
         self.type_text(full_message, key_delay=key_delay, pause=0.2)
         self.press_key("enter", pause=pause)
 
-    def emotion_workflow(self):
-        message_words = self.session_data['player_message'].split(' ')
-        for word in message_words:
-            if '/' in word:
-                self.send_message_to_chat(f"Ok, I'm going to {word.replace('/', '')}!")
-                self.send_message_to_chat(f"{word}", channel="/p")
+
 
     '''
     Spells and casting
