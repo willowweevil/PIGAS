@@ -61,7 +61,7 @@ class GameWindow:
             case Platform.LINUX:
                 self.screenshot_shift = {'x': 14, 'y': 49}
             case Platform.WINDOWS:
-                self.screenshot_shift = {'x': 8, 'y': 31}
+                self.screenshot_shift = {'x': 9, 'y': 38} #{'x': 8, 'y': 31}
 
     def _set_window_id(self):
         """Find the window ID by title."""

@@ -654,9 +654,9 @@ class CompanionControlLoop(HardwareInputSimulator, GameWindow, CompanionProfile,
     def target_the_enemy(self, target_of='player'):
         if target_of == 'player':
             self.press_key("F2")
-            self.press_key("F", pause=0.3)
+            self.press_key("f", pause=0.3)
         elif target_of == 'companion':
-            self.press_key("T", pause=0.3)
+            self.press_key("t", pause=0.3)
 
     '''
     Moving
