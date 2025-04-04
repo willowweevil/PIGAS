@@ -14,8 +14,8 @@ venv.bak/
 .idea/
 
 # Project files
-config.yaml
-context.txt
+config*
+context*
 *.png
 .*
 _*
