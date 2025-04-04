@@ -570,7 +570,7 @@ class CompanionControlLoop(HardwareInputSimulator, GameWindow, CompanionProfile,
     def respond_to_player(self):
         if "/" in self.session_data['player_message']:
             self.emotion_workflow()
-        elif self.session_data['player_message'].startswith("//"):
+        elif self.session_data['player_message'].startswith("%"):
             self.command_workflow()
         else:
             self.ai_response_workflow()
@@ -711,7 +711,7 @@ class CompanionControlLoop(HardwareInputSimulator, GameWindow, CompanionProfile,
     '''
 
     def freeze(self):
-        current_pressed_keys = self.pressed_keys
+        current_pressed_keys = list(self.pressed_keys)
         for key in current_pressed_keys:
             self.release_key(key)
 
