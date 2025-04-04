@@ -40,7 +40,10 @@ if __name__ == '__main__':
         workflow_handler.execute_prestart_actions()
         while True:
             ### preparations
-            # set frame and check if a companion leaved the pause
+            # check if a window still exists
+            game_window.ensure_window_exists()
+
+            # set the frame and check if a companion leaved the pause
             should_leave_the_pause = workflow_handler.set_frame_and_check_pause_leaving()
 
             # activate a window

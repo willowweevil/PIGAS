@@ -102,10 +102,10 @@ class GameWindow:
                 exit(1)
 
         if len(window_ids) > 0:
-            self.logger.info(
+            self.logger.debug(
                 f'Found {len(window_ids)} window{'s' if len(window_ids) > 1 else ''} with name {self.window_title}: {', '.join(window_ids)}')
             if len(window_ids) > 1:
-                self.logger.info(f'The first one will be activated.')
+                self.logger.debug(f'The first one will be used.')
             self.window_id = window_ids[0]
         else:
             self.logger.error(f"\"{self.window_title}\": no window found.")
@@ -166,7 +166,7 @@ class GameWindow:
 
         return current_window
 
-    def activate_window(self):
+    def _activate_window(self):
         """Activate the window by ID."""
         match self.platform:
             case Platform.LINUX:
@@ -194,9 +194,12 @@ class GameWindow:
         if current_active_window != self.window_title:
             if self.window_id:
                 time.sleep(1)
-                self.activate_window()
+                self._activate_window()
             else:
                 self.logger.error(f"Cannot activate window {self.window_title}. No windows found.")
+
+    def ensure_window_exists(self):
+        self._set_window_id()
 
     def _get_screenshot_geometry(self):
         position_x, position_y = self.window_position

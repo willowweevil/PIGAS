@@ -559,10 +559,10 @@ class CompanionControlLoop(HardwareInputSimulator, GameWindow, CompanionProfile,
     '''
 
     def workflow_report(self, report_pause=False, report_pause_leaving=False, report_disable=False):
-        if report_pause:
-            self.send_message_to_chat("The control script was paused!")
-        if report_pause_leaving:
-            self.send_message_to_chat("Control script was removed from the pause! I'm alive!")
+        # if report_pause:
+        #     self.send_message_to_chat("The control script was paused!")
+        # if report_pause_leaving:
+        #     self.send_message_to_chat("Control script was removed from the pause! I'm alive!")
         if report_disable:
             self.send_message_to_chat("The control script was #disabled!")
             exit(0)
