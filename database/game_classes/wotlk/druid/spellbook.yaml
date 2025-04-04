@@ -4,43 +4,36 @@ Regrowth:
   cooldown: 21
   cast_time: 2
   action_page_number: 1
-
 "Healing Touch":
   action_button: 3
   cooldown: 0
   cast_time: 2.2
   action_page_number: 1
-
 "Mark of the Wild":
   action_button: 8
   cooldown: 0
   cast_time: 0
   action_page_number: 1
-
 "Thorns":
   action_button: 7
   cooldown: 0
   cast_time: 0
   action_page_number: 1
-
 "Rejuvenation":
   action_button: 5
   cooldown: 15
   cast_time: 0
   action_page_number: 1
-
 "Moonfire":
   action_button: 2
   cooldown: 12
   cast_time: 0
   action_page_number: 1
-
 Wrath:
   action_button: 1
   cooldown: 0
   cast_time: 2
   action_page_number: 2
-
 Mount:
   action_button: =
   cooldown: 0
