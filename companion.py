@@ -816,10 +816,10 @@ class CompanionControlLoop(HardwareInputSimulator, GameWindow, CompanionProfile,
         input_spell = self.spellbook[spell_name]
         spell_ready = input_spell['ready']
         if not spell_ready:
-            if time.time() - input_spell['timestamp_of_cast'] < input_spell["cooldown"]:
+            if time.time() - input_spell['timestamp_of_cast'] < float(input_spell["cooldown"]):
                 self.logger.debug(
                     f"{spell_name} cooldown. "
-                    f"Should wait for {round(np.abs(time.time() - input_spell['timestamp_of_cast'] - input_spell["cooldown"]), 2)} seconds")
+                    f"Should wait for {round(np.abs(time.time() - input_spell['timestamp_of_cast'] - float(input_spell["cooldown"])), 2)} seconds")
                 input_spell['ready'] = False
             else:
                 self.logger.debug(f"{spell_name} is ready")
