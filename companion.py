@@ -568,10 +568,10 @@ class CompanionControlLoop(HardwareInputSimulator, GameWindow, CompanionProfile,
             exit(0)
 
     def respond_to_player(self):
-        if "/" in self.session_data['player_message']:
-            self.emotion_workflow()
-        elif self.session_data['player_message'].startswith("%"):
+        if self.session_data['player_message'].startswith("%"):
             self.command_workflow()
+        elif "/" in self.session_data['player_message']:
+            self.emotion_workflow()
         else:
             self.ai_response_workflow()
 
