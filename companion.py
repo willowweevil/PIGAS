@@ -3,12 +3,13 @@ import os.path
 import numpy as np
 import time
 import logging
+import re
 
 from library.miscellaneous import read_yaml_file
 from hardware_input import HardwareInputSimulator
 from game_window import GameWindow
 from gingham_processing import GinghamProcessor
-from library.miscellaneous import get_response
+from library.miscellaneous import get_open_ai_response
 from library.entity_attributes import Action, Moving, Combat, Mount, Duty, State
 
 
@@ -139,6 +140,7 @@ class CompanionControlLoop(HardwareInputSimulator, GameWindow, CompanionProfile,
         self.combat_rotation = None
         self.healing_rotation = None
         self.buffing_rotation = None
+        self.context_file = None
 
         self.session_data = {}
 
@@ -157,8 +159,13 @@ class CompanionControlLoop(HardwareInputSimulator, GameWindow, CompanionProfile,
         self.screenshot_shift = game_window.screenshot_shift
         self.set_companion_directory(config_file)
         self.set_companion_name(config_file)
+        self.set_context_file(config_file)
         self.initialize_spellbook()
         self.set_rotations()
+
+    def set_context_file(self, config):
+        config_data = read_yaml_file(config)
+        self.context_file = config_data['companion']['context_file']
 
     def set_companion_directory(self, config):
         config_data = read_yaml_file(config)
@@ -550,10 +557,27 @@ class CompanionControlLoop(HardwareInputSimulator, GameWindow, CompanionProfile,
     Messaging and chatting
     '''
 
-    def ai_companion_response(self, player_message, context_file='context.txt'):
-        self.freeze()
+    def workflow_report(self, report_pause=False, report_pause_leaving=False, report_disable=False):
+        if report_pause:
+            self.send_message_to_chat("The control script was paused!")
+        if report_pause_leaving:
+            self.send_message_to_chat("Control script was removed from the pause! I'm alive!")
+        if report_disable:
+            self.send_message_to_chat("The control script was #disabled!")
+            exit(0)
 
-        with open(context_file, 'r') as file:
+    def respond_to_player(self):
+        if "/" in self.session_data['player_message']:
+            self.emotion_workflow()
+        else:
+            self.ai_response_workflow()
+
+    def ai_response_workflow(self):
+        self.freeze()
+        player_message = self.session_data['player_message']
+
+        # read context
+        with open(self.context_file, 'r') as file:
             context = file.read()
             file.close()
         context += f"{player_message}\n"
@@ -561,18 +585,23 @@ class CompanionControlLoop(HardwareInputSimulator, GameWindow, CompanionProfile,
         assistant_answer_start_time = time.time()
         self.logger.info(f"Got player message: {player_message}")
         self.logger.info("Getting response..")
-        response = get_response(context)
+        response = get_open_ai_response(context)
         if response:
+            response = response.strip().replace('\n', ' ')
             self.logger.info(f"Companion response: {response}")
-            response = response.strip()
+
+            # add response in context
             context += f"{response}\n\n"
-            with open(context_file, "w") as f:
+            with open(self.context_file, "w") as f:
                 f.write(context)
                 f.close()
-            if len(response) >= 255:
-                self.send_message_to_chat(response[:255], key_delay=40)
-                response = response[255:]
-            self.send_message_to_chat(response, key_delay=40)
+
+            # send response to chat
+            # n_responses = len(response)//255 + int(bool(len(response)%255))
+            sentences = re.split(r'(?<=[.!?])\s+', response)
+            for sentence in sentences:
+                self.send_message_to_chat(sentence, key_delay=40)
+
         else:
             self.send_message_to_chat("I'm too tired to speak now..", key_delay=20)
         self.logger.info(
@@ -584,7 +613,14 @@ class CompanionControlLoop(HardwareInputSimulator, GameWindow, CompanionProfile,
         self.freeze()
         self.press_key("enter", pause=0.2)
         self.type_text(full_message, key_delay=key_delay, pause=0.2)
-        self.press_key("Return", pause=pause)
+        self.press_key("enter", pause=pause)
+
+    def emotion_workflow(self):
+        message_words = self.session_data['player_message'].split(' ')
+        for word in message_words:
+            if '/' in word:
+                self.send_message_to_chat(f"Ok, I'm going to {word.replace('/', '')}!")
+                self.send_message_to_chat(f"{word}", channel="/p")
 
     '''
     Spells and casting

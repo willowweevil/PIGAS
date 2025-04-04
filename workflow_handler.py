@@ -24,13 +24,6 @@ class ScriptWorkflowHandler(HardwareInputSimulator):
             self.logger.addHandler(handler)
             self.logger.propagate = False
 
-
-    def set_frame(self):
-        self.frame_start_time = time.time()
-        if not self.pause_command:
-            self.pause_frame = None
-            self.frame += 1
-
     @property
     def set_session_data(self):
         return {'frame': self.frame}
@@ -43,28 +36,45 @@ class ScriptWorkflowHandler(HardwareInputSimulator):
         self.frame_end_time = time.time()
         self.logger.debug(f"Loop time was {round(self.frame_end_time - self.frame_start_time, 2)}s per frame.")
 
+    def set_frame_and_check_pause_leaving(self):
+        self.frame_start_time = time.time()
+        report_leave_pause = False
+        if not self.pause_command:
+            if self.pause_frame:
+                logging.info("Control script was removed from the pause.")
+                report_leave_pause = True
+            self.pause_frame = None
+            self.frame += 1
+        return report_leave_pause
+
     def disable_script(self):
+        report_disable = False
         if self.disable_command:
             logging.warning("Control script was disabled from game.")
-            if self.frame == 0:
-                logging.warning("Enable it by sending \'disable\' in the party chat.")
+            # if self.frame == 0:
+            #     logging.warning("Enable it by sending \'disable\' in the party chat.")
             self.release_movement_keys()
-            exit(0)
+            report_disable = True
+        return report_disable
 
     def pause_script(self):
+        report_pause = False
         if self.pause_command:
             if not self.pause_frame:
                 self.pause_frame = self.frame
             if self.pause_frame == self.frame:
                 logging.info("Control script was paused.")
                 self.release_movement_keys()
+                report_pause = True
             self.pause_frame += 1
         else:
             self.logger.debug(f"Frame #{self.frame}")
+        return report_pause
 
     def script_workflow_control(self):
-        self.disable_script()
-        self.pause_script()
+        report_disable = self.disable_script()
+        report_pause = self.pause_script()
+        return report_disable, report_pause
 
     def execute_prestart_actions(self):
         self.logger.info("WoW In-Game Companion is ready to start.")

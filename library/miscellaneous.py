@@ -7,11 +7,11 @@ def read_yaml_file(input_file=None):
         data = yaml.safe_load(file)
     return data
 
-def get_response(input_message):
+def get_open_ai_response(input_message):
     connection_parameters = read_yaml_file('config.yaml')
     client = openai.OpenAI(
-        api_key="sk-mbOK4BfoIlrsKFPzAe534e4506E34055815c582e6fFc270c",
-        base_url="https://api.aiguoguo199.com/v1"
+        api_key=connection_parameters['open-ai']['api_key'],
+        base_url=connection_parameters['open-ai']['base_url']
     )
     try:
         response = client.chat.completions.create(

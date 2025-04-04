@@ -40,8 +40,10 @@ if __name__ == '__main__':
         workflow_handler.execute_prestart_actions()
         while True:
             ### preparations
-            # set frame and activate a window
-            workflow_handler.set_frame()
+            # set frame and check if a companion leaved the pause
+            should_leave_the_pause = workflow_handler.set_frame_and_check_pause_leaving()
+
+            # activate a window
             if not workflow_handler.pause_command:
                 game_window.ensure_window_active()
 
@@ -68,7 +70,10 @@ if __name__ == '__main__':
             workflow_handler.set_workflow_commands(session_data)
 
             # workflow control
-            workflow_handler.script_workflow_control()
+            should_disable, should_pause =  workflow_handler.script_workflow_control()
+            companion.workflow_report(report_pause_leaving=should_leave_the_pause,
+                                      report_disable=should_disable,
+                                      report_pause=should_pause)
             if workflow_handler.pause_command:
                 continue
 
@@ -106,7 +111,7 @@ if __name__ == '__main__':
 
             ### respond to message
             if companion.state_is(State.RESPONDING):
-                companion.ai_companion_response(companion.session_data['player_message'])
+                companion.respond_to_player()
 
             ### mounting
             if companion.state_is(State.MOUNTING):
