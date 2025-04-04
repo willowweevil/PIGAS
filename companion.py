@@ -618,7 +618,7 @@ class CompanionControlLoop(HardwareInputSimulator, GameWindow, CompanionProfile,
                 self.send_message_to_chat(f"{word}", channel="/p")
 
     def command_workflow(self):
-        player_message = self.session_data['player_message'].replace('//', '').strip()
+        player_message = self.session_data['player_message'][1:].strip()
         self.send_message_to_chat(f"{player_message}", channel="/p")
 
     def send_message_to_chat(self, message, channel="/p", receiver=None, key_delay=20, pause=1.0):
