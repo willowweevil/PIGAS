@@ -711,7 +711,8 @@ class CompanionControlLoop(HardwareInputSimulator, GameWindow, CompanionProfile,
     '''
 
     def freeze(self):
-        for key in self.pressed_keys:
+        current_pressed_keys = self.pressed_keys
+        for key in current_pressed_keys:
             self.release_key(key)
 
         # if self.forward_held:
