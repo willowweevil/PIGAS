@@ -5,6 +5,67 @@ from pynput.keyboard import Controller as KeyboardController, Key
 from pynput.mouse import Controller as MouseController, Button
 from pynput import keyboard
 
+KEY_MAPPING = {
+    # Mouse buttons
+    'left': Button.left,
+    'right': Button.right,
+    'middle': Button.middle,
+
+    # Modifier keys
+    'shift': Key.shift,
+    'ctrl': Key.ctrl,
+    'alt': Key.alt,
+    'cmd': Key.cmd,
+
+    # Special keys
+    'space': Key.space,
+    'enter': Key.enter,
+    'esc': Key.esc,
+    'tab': Key.tab,
+    'backspace': Key.backspace,
+    'delete': Key.delete,
+
+    # Function keys
+    'f1': Key.f1,
+    'f2': Key.f2,
+    'f3': Key.f3,
+    'f4': Key.f4,
+    'f5': Key.f5,
+    'f6': Key.f6,
+    'f7': Key.f7,
+    'f8': Key.f8,
+    'f9': Key.f9,
+    'f10': Key.f10,
+    'f11': Key.f11,
+    'f12': Key.f12,
+
+    # Arrow keys (both versions)
+    'key.up': Key.up,
+    'key.down': Key.down,
+    'key.left': Key.left,
+    'key.right': Key.right,
+
+    # Numpad keys
+    'num0': '0',
+    'num1': '1',
+    'num2': '2',
+    'num3': '3',
+    'num4': '4',
+    'num5': '5',
+    'num6': '6',
+    'num7': '7',
+    'num8': '8',
+    'num9': '9',
+
+    # Media keys
+    'media_play_pause': Key.media_play_pause,
+    'media_volume_mute': Key.media_volume_mute,
+    'media_volume_down': Key.media_volume_down,
+    'media_volume_up': Key.media_volume_up,
+    'media_previous': Key.media_previous,
+    'media_next': Key.media_next
+}
+
 
 class HardwareInputSimulator:
     def __init__(self):
@@ -46,23 +107,8 @@ class HardwareInputSimulator:
 
     @staticmethod
     def _transform_input_key_or_button(input_key):
-        output_key = input_key
-        match input_key.lower():
-            case 'left':
-                output_key = Button.left
-            case 'right':
-                output_key = Button.right
-            case 'shift':
-                output_key = Key.shift
-            case 'space':
-                output_key = Key.space
-            case 'f1':
-                output_key = Key.f1
-            case 'f2':
-                output_key = Key.f2
-        if input_key.lower() in ['enter', 'return']:
-            output_key = Key.enter
-        return output_key
+        output_key = KEY_MAPPING.get(input_key.lower())
+        return output_key if output_key is not None else input_key
 
     def type_text(self, message, key_delay=20, pause=1.0):
         shift_characters = "!@#$%^&*()_+{}:\"<>?|~"

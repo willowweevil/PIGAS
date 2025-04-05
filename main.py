@@ -30,7 +30,7 @@ if __name__ == '__main__':
         gingham = GinghamProcessor()
 
         # geometry and navigation
-        navigator = Navigator()
+        navigator = Navigator(config_file=workflow_handler.config_file)
 
         # companion actions
         companion = CompanionControlLoop()
@@ -54,7 +54,7 @@ if __name__ == '__main__':
             session_data = workflow_handler.set_session_data
 
             # extend session data with gingham data
-            screenshot = game_window.take_screenshot(savefig=False)
+            screenshot = game_window.take_screenshot(savefig=True)
             gingham_pixels = gingham.pixels_analysis(data=screenshot,
                                                      n_monitoring_pixels=game_window.n_pixels['y'],
                                                      pixel_height=game_window.pixel_size['y'],

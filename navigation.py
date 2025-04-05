@@ -2,6 +2,7 @@ import numpy as np
 import logging
 import time
 
+from library.miscellaneous import read_yaml_file
 
 class BasicGeometry:
     @staticmethod
@@ -51,13 +52,15 @@ class BasicGeometry:
 
 
 class Navigator(BasicGeometry):
-    def __init__(self, n_frames=20):
+    def __init__(self, n_frames=20, config_file=None):
         super().__init__()
         self.n_frames = n_frames
         self.last_companion_coordinates = [(0, 0)] * n_frames
         self.last_player_coordinates = [(0, 0)] * n_frames
         self.last_companion_time = [0] * n_frames
         self.last_player_time = [0] * n_frames
+
+        self.config_file = config_file
 
         self.logger = logging.getLogger('navigation')
         if not self.logger.hasHandlers():
@@ -170,14 +173,15 @@ class Navigator(BasicGeometry):
             'angle_between_companion_facing_and_player_facing': angle_between_companion_facing_and_player_facing
         }
 
-    @staticmethod
-    def _define_moving_constants(input_data):
+
+    def _define_moving_constants(self, input_data):
         # distances
-        distance_to_player_delta = 0.15
-        mounted_distance_to_player_delta = distance_to_player_delta * 1.25
-        looting_distance_to_player_delta = distance_to_player_delta / 2
-        distance_to_start_avoid_obstacles = distance_to_player_delta * 3
-        max_distance_from_companion_to_player = 7.5 # distance to start waiting for player
+        constants = read_yaml_file(self.config_file)['navigation']
+        distance_to_player_delta = constants['min_distance_to_player']
+        mounted_distance_to_player_delta = distance_to_player_delta * constants['mounted_distance_coefficient']
+        looting_distance_to_player_delta = distance_to_player_delta * constants['looting_distance_coefficient']
+        distance_to_start_avoid_obstacles = distance_to_player_delta * constants['start_to_avoid_obstacles_distance_coefficient']
+        max_distance_from_companion_to_player = distance_to_player_delta * constants['start_to_wait_player_coefficient']
 
         # angles
         rotation_to_player_angle_delta_min = 10 # min angle (degrees in one side of rotation)
