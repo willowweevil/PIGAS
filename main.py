@@ -68,6 +68,10 @@ if __name__ == '__main__':
             # update companion with new session data
             companion.session_data.update(session_data)
 
+            # check for context for comments if streaming
+            if workflow_handler.streaming[0]:
+                companion.set_comment_as_player_message(comment_file=workflow_handler.streaming[1])
+
             ### script workflow control
             # update script workflow controller
             workflow_handler.set_workflow_commands(session_data)

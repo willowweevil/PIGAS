@@ -9,8 +9,10 @@ from library.miscellaneous import read_yaml_file
 from hardware_input import HardwareInputSimulator
 from game_window import GameWindow
 from gingham_processing import GinghamProcessor
-from library.miscellaneous import get_open_ai_response
+from library.miscellaneous import get_open_ai_response, read_the_context, write_the_context, read_the_last_line, \
+    add_message_to_context, clear_file
 from library.entity_attributes import Action, Moving, Combat, Mount, Duty, State
+from library.constants import WOW_EMOTES
 
 
 class CompanionProfile(object):
@@ -515,8 +517,9 @@ class CompanionControlLoop(HardwareInputSimulator, GameWindow, CompanionProfile,
 
     def _get_scan_array_sides(self, area_geometry):
 
-        area_x, area_y = area_geometry['x_length']*self.window_size[0], area_geometry['y_length']*self.window_size[1]
-        step_x, step_y = area_geometry['x_step']*self.window_size[0], area_geometry['y_step']*self.window_size[1]
+        area_x, area_y = area_geometry['x_length'] * self.window_size[0], area_geometry['y_length'] * self.window_size[
+            1]
+        step_x, step_y = area_geometry['x_step'] * self.window_size[0], area_geometry['y_step'] * self.window_size[1]
         shift_x = 0 if not 'x_shift' in area_geometry.keys() else area_geometry['x_shift']
         shift_y = 0 if not 'y_shift' in area_geometry.keys() else area_geometry['y_shift']
 
@@ -568,43 +571,43 @@ class CompanionControlLoop(HardwareInputSimulator, GameWindow, CompanionProfile,
             exit(0)
 
     def respond_to_player(self):
-        if self.session_data['player_message'].startswith("%"):
-            self.command_workflow()
-        elif "/" in self.session_data['player_message']:
-            self.emotion_workflow()
-        else:
+        message_sent = False
+        # commands first
+        if self.session_data['player_message'].startswith("&"):
+            message_sent = self.command_workflow()
+        # add something in the context
+        if not message_sent and self.session_data['player_message'].startswith("%"):
+            add_message_to_context(self.context_file, self.session_data['player_message'][1:])
+            self.send_message_to_chat("Ok, I got it.")
+            message_sent = True
+        # process wow-emotions
+        if not message_sent and "/" in self.session_data['player_message']:
+            message_sent = self.emotion_workflow()
+        # process ai-responding
+        if not message_sent:
             self.ai_response_workflow()
+
+    def ai_response_in_chat(self, response, context):
+        response = response.strip().replace('\n', ' ')
+        self.logger.info(f"Companion response: {response}")
+        context += f"\n\n{response}"
+        write_the_context(self.context_file, context)
+        sentences = re.split(r'(?<=[.!?])\s+', response)
+        for sentence in sentences:
+            self.send_message_to_chat(sentence, key_delay=40)
 
     def ai_response_workflow(self):
         self.freeze()
         player_message = self.session_data['player_message']
-
-        # read context
-        with open(self.context_file, 'r') as file:
-            context = file.read()
-            file.close()
-        context += f"{player_message}\n"
+        context = read_the_context(self.context_file)
+        context += f"\n{player_message}"
 
         assistant_answer_start_time = time.time()
         self.logger.info(f"Got player message: {player_message}")
         self.logger.info("Getting response..")
         response = get_open_ai_response(context)
         if response:
-            response = response.strip().replace('\n', ' ')
-            self.logger.info(f"Companion response: {response}")
-
-            # add response in context
-            context += f"{response}\n\n"
-            with open(self.context_file, "w") as f:
-                f.write(context)
-                f.close()
-
-            # send response to chat
-            # n_responses = len(response)//255 + int(bool(len(response)%255))
-            sentences = re.split(r'(?<=[.!?])\s+', response)
-            for sentence in sentences:
-                self.send_message_to_chat(sentence, key_delay=40)
-
+            self.ai_response_in_chat(response, context)
         else:
             self.send_message_to_chat("I'm too tired to speak now..", key_delay=20)
         self.logger.info(
@@ -613,14 +616,18 @@ class CompanionControlLoop(HardwareInputSimulator, GameWindow, CompanionProfile,
     def emotion_workflow(self):
         message_words = self.session_data['player_message'].split(' ')
         for word in message_words:
-            if '/' in word:
-                self.send_message_to_chat(f"Let's {word.replace('/', '')}!")
-                self.send_message_to_chat(f"{word}", channel="/p")
+            if word in WOW_EMOTES:
+                emote = re.sub(r'\W', '', word)
+                self.send_message_to_chat(f"Let's {emote}!")
+                self.send_message_to_chat(f"{'/' + emote}", channel="/p")
+                return True
+        return False
 
     def command_workflow(self):
         command = self.session_data['player_message'][1:].strip()
         self.send_message_to_chat(f"I'm going to type a: \"{command}\"!")
         self.send_message_to_chat(f"{command}", channel="/p")
+        return True
 
     def send_message_to_chat(self, message, channel="/p", receiver=None, key_delay=20, pause=1.0):
         full_message = f"{channel} {receiver} {message}" if receiver is not None else f"{channel} {message}"
@@ -630,7 +637,11 @@ class CompanionControlLoop(HardwareInputSimulator, GameWindow, CompanionProfile,
         self.type_text(full_message, key_delay=key_delay, pause=0.2)
         self.press_key("enter", pause=pause)
 
-
+    def set_comment_as_player_message(self, comment_file):
+        comment = read_the_last_line(comment_file)
+        if comment:
+            self.session_data['player_message'] = comment
+            clear_file(comment_file)
 
     '''
     Spells and casting

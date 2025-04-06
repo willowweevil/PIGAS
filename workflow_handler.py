@@ -2,6 +2,7 @@ import logging
 import time
 
 from hardware_input import HardwareInputSimulator
+from library.miscellaneous import read_yaml_file
 
 
 class ScriptWorkflowHandler(HardwareInputSimulator):
@@ -23,6 +24,11 @@ class ScriptWorkflowHandler(HardwareInputSimulator):
             handler = logging.StreamHandler()
             self.logger.addHandler(handler)
             self.logger.propagate = False
+
+    @property
+    def streaming(self):
+        config = read_yaml_file(self.config_file)
+        return config['other'].get('streaming'), config['other'].get('comment_file')
 
     @property
     def set_session_data(self):

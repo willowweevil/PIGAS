@@ -543,10 +543,10 @@ function CompanionControlSquareColor(self, event, message, sender, ...)
     end
     if containCommand(message, commands.pause) then
         if programControlColor == 0.0 then
-            --SendChatMessage("The control script was paused!", "PARTY")
+            SendChatMessage("The control script was paused!", "PARTY")
             programControlColor = 0.5
         elseif programControlColor == 0.5 then
-            --SendChatMessage("Control script is active! I'm alive!", "PARTY")
+            SendChatMessage("Control script is active! I'm alive!", "PARTY")
             programControlColor = 0.0
         end
     end
