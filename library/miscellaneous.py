@@ -31,12 +31,12 @@ def read_the_context(context_file):
     return context
 
 def write_the_context(context_file, context):
-    with open(context_file, "w") as f:
+    with open(context_file, "w", errors='ignore') as f:
         f.write(context)
         f.close()
 
 def read_the_last_line(file):
-    with open(file, 'r') as f:
+    with open(file, 'r', errors='ignore') as f:
         lines = f.readlines()
         if len(lines) > 0:
             return lines[-1].strip()
