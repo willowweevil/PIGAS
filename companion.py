@@ -144,6 +144,9 @@ class CompanionControlLoop(HardwareInputSimulator, GameWindow, CompanionProfile,
         self.buffing_rotation = None
         self.context_file = None
 
+        self.should_heal = False
+        self.should_support = False
+
         self.session_data = {}
 
         self.logger = logging.getLogger('companion')
@@ -164,6 +167,7 @@ class CompanionControlLoop(HardwareInputSimulator, GameWindow, CompanionProfile,
         self.set_context_file(config_file)
         self.initialize_spellbook()
         self.set_rotations()
+        self.set_should_heal_and_support(config_file)
 
     def set_context_file(self, config):
         config_data = read_yaml_file(config)
@@ -186,13 +190,19 @@ class CompanionControlLoop(HardwareInputSimulator, GameWindow, CompanionProfile,
     def set_rotations(self):
         rotations_file = os.path.join(self.directory, "rotations.yaml")
         rotations = read_yaml_file(rotations_file)
-        self.combat_rotation = rotations["Combat Rotation"]
-        self.healing_rotation = rotations["Healing Rotation"]
-        self.buffing_rotation = rotations["Buffing Rotation"]
+        self.combat_rotation = rotations.get("Combat Rotation")
+        self.healing_rotation = rotations.get("Healing Rotation")
+        self.buffing_rotation = rotations.get("Buffing Rotation")
 
     def set_companion_name(self, config):
         config_data = read_yaml_file(config)
         self.name = config_data['companion']['name']
+
+    def set_should_heal_and_support(self, config):
+        config_data = read_yaml_file(config)
+        self.should_heal = config_data["companion"].get("should_heal", False)
+        self.should_support = config_data["companion"].get("should_support", False)
+
 
     @property
     def companion_position_on_screen(self):
@@ -311,7 +321,7 @@ class CompanionControlLoop(HardwareInputSimulator, GameWindow, CompanionProfile,
             self.add_duty(Duty.LOOT)
 
     def _define_heal_yourself_duty(self):
-        if not self.combat_behaviour_is(Combat.PASSIVE):
+        if not self.combat_behaviour_is(Combat.PASSIVE) and self.should_heal:
             if 0.0 < self.session_data['companion_health'] <= self.session_data['health_to_start_healing']:
                 self.add_duty(Duty.HEAL_YOURSELF)
 
@@ -321,7 +331,7 @@ class CompanionControlLoop(HardwareInputSimulator, GameWindow, CompanionProfile,
                 self.add_duty(Duty.DEFEND_YOURSELF)
 
     def _define_heal_player_duty(self):
-        if not self.combat_behaviour_is(Combat.PASSIVE):
+        if not self.combat_behaviour_is(Combat.PASSIVE) and self.should_heal:
             if 0.0 < self.session_data['player_health'] <= self.session_data[
                 'health_to_start_healing']:
                 self.add_duty(Duty.HEAL_PLAYER)
@@ -649,39 +659,58 @@ class CompanionControlLoop(HardwareInputSimulator, GameWindow, CompanionProfile,
 
     def apply_buffing_rotation(self, ally_target=None):
         self.target_the_ally(ally_target)
-        for spell in self.buffing_rotation:
-            self.cast_spell(spell)
+        if self.buffing_rotation:
+            buffing_spells = self.buffing_rotation.get("Buffing Spells")
+            if buffing_spells:
+                for spell in buffing_spells:
+                    self.cast_spell(spell)
 
     def apply_combat_rotation(self, ally_target=None, enemy_is_target_of=None):
-        if ally_target is None:
-            ally_target = self.combat_rotation.get("Support Target")
-        if ally_target:
-            for spell in self.combat_rotation["Support Spells"]:
-                if self.spellbook[spell]['ready']:
-                    self.target_the_ally(target=ally_target)
+        if self.should_support:
+            if not ally_target:
+                ally_target = self.combat_rotation.get("Support Target")
+            if ally_target:
+                support_spells = self.combat_rotation.get("Support Spells")
+                if support_spells:
+                    for spell in support_spells:
+                        if self.spellbook[spell]['ready']:
+                            self.target_the_ally(target=ally_target)
+                            self.cast_spell(spell)
+
+        if not enemy_is_target_of:
+            ally_target = self.combat_rotation.get("Attack Target Is Target Of")
+        if enemy_is_target_of:
+            self.target_the_enemy(target_of=enemy_is_target_of)
+            attack_spells = self.combat_rotation.get("Attack Spells")
+            if attack_spells:
+                for spell in attack_spells:
                     self.cast_spell(spell)
-        self.target_the_enemy(target_of=enemy_is_target_of)
-        for spell in self.combat_rotation["Attack Spells"]:
-            self.cast_spell(spell)
 
     def apply_healing_rotation(self, target=None):
+        if not target:
+            target = self.healing_rotation.get("Healing Target")
         self.target_the_ally(target=target)
-        for spell in self.healing_rotation["Spells"]:
-            self.cast_spell(spell)
+        healing_spells = self.healing_rotation.get("Healing Spells")
+        if healing_spells:
+            for spell in healing_spells:
+                self.cast_spell(spell)
 
     def cast_spell(self, spell, pause=2.0):
-        if self.spellbook[spell]['ready']:
-            pause_after_cast = pause if self.spellbook[spell]['cast_time'] <= pause else self.spellbook[spell][
-                'cast_time']
-            if self.spellbook[spell]['cooldown']:
-                self.logger.debug(
-                    f"Going to cast a {spell} (cooldown is {self.spellbook[spell]['cooldown']} seconds).")
-                self._perform_casting_actions_sequence(self.spellbook[spell], pause=pause_after_cast)
-                self.spellbook[spell]["timestamp_of_cast"] = time.time()
-                self.spellbook[spell]['ready'] = False
-            else:
-                self.logger.debug(f"Going to cast a {spell}.")
-                self._perform_casting_actions_sequence(self.spellbook[spell], pause=pause_after_cast)
+        spell_info = self.spellbook.get(spell)
+        if spell_info:
+            if spell_info['ready']:
+                pause_after_cast = pause if spell_info['cast_time'] <= pause else spell_info['cast_time']
+                if spell_info['cooldown']:
+                    self.logger.debug(
+                        f"Going to cast a {spell} (cooldown is {spell_info['cooldown']} seconds).")
+                    self._perform_casting_actions_sequence(spell_info, pause=pause_after_cast)
+                    spell_info["timestamp_of_cast"] = time.time()
+                    spell_info['ready'] = False
+                else:
+                    self.logger.debug(f"Going to cast a {spell}.")
+                    self._perform_casting_actions_sequence(spell_info, pause=pause_after_cast)
+        else:
+            self.send_message_to_chat(f"Sorry, I don't know spell \"{spell}\". Please, check spell and rotation books.")
 
     def _perform_casting_actions_sequence(self, spell_data, pause):
         action_page_number = str(spell_data['action_page_number'])
