@@ -159,6 +159,9 @@ function EventFrame:OnUpdate()
     LettersSquareColors()
 
     --print(GetMapInfo())
+    --print(GetRealZoneText())
+    --print(GetZoneText())
+    --print(GetCurrentMapAreaID())
     --print(UnitName("target"))
 
     AcceptQuest()

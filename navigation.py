@@ -68,7 +68,7 @@ class Navigator(BasicGeometry):
             self.logger.addHandler(handler)
             self.logger.propagate = False
 
-    def calculate_velocity(self, position, coordinates_array, times_array):
+    def _calculate_velocity(self, position, coordinates_array, times_array):
         times_array.append(time.time())
         times_array.pop(0)
         coordinates_array.append(position)
@@ -104,12 +104,7 @@ class Navigator(BasicGeometry):
                                                              self.second_point_of_vector(companion_position,
                                                                                          companion_facing))
 
-        # self.last_companion_coordinates.append(companion_position)
-        # self.last_companion_coordinates.pop(0)
-        # companion_average_velocity = np.average(
-        #     np.abs(np.diff([np.sqrt(coord[0] ** 2 + coord[1] ** 2) for coord in self.last_companion_coordinates])))
-
-        companion_average_velocity = self.calculate_velocity(companion_position,
+        companion_average_velocity = self._calculate_velocity(companion_position,
                                                              self.last_companion_coordinates,
                                                              self.last_companion_time)
 
@@ -127,8 +122,6 @@ class Navigator(BasicGeometry):
         player_position = (player_x, player_y)
         player_position = None if player_position == (0, 0) else player_position
 
-        # last_player_coordinates = [self.last_player_coordinates[1],
-        #                            player_position] if frame % number_of_calculation_frames == 0 else last_player_coordinates
         self.last_player_coordinates.append(player_position)
         self.last_player_coordinates.pop(0)
         player_facing_vector = self.vector_between_points(self.last_player_coordinates[-1],
@@ -136,9 +129,7 @@ class Navigator(BasicGeometry):
         player_facing_vector = None if player_facing_vector == [0, 0] else player_facing_vector
 
         if None not in self.last_player_coordinates:
-            # player_average_velocity = np.average(
-            #     np.abs(np.diff([np.sqrt(coord[0] ** 2 + coord[1] ** 2) for coord in self.last_player_coordinates])))
-            player_average_velocity = self.calculate_velocity(player_position,
+            player_average_velocity = self._calculate_velocity(player_position,
                                                               self.last_player_coordinates,
                                                               self.last_player_time)
         else:
@@ -177,11 +168,16 @@ class Navigator(BasicGeometry):
     def _define_moving_constants(self, input_data):
         # distances
         constants = read_yaml_file(self.config_file)['navigation']
+        mounted_distance_coefficient = constants.get('mounted_distance_coefficient', 1.25)
+        looting_distance_coefficient = constants.get('looting_distance_coefficient', 0.5)
+        start_to_avoid_obstacles_distance_coefficient = constants.get('start_to_avoid_obstacles_distance_coefficient', 3.0)
+        start_to_wait_player_coefficient = constants.get('start_to_wait_player_coefficient', 50.0)
+
         distance_to_player_delta = constants['min_distance_to_player']
-        mounted_distance_to_player_delta = distance_to_player_delta * constants['mounted_distance_coefficient']
-        looting_distance_to_player_delta = distance_to_player_delta * constants['looting_distance_coefficient']
-        distance_to_start_avoid_obstacles = distance_to_player_delta * constants['start_to_avoid_obstacles_distance_coefficient']
-        max_distance_from_companion_to_player = distance_to_player_delta * constants['start_to_wait_player_coefficient']
+        mounted_distance_to_player_delta = distance_to_player_delta * mounted_distance_coefficient
+        looting_distance_to_player_delta = distance_to_player_delta * looting_distance_coefficient
+        distance_to_start_avoid_obstacles = distance_to_player_delta * start_to_avoid_obstacles_distance_coefficient
+        max_distance_from_companion_to_player = distance_to_player_delta * start_to_wait_player_coefficient
 
         # angles
         rotation_to_player_angle_delta_min = 10 # min angle (degrees in one side of rotation)
