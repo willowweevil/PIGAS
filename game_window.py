@@ -13,18 +13,24 @@ else:
         @staticmethod
         def GetWindowRect(*args, **kwargs):
             return False
+
         @staticmethod
         def GetWindowText(self, *args, **kwargs):
             return False
+
         @staticmethod
         def EnumWindows(self, *args, **kwargs):
             return False
+
         @staticmethod
         def GetForegroundWindow(*args, **kwargs):
             return False
+
         @staticmethod
         def SetForegroundWindow(*args, **kwargs):
             return False
+
+
     win32gui = MockWin32GUI()
 
 from library.miscellaneous import read_yaml_file
@@ -35,7 +41,7 @@ class GameWindow:
     def __init__(self):
         self.pixel_size = {'x': 5, 'y': 5}
         self.n_pixels = {'x': 201, 'y': 11}
-        self.screenshot_shift = None 
+        self.screenshot_shift = None
 
         self.platform = None
 
@@ -62,8 +68,8 @@ class GameWindow:
         else:
             self.logger.error(f"Cannot define platform: {sys.platform}")
             exit(1)
-        
-        self.logger.info(f"System platform was defined as {str(self.platform).split('.')[1]}.")
+
+        self.logger.debug(f"System platform was defined as {str(self.platform).split('.')[1]}.")
 
     def set_window_title_from_config(self, config=None):
         config_data = read_yaml_file(config)
@@ -93,7 +99,7 @@ class GameWindow:
                     self.screenshot_shift = {'x': 0, 'y': 0}
             case Platform.WINDOWS:
                 if not self.fullscreen_mode:
-                    self.screenshot_shift = {'x': 9, 'y': 38} #{'x': 8, 'y': 31}
+                    self.screenshot_shift = {'x': 9, 'y': 38}  # {'x': 8, 'y': 31}
                 else:
                     self.screenshot_shift = {'x': 0, 'y': 0}
 
@@ -107,10 +113,12 @@ class GameWindow:
                 window_ids = result.stdout.splitlines()
             case Platform.WINDOWS:
                 window_ids = []
+
                 def enum_callback(hwnd, lParam):
                     window_title = win32gui.GetWindowText(hwnd)
                     if self.window_title in window_title:
                         window_ids.append(str(hwnd))
+
                 win32gui.EnumWindows(enum_callback, None)
             case _:
                 self.logger.error("Cannot define window ID: unsupported system.")
@@ -130,7 +138,8 @@ class GameWindow:
         match self.platform:
             case Platform.LINUX:
                 try:
-                    result = subprocess.run(['xdotool', 'getwindowgeometry', self.window_id], capture_output=True, text=True)
+                    result = subprocess.run(['xdotool', 'getwindowgeometry', self.window_id], capture_output=True,
+                                            text=True)
                 except subprocess.CalledProcessError as e:
                     self.logger.error(f"Failed to identify active window geometry. Error: {e}")
                     exit(1)
@@ -161,7 +170,6 @@ class GameWindow:
                 self.logger.error("Cannot set window geometry: unsupported system.")
                 exit(1)
 
-    
         self.logger.debug(f"Window position: x={position[0]}, y={position[1]}")
         self.logger.debug(f"Window size: {size[0]}x{size[1]}")
         self.window_position = [int(val) for val in position]
@@ -189,17 +197,29 @@ class GameWindow:
                     subprocess.run(['xdotool', 'windowactivate', self.window_id], capture_output=True, text=True)
                     self.logger.info(f"Window {self.window_id} activated successfully.")
                 except subprocess.CalledProcessError as e:
-                    self.logger.error(f"Failed to activate window {self.window_id}. Error: {e}")
+                    self.logger.error(
+                        f"Failed to activate window {self.window_title} (id: {self.window_id}). "
+                        f"Error: {e}")
                     exit(1)
                 except Exception as e:
-                    self.logger.error(f"Failed to activate window {self.window_id}. An unexpected error occurred: {e}")
+                    self.logger.error(
+                        f"Failed to activate window {self.window_title} (id: {self.window_id}). "
+                        f"An unexpected error occurred: {e}")
                     exit(1)
             case Platform.WINDOWS:
                 try:
                     win32gui.SetForegroundWindow(self.window_id)
                 except Exception as e:
-                   self.logger.error(f"Failed to activate window {self.window_id}. An unexpected error occurred: {e}")
-                   exit(1)
+                    error_code, function_name, _ = e.args
+                    if error_code == 1400 and function_name == 'SetForegroundWindow':
+                        self.logger.error(
+                            f"Failed to activate window {self.window_title} (id: {self.window_id}). "
+                            f"Window not found.")
+                    else:
+                        self.logger.error(
+                            f"Failed to activate window {self.window_title} (id: {self.window_id}). "
+                            f"An unexpected error occurred: {e}")
+                exit(1)
             case _:
                 self.logger.error("Cannot activate window: unsupported system.")
                 exit(1)
@@ -236,10 +256,11 @@ class GameWindow:
             except mss.ScreenShotError:
                 self.logger.error("Unable to take a screenshot.")
                 return None
-            self.logger.debug(f"Took screenshot of area {width}x{height} (zero in {position_x+x_shift},{position_y+y_shift})")
+            self.logger.debug(
+                f"Took screenshot of area {width}x{height} (zero in {position_x + x_shift},{position_y + y_shift})")
             img = Image.frombytes("RGB", screenshot.size, screenshot.rgb)
             if savefig:
-                img.save(f"{savefig_prefix}_{position_x+x_shift}_{position_y+y_shift}_{height}_{width}.png")
+                img.save(f"{savefig_prefix}_{position_x + x_shift}_{position_y + y_shift}_{height}_{width}.png")
         return img
 
 # def get_initial_monitor_parameters():
