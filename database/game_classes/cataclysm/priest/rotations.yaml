@@ -4,6 +4,7 @@ Healing Rotation:
   Healing Spells:
     - "Power Word: Shield"
     - "Flash Heal"
+    - "Renew"
 Buffing Rotation:
   Buffing Spells:
     - "Power Word: Fortitude"
@@ -15,4 +16,6 @@ Combat Rotation:
     - "Power Word: Shield"
   Attack Spells:
     - "Penance"
+    - "Shadow Word: Pain"
+    - "Devouring Plague"
     - "Smite"
