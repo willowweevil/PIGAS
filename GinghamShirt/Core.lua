@@ -11,6 +11,7 @@ local AutoGreedFrame = CreateFrame("Frame")
 
 local ginghamPixelSize = 5
 
+
 local squareData = {
     { name = "CompanionControlSquare", yOffset = 0 },
     { name = "InteractionCommandsSquare", yOffset = -5 },
@@ -157,13 +158,16 @@ function EventFrame:OnUpdate()
 
     LettersSquareColors()
 
+    --print(GetMapInfo())
+    --print(UnitName("target"))
+
     AcceptQuest()
 
 end
 
 function AcceptLoot(self, event, rollID)
     -- Check if the item is not BoP (Bind on Pickup)
-    local _, _, _, _, canNeed, canGreed = GetLootRollItemInfo(rollID)
+    local _, _, _, _, _, canGreed = GetLootRollItemInfo(rollID)
 
     -- Automatically roll "Greed" if possible
     if canGreed then
@@ -369,7 +373,7 @@ end
 -- Pixels.lua
 function CreateSquare(name, xOffset, yOffset, size)
     local square = CreateFrame("Frame", name, UIParent)
-    square:SetFrameStrata("BACKGROUND")
+    square:SetFrameStrata("TOOLTIP")
     square:SetSize(size or 5, size or 5)
     square.texture = square:CreateTexture(nil, "BACKGROUND")
     square.texture:SetAllPoints(square)
@@ -546,7 +550,7 @@ function CompanionControlSquareColor(self, event, message, sender, ...)
             SendChatMessage("The control script was paused!", "PARTY")
             programControlColor = 0.5
         elseif programControlColor == 0.5 then
-            SendChatMessage("Control script is active! I'm alive!", "PARTY")
+            SendChatMessage("The control script was removed from the pause! I'm alive!", "PARTY")
             programControlColor = 0.0
         end
     end

@@ -39,6 +39,8 @@ class GameWindow:
 
         self.platform = None
 
+        self.fullscreen_mode = None
+
         self.window_title = None
         self.window_id = None
         self.window_position = None
@@ -67,6 +69,10 @@ class GameWindow:
         config_data = read_yaml_file(config)
         self.window_title = config_data['game']['window-title']
 
+    def set_fullscreen_mode(self, config):
+        config_data = read_yaml_file(config)
+        self.fullscreen_mode = config_data['game'].get('fullscreen', False)
+
     def set_window_parameters(self, config_file=None):
         if not self.platform:
             self.set_platform()
@@ -76,18 +82,27 @@ class GameWindow:
             self._set_window_id()
         if not self.window_position or not self.window_size:
             self._set_window_geometry()
+        if not self.fullscreen_mode:
+            self.set_fullscreen_mode(config_file)
 
         match self.platform:
             case Platform.LINUX:
-                self.screenshot_shift = {'x': 14, 'y': 49}
+                if not self.fullscreen_mode:
+                    self.screenshot_shift = {'x': 14, 'y': 49}
+                else:
+                    self.screenshot_shift = {'x': 0, 'y': 0}
             case Platform.WINDOWS:
-                self.screenshot_shift = {'x': 9, 'y': 38} #{'x': 8, 'y': 31}
+                if not self.fullscreen_mode:
+                    self.screenshot_shift = {'x': 9, 'y': 38} #{'x': 8, 'y': 31}
+                else:
+                    self.screenshot_shift = {'x': 0, 'y': 0}
 
     def _set_window_id(self):
         """Find the window ID by title."""
         match self.platform:
             case Platform.LINUX:
-                result = subprocess.run(['xdotool', 'search', '--name', f"^{self.window_title}$"], capture_output=True,
+                result = subprocess.run(['xdotool', 'search', '--name', f"^{self.window_title}$"],
+                                        capture_output=True,
                                         text=True)
                 window_ids = result.stdout.splitlines()
             case Platform.WINDOWS:

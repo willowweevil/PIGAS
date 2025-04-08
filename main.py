@@ -54,7 +54,7 @@ if __name__ == '__main__':
             session_data = workflow_handler.set_session_data
 
             # extend session data with gingham data
-            screenshot = game_window.take_screenshot(savefig=True)
+            screenshot = game_window.take_screenshot(savefig=False)
             gingham_pixels = gingham.pixels_analysis(data=screenshot,
                                                      n_monitoring_pixels=game_window.n_pixels['y'],
                                                      pixel_height=game_window.pixel_size['y'],

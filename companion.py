@@ -203,7 +203,6 @@ class CompanionControlLoop(HardwareInputSimulator, GameWindow, CompanionProfile,
         self.should_heal = config_data["companion"].get("should_heal", False)
         self.should_support = config_data["companion"].get("should_support", False)
 
-
     @property
     def companion_position_on_screen(self):
         position_x = self.window_position[0] + self.window_size[0] / 2
