@@ -6,11 +6,9 @@ import sys
 import mss
 from PIL import Image
 
-import win32com
-import win32com.client
-
 if 'win' in sys.platform.lower():
     import win32gui
+    import win32com.client
 else:
     class MockWin32GUI:
         @staticmethod
