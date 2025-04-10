@@ -196,7 +196,7 @@ class GameWindow:
             case Platform.LINUX:
                 try:
                     subprocess.run(['xdotool', 'windowactivate', self.window_id], capture_output=True, text=True)
-                    self.logger.info(f"Window {self.window_id} activated successfully.")
+                    self.logger.info(f"Window {self.window_title} (ID: {self.window_id}) activated successfully.")
                 except subprocess.CalledProcessError as e:
                     self.logger.error(
                         f"Failed to activate window {self.window_title} (id: {self.window_id}). "
