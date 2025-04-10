@@ -1,5 +1,6 @@
 import logging
 import time
+import sys
 
 from hardware_input import HardwareInputSimulator
 from library.miscellaneous import read_yaml_file
@@ -28,7 +29,16 @@ class ScriptWorkflowHandler(HardwareInputSimulator):
     @property
     def streaming(self):
         config = read_yaml_file(self.config_file)
-        return config['other'].get('streaming'), config['other'].get('comment_file')
+        other_data = config.get("other")
+        if other_data:
+            is_streaming = other_data.get('streaming', False)
+            comment_file = other_data.get('comment_file', None)
+            if is_streaming and not comment_file:
+                self.logger.error("Streaming is active, but comment file is not found!")
+                sys.exit(1)
+        else:
+            is_streaming, comment_file = False, None
+        return is_streaming, comment_file
 
     @property
     def set_session_data(self):
@@ -42,23 +52,20 @@ class ScriptWorkflowHandler(HardwareInputSimulator):
         self.frame_end_time = time.time()
         self.logger.debug(f"Loop time was {round(self.frame_end_time - self.frame_start_time, 2)}s per frame.")
 
-    def set_frame_and_check_pause_leaving(self):
+    def set_frame(self):
         self.frame_start_time = time.time()
-        report_leave_pause = False
         if not self.pause_command:
             if self.pause_frame:
                 logging.info("Control script was removed from the pause.")
-                report_leave_pause = True
             self.pause_frame = None
             self.frame += 1
-        return report_leave_pause
 
     def disable_script(self):
         report_disable = False
         if self.disable_command:
-            logging.warning("Control script was disabled from game.")
-            # if self.frame == 0:
-            #     logging.warning("Enable it by sending \'disable\' in the party chat.")
+            logging.info("Control script was disabled from game.")
+            if self.frame == 0:
+                logging.warning("Enable it by sending \'#disable\' in the party chat or /reload game interface.")
             self.release_movement_keys()
             report_disable = True
         return report_disable
@@ -79,8 +86,8 @@ class ScriptWorkflowHandler(HardwareInputSimulator):
 
     def script_workflow_control(self):
         report_disable = self.disable_script()
-        report_pause = self.pause_script()
-        return report_disable, report_pause
+        _ = self.pause_script()
+        return report_disable
 
     def execute_prestart_actions(self):
         self.logger.info("WoW In-Game Companion is ready to start.")
@@ -90,3 +97,8 @@ class ScriptWorkflowHandler(HardwareInputSimulator):
         self.stop_keyboard_listener()
         self.release_movement_keys()
         self.logger.info("Monitoring stopped.")
+        sys.exit(0)
+
+    def unexpected_finish(self, e):
+        self.logger.error(f"PIGAS just finished execution with error {e}.")
+        sys.exit(1)

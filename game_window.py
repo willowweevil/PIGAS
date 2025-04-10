@@ -67,7 +67,7 @@ class GameWindow:
             self.platform = Platform.MACOS
         else:
             self.logger.error(f"Cannot define platform: {sys.platform}")
-            exit(1)
+            sys.exit(1)
 
         self.logger.debug(f"System platform was defined as {str(self.platform).split('.')[1]}.")
 
@@ -122,7 +122,7 @@ class GameWindow:
                 win32gui.EnumWindows(enum_callback, None)
             case _:
                 self.logger.error("Cannot define window ID: unsupported system.")
-                exit(1)
+                sys.exit(1)
 
         if len(window_ids) > 0:
             self.logger.debug(
@@ -132,7 +132,7 @@ class GameWindow:
             self.window_id = window_ids[0]
         else:
             self.logger.error(f"\"{self.window_title}\": no window found.")
-            exit(1)
+            sys.exit(1)
 
     def _get_window_geometry(self):
         match self.platform:
@@ -142,17 +142,17 @@ class GameWindow:
                                             text=True)
                 except subprocess.CalledProcessError as e:
                     self.logger.error(f"Failed to identify active window geometry. Error: {e}")
-                    exit(1)
+                    sys.exit(1)
                 except Exception as e:
                     self.logger.error(f"An unexpected error occurred during game window geometry defining: {e}")
-                    exit(1)
+                    sys.exit(1)
                 return result.stdout.split('\n')
             case Platform.WINDOWS:
                 result = win32gui.GetWindowRect(self.window_id)
                 return result
             case _:
                 self.logger.error("Cannot get window geometry: unsupported system.")
-                exit(1)
+                sys.exit(1)
 
     def _set_window_geometry(self):
         window_raw_info = self._get_window_geometry()
@@ -168,7 +168,7 @@ class GameWindow:
                 size = width, height
             case _:
                 self.logger.error("Cannot set window geometry: unsupported system.")
-                exit(1)
+                sys.exit(1)
 
         self.logger.debug(f"Window position: x={position[0]}, y={position[1]}")
         self.logger.debug(f"Window size: {size[0]}x{size[1]}")
@@ -185,7 +185,7 @@ class GameWindow:
                 current_window = win32gui.GetWindowText(result)
             case _:
                 self.logger.error("Cannot activate window: unsupported system.")
-                exit(1)
+                sys.exit(1)
 
         return current_window
 
@@ -200,12 +200,12 @@ class GameWindow:
                     self.logger.error(
                         f"Failed to activate window {self.window_title} (id: {self.window_id}). "
                         f"Error: {e}")
-                    exit(1)
+                    sys.exit(1)
                 except Exception as e:
                     self.logger.error(
                         f"Failed to activate window {self.window_title} (id: {self.window_id}). "
                         f"An unexpected error occurred: {e}")
-                    exit(1)
+                    sys.exit(1)
             case Platform.WINDOWS:
                 try:
                     win32gui.SetForegroundWindow(self.window_id)
@@ -219,10 +219,10 @@ class GameWindow:
                         self.logger.error(
                             f"Failed to activate window {self.window_title} (id: {self.window_id}). "
                             f"An unexpected error occurred: {e}")
-                exit(1)
+                sys.exit(1)
             case _:
                 self.logger.error("Cannot activate window: unsupported system.")
-                exit(1)
+                sys.exit(1)
 
     def ensure_window_active(self):
         current_active_window = self._get_current_active_window()

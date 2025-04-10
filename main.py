@@ -7,20 +7,25 @@ from game_window import GameWindow
 from navigation import Navigator
 from companion import CompanionControlLoop
 from workflow_handler import ScriptWorkflowHandler
+from library.miscellaneous import set_debug
 
-logging.basicConfig(level=logging.INFO,
+config_file = 'config.yaml'
+
+is_debug = set_debug(config_file)
+
+logging.basicConfig(level=logging.INFO if not is_debug else logging.DEBUG,
                     format="%(asctime)s %(levelname)s %(message)s")
 
-logging.getLogger('script_control').setLevel(logging.INFO)
-logging.getLogger('game_window').setLevel(logging.INFO)
-logging.getLogger('hardware_input').setLevel(logging.INFO)
-logging.getLogger('navigation').setLevel(logging.INFO)
-logging.getLogger('companion').setLevel(logging.INFO)
+logging.getLogger('script_control').setLevel(logging.INFO if not is_debug else logging.DEBUG)
+logging.getLogger('game_window').setLevel(logging.INFO if not is_debug else logging.DEBUG)
+logging.getLogger('hardware_input').setLevel(logging.INFO if not is_debug else logging.DEBUG)
+logging.getLogger('navigation').setLevel(logging.INFO if not is_debug else logging.DEBUG)
+logging.getLogger('companion').setLevel(logging.INFO if not is_debug else logging.DEBUG)
 
 if __name__ == '__main__':
     try:
         # script workflow handler
-        workflow_handler = ScriptWorkflowHandler(config_file='config.yaml')
+        workflow_handler = ScriptWorkflowHandler(config_file=config_file)
 
         # game window
         game_window = GameWindow()
@@ -40,11 +45,11 @@ if __name__ == '__main__':
         workflow_handler.execute_prestart_actions()
         while True:
             ### preparations
-            # check if a window still exists
+            # check if a game window still exists
             game_window.ensure_window_exists()
 
-            # set the frame and check if a companion leaved the pause
-            should_leave_the_pause = workflow_handler.set_frame_and_check_pause_leaving()
+            # set frame
+            workflow_handler.set_frame()
 
             # activate a window
             if not workflow_handler.pause_command:
@@ -54,7 +59,7 @@ if __name__ == '__main__':
             session_data = workflow_handler.set_session_data
 
             # extend session data with gingham data
-            screenshot = game_window.take_screenshot(savefig=False)
+            screenshot = game_window.take_screenshot(savefig=is_debug)
             gingham_pixels = gingham.pixels_analysis(data=screenshot,
                                                      n_monitoring_pixels=game_window.n_pixels['y'],
                                                      pixel_height=game_window.pixel_size['y'],
@@ -77,10 +82,8 @@ if __name__ == '__main__':
             workflow_handler.set_workflow_commands(session_data)
 
             # workflow control
-            should_disable, should_pause =  workflow_handler.script_workflow_control()
-            companion.workflow_report(report_pause_leaving=should_leave_the_pause,
-                                      report_disable=should_disable,
-                                      report_pause=should_pause)
+            should_disable = workflow_handler.script_workflow_control()
+            companion.workflow_report(report_disable=should_disable)
             if workflow_handler.pause_command:
                 continue
 
@@ -137,7 +140,6 @@ if __name__ == '__main__':
             if companion.state_is(State.NEARING_FOR_LOOTING):
                 companion.perform_prelooting_actions()
 
-
             # perform looting
             if companion.state_is(State.LOOTING):
                 # values - part of screen around the character
@@ -172,3 +174,6 @@ if __name__ == '__main__':
 
     except KeyboardInterrupt:
         ScriptWorkflowHandler().finish_script()
+
+    except Exception as e:
+        ScriptWorkflowHandler().unexpected_finish(e)

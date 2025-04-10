@@ -1,10 +1,26 @@
 import yaml
 import openai
 import logging
+import sys
+
+
+def set_debug(config_file):
+    debug_level = False
+    config = read_yaml_file(config_file)
+    other_data = config.get('other')
+    if other_data:
+        debug_level = config.get('debug')
+    return debug_level
 
 def read_yaml_file(input_file=None):
-    with open(input_file, 'r', encoding="utf-8") as file:
-        data = yaml.safe_load(file)
+    try:
+        with open(input_file, 'r', encoding="utf-8") as file:
+            data = yaml.safe_load(file)
+    except FileNotFoundError:
+        logging.error(f"File {input_file} not found.")
+        sys.exit(1)
+    except KeyboardInterrupt:
+        sys.exit(0)
     return data
 
 def get_open_ai_response(input_message):

@@ -3,8 +3,7 @@ import logging
 import numpy as np
 import re
 from collections import Counter
-from pprint import pprint
-from matplotlib import pyplot as plt
+import sys
 import matplotlib as mpl
 
 mpl.use('TkAgg')
@@ -26,7 +25,7 @@ class GinghamProcessor:
             img = data.convert("RGB")
         except AttributeError:
             logging.error("No screenshot for processing.")
-            exit(1)
+            sys.exit(1)
         img_array = np.array(img)[x_from_to['from']:x_from_to['to'], y_from_to['from']:y_from_to['to'], :]
         if rotate_90:
             img_array = np.rot90(img_array, 1)

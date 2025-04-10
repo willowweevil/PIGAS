@@ -4,6 +4,7 @@ import numpy as np
 import time
 import logging
 import re
+import sys
 
 from library.miscellaneous import read_yaml_file
 from hardware_input import HardwareInputSimulator
@@ -167,7 +168,7 @@ class CompanionControlLoop(HardwareInputSimulator, GameWindow, CompanionProfile,
         self.set_context_file(config_file)
         self.initialize_spellbook()
         self.set_rotations()
-        self.set_should_heal_and_support(config_file)
+        self.set_should_heal_and_support()
 
     def set_context_file(self, config):
         config_data = read_yaml_file(config)
@@ -198,10 +199,15 @@ class CompanionControlLoop(HardwareInputSimulator, GameWindow, CompanionProfile,
         config_data = read_yaml_file(config)
         self.name = config_data['companion']['name']
 
-    def set_should_heal_and_support(self, config):
-        config_data = read_yaml_file(config)
-        self.should_heal = config_data["companion"].get("should_heal", False)
-        self.should_support = config_data["companion"].get("should_support", False)
+    def set_should_heal_and_support(self):
+        if self.healing_rotation:
+            if self.healing_rotation.get("Healing Spells"):
+                if len(self.healing_rotation.get("Healing Spells")) > 0:
+                    self.should_heal = True
+        if self.combat_rotation:
+            if self.combat_rotation.get("Combat Spells"):
+                if len(self.combat_rotation.get("Support Spells")) > 0:
+                    self.should_support = True
 
     @property
     def companion_position_on_screen(self):
@@ -570,14 +576,10 @@ class CompanionControlLoop(HardwareInputSimulator, GameWindow, CompanionProfile,
     Messaging and chatting
     '''
 
-    def workflow_report(self, report_pause=False, report_pause_leaving=False, report_disable=False):
-        # if report_pause:
-        #     self.send_message_to_chat("The control script was paused!")
-        # if report_pause_leaving:
-        #     self.send_message_to_chat("Control script was removed from the pause! I'm alive!")
+    def workflow_report(self, report_disable=False):
         if report_disable:
             self.send_message_to_chat("The control script was #disabled!")
-            exit(0)
+            sys.exit(0)
 
     def respond_to_player(self):
         message_sent = False
@@ -645,6 +647,7 @@ class CompanionControlLoop(HardwareInputSimulator, GameWindow, CompanionProfile,
         self.press_key("enter", pause=0.2)
         self.type_text(full_message, key_delay=key_delay, pause=0.2)
         self.press_key("enter", pause=pause)
+        return True
 
     def set_comment_as_player_message(self, comment_file):
         comment = read_the_last_line(comment_file)

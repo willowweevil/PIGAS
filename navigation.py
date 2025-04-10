@@ -3,6 +3,7 @@ import logging
 import time
 
 from library.miscellaneous import read_yaml_file
+from library.constants import WOW_AREAS
 
 class BasicGeometry:
     @staticmethod
@@ -167,13 +168,18 @@ class Navigator(BasicGeometry):
 
     def _define_moving_constants(self, input_data):
         # distances
-        constants = read_yaml_file(self.config_file)['navigation']
-        mounted_distance_coefficient = constants.get('mounted_distance_coefficient', 1.25)
-        looting_distance_coefficient = constants.get('looting_distance_coefficient', 0.5)
-        start_to_avoid_obstacles_distance_coefficient = constants.get('start_to_avoid_obstacles_distance_coefficient', 3.0)
-        start_to_wait_player_coefficient = constants.get('start_to_wait_player_coefficient', 50.0)
+        distance_to_player_delta = 0.15
+        navigation_constants = read_yaml_file(self.config_file).get('navigation', None)
+        if navigation_constants:
+            min_distance = navigation_constants.get('min_distance', None)
+            if min_distance:
+                distance_to_player_delta = min_distance
 
-        distance_to_player_delta = constants['min_distance_to_player']
+        mounted_distance_coefficient = navigation_constants.get('mounted_distance_coefficient', 1.25)
+        looting_distance_coefficient = navigation_constants.get('looting_distance_coefficient', 0.5)
+        start_to_avoid_obstacles_distance_coefficient = navigation_constants.get('start_to_avoid_obstacles_distance_coefficient', 3.0)
+        start_to_wait_player_coefficient = navigation_constants.get('start_to_wait_player_coefficient', 50.0)
+
         mounted_distance_to_player_delta = distance_to_player_delta * mounted_distance_coefficient
         looting_distance_to_player_delta = distance_to_player_delta * looting_distance_coefficient
         distance_to_start_avoid_obstacles = distance_to_player_delta * start_to_avoid_obstacles_distance_coefficient
