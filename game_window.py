@@ -219,7 +219,7 @@ class GameWindow:
                         self.logger.error(
                             f"Failed to activate window {self.window_title} (id: {self.window_id}). "
                             f"An unexpected error occurred: {e}")
-                sys.exit(1)
+                    sys.exit(1)
             case _:
                 self.logger.error("Cannot activate window: unsupported system.")
                 sys.exit(1)
