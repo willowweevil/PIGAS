@@ -541,7 +541,7 @@ function CompanionControlSquareColor(self, event, message, sender, ...)
     if containCommand(message, commands.disable) then
         if programControlColor ~= 1.0 then
             --SendChatMessage("The control script was #disabled!", "PARTY")
-            movingControlColor = 1.0
+            --movingControlColor = 1.0
             programControlColor = 1.0
         elseif programControlColor == 1 then
             --SendChatMessage("Enable the control script!", "PARTY")
