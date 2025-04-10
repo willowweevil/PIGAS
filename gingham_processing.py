@@ -147,6 +147,11 @@ class GinghamProcessor:
     def check_bool_pixel(pixel, pixel_value):
         return True if round(pixel, 2) == pixel_value else False
 
+    @staticmethod
+    def get_map_id(pixel):
+        map_id = int(((1/pixel[0] if pixel[0] > 0 else 0) + pixel[1])*255)
+        return map_id
+
     def to_dictionary(self, all_pixels):
         data_pixels, player_message_pixels, cursor_message_pixels = all_pixels[0], all_pixels[1], all_pixels[2]
 
@@ -171,6 +176,8 @@ class GinghamProcessor:
         player_combat_status, player_health, player_mana = data_pixels[7]
 
         companion_mounted, companion_breath_level, _ = data_pixels[8]
+
+        map_id = self.get_map_id(data_pixels[9])
 
         player_message = self.get_message(player_message_pixels)
         cursor_message = self.get_message(cursor_message_pixels)
@@ -199,6 +206,7 @@ class GinghamProcessor:
                         'companion_mana': companion_mana,
                         'companion_mounted': companion_mounted,
                         'companion_breath_level': companion_breath_level,
+                        'map_id': map_id,
                         'player_message': player_message,
                         'cursor_message': cursor_message}
 

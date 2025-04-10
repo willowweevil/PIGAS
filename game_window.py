@@ -41,7 +41,7 @@ from library.platforms import Platform
 class GameWindow:
     def __init__(self):
         self.pixel_size = {'x': 5, 'y': 5}
-        self.n_pixels = {'x': 201, 'y': 11}
+        self.n_pixels = {'x': 201, 'y': 12}
         self.screenshot_shift = None
 
         self.platform = None

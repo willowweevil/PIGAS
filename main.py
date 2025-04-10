@@ -175,5 +175,5 @@ if __name__ == '__main__':
     except KeyboardInterrupt:
         ScriptWorkflowHandler().finish_script()
 
-    except Exception as e:
-        ScriptWorkflowHandler().unexpected_finish(e)
+    # except Exception as e:
+    #     ScriptWorkflowHandler().unexpected_finish(e)

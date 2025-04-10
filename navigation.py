@@ -5,6 +5,7 @@ import time
 from library.miscellaneous import read_yaml_file
 from library.constants import WOW_AREAS
 
+
 class BasicGeometry:
     @staticmethod
     def coordinates_recalculation(input_data):
@@ -53,6 +54,7 @@ class BasicGeometry:
 
 
 class Navigator(BasicGeometry):
+
     def __init__(self, n_frames=20, config_file=None):
         super().__init__()
         self.n_frames = n_frames
@@ -62,12 +64,18 @@ class Navigator(BasicGeometry):
         self.last_player_time = [0] * n_frames
 
         self.config_file = config_file
+        self.predefined_navigation_constants = self.set_predefined_navigation_constants()
 
         self.logger = logging.getLogger('navigation')
         if not self.logger.hasHandlers():
             handler = logging.StreamHandler()
             self.logger.addHandler(handler)
             self.logger.propagate = False
+
+
+    def set_predefined_navigation_constants(self):
+        predefined_navigation_constants = read_yaml_file(self.config_file).get('navigation', None)
+        return predefined_navigation_constants
 
     def _calculate_velocity(self, position, coordinates_array, times_array):
         times_array.append(time.time())
@@ -86,7 +94,7 @@ class Navigator(BasicGeometry):
         companion_data = self._calculate_companion(data)
         player_data = self._calculate_player(data)
         companion_player_data = self._calculate_companion_player(companion_data, player_data)
-        nearing_and_rotations_data = self._define_moving_constants(companion_player_data)
+        nearing_and_rotations_data = self._define_moving_constants(companion_player_data, data['map_id'])
 
         output_data = {}
         for d in [player_data, companion_data, companion_player_data, nearing_and_rotations_data]:
@@ -106,8 +114,8 @@ class Navigator(BasicGeometry):
                                                                                          companion_facing))
 
         companion_average_velocity = self._calculate_velocity(companion_position,
-                                                             self.last_companion_coordinates,
-                                                             self.last_companion_time)
+                                                              self.last_companion_coordinates,
+                                                              self.last_companion_time)
 
         return {
             'companion_x': companion_x, 'companion_y': companion_y,
@@ -131,8 +139,8 @@ class Navigator(BasicGeometry):
 
         if None not in self.last_player_coordinates:
             player_average_velocity = self._calculate_velocity(player_position,
-                                                              self.last_player_coordinates,
-                                                              self.last_player_time)
+                                                               self.last_player_coordinates,
+                                                               self.last_player_time)
         else:
             player_average_velocity = None
 
@@ -165,20 +173,29 @@ class Navigator(BasicGeometry):
             'angle_between_companion_facing_and_player_facing': angle_between_companion_facing_and_player_facing
         }
 
-
-    def _define_moving_constants(self, input_data):
+    def _define_moving_constants(self, input_data, map_id):
         # distances
-        distance_to_player_delta = 0.15
-        navigation_constants = read_yaml_file(self.config_file).get('navigation', None)
-        if navigation_constants:
-            min_distance = navigation_constants.get('min_distance', None)
-            if min_distance:
-                distance_to_player_delta = min_distance
 
-        mounted_distance_coefficient = navigation_constants.get('mounted_distance_coefficient', 1.25)
-        looting_distance_coefficient = navigation_constants.get('looting_distance_coefficient', 0.5)
-        start_to_avoid_obstacles_distance_coefficient = navigation_constants.get('start_to_avoid_obstacles_distance_coefficient', 3.0)
-        start_to_wait_player_coefficient = navigation_constants.get('start_to_wait_player_coefficient', 50.0)
+        if map_id in WOW_AREAS.keys():
+            distance_to_player_delta = WOW_AREAS[map_id] * 0.15
+        else:
+            self.logger.debug(f"Cannot find map with map ID {map_id}.")
+            distance_to_player_delta = 0.15
+
+        mounted_distance_coefficient = 1.25
+        looting_distance_coefficient = 0.5
+        start_to_avoid_obstacles_distance_coefficient = 3.0
+        start_to_wait_player_coefficient = 50.0
+
+        if self.predefined_navigation_constants:
+            mounted_distance_coefficient = self.predefined_navigation_constants.get('mounted_distance_coefficient',
+                                                                                    mounted_distance_coefficient)
+            looting_distance_coefficient = self.predefined_navigation_constants.get('looting_distance_coefficient',
+                                                                                    looting_distance_coefficient)
+            start_to_avoid_obstacles_distance_coefficient = self.predefined_navigation_constants.get(
+                'start_to_avoid_obstacles_distance_coefficient', start_to_avoid_obstacles_distance_coefficient)
+            start_to_wait_player_coefficient = self.predefined_navigation_constants.get(
+                'start_to_wait_player_coefficient', start_to_avoid_obstacles_distance_coefficient)
 
         mounted_distance_to_player_delta = distance_to_player_delta * mounted_distance_coefficient
         looting_distance_to_player_delta = distance_to_player_delta * looting_distance_coefficient
@@ -186,9 +203,9 @@ class Navigator(BasicGeometry):
         max_distance_from_companion_to_player = distance_to_player_delta * start_to_wait_player_coefficient
 
         # angles
-        rotation_to_player_angle_delta_min = 10 # min angle (degrees in one side of rotation)
-        rotation_to_player_angle_delta_max = 35 # max angle (degrees in one side of rotation)
-        rotation_to_player_angle_delta = rotation_to_player_angle_delta_max # defined by distance to player
+        rotation_to_player_angle_delta_min = 10  # min angle (degrees in one side of rotation)
+        rotation_to_player_angle_delta_max = 35  # max angle (degrees in one side of rotation)
+        rotation_to_player_angle_delta = rotation_to_player_angle_delta_max  # defined by distance to player
         if input_data['distance_from_companion_to_player'] and input_data['distance_from_companion_to_player'] > 0:
             rotation_to_player_angle_delta = np.rad2deg(
                 np.arctan(distance_to_player_delta / input_data['distance_from_companion_to_player']))

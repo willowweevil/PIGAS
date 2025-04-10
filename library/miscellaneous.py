@@ -10,7 +10,7 @@ def set_debug(config_file):
     other_data = config.get('other')
     if other_data:
         debug_level = other_data.get('debug')
-    return debug_level
+    return True if debug_level is True else False
 
 def read_yaml_file(input_file=None):
     try:

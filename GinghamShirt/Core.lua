@@ -22,18 +22,19 @@ local squareData = {
     { name = "MainCharacterCoordinatesSquare2", yOffset = -30 },
     { name = "MainCharacterConditionSquare1", yOffset = -35 },
     { name = "AssistantConditionSquare2", yOffset = -40 },
+    { name = "MapIDSquare", yOffset = -45 },
 
     { name = "AssistantPositionCalibrationSquare", xOffset = 807, yOffset = -690 }
 }
 
 local lettersSquaresData = {}
-lettersSquaresData[1] = { name = "MessageLengthPixel", xOffset = 0, yOffset = -45 }
+lettersSquaresData[1] = { name = "MessageLengthPixel", xOffset = 0, yOffset = -50 }
 for i = 2, 86, 1 do
     lettersSquaresData[i] = { name = string.format("LettersSquare_%d", i - 1), xOffset = ginghamPixelSize * (i - 1), yOffset = 0 }
 end
 
 local cursorObjectsPixelsData = {}
-cursorObjectsPixelsData[1] = { name = "CursorObjectMessageLengthPixel", xOffset = 0, yOffset = -50 }
+cursorObjectsPixelsData[1] = { name = "CursorObjectMessageLengthPixel", xOffset = 0, yOffset = -55 }
 for i = 2, 86, 1 do
     cursorObjectsPixelsData[i] = { name = string.format("CursorObjectPixel_%d", i - 1), xOffset = ginghamPixelSize * (i - 1), yOffset = -5 }
 end
@@ -153,6 +154,8 @@ function EventFrame:OnUpdate()
     InteractionCommandsSquareColor()
 
     CursorObjectInfoPixelsColors()
+
+    MapIDSquareColor()
 
     --AnnounceLoot()
 
@@ -661,4 +664,18 @@ function SetConditionStatus(character)
     else
         print("Cannot set condition status of " .. character .. ".")
     end
+end
+
+
+function MapIDSquareColor()
+    local mapID = GetCurrentMapAreaID()
+    if mapID < 0 then
+       mapID = 0
+    end
+    local color1, color2 = math.modf(mapID/255)
+    if color1 > 0 then
+        color1 = 1 / color1
+    end
+    squares["MapIDSquare"].texture:SetTexture(color1, color2, 0)
+
 end
