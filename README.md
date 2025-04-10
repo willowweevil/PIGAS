@@ -1,2 +1,2 @@
-# wowingco
-WOWING Co.
+# PIGAS
+## Personal In-Game Adventure Sidekick

@@ -19,3 +19,7 @@ context*
 *.png
 .*
 _*
+
+# Pyinstaller
+build/
+dist/
