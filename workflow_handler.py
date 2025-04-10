@@ -90,15 +90,15 @@ class ScriptWorkflowHandler(HardwareInputSimulator):
         return report_disable
 
     def execute_prestart_actions(self):
-        self.logger.info("WoW In-Game Companion is ready to start.")
+        self.logger.info("PIGAS is ready to start.")
         time.sleep(1)
 
     def finish_script(self):
         self.stop_keyboard_listener()
         self.release_movement_keys()
-        self.logger.info("Monitoring stopped.")
+        self.logger.info("PIGAS finished.")
         sys.exit(0)
 
     def unexpected_finish(self, e):
-        self.logger.error(f"PIGAS just finished execution with error {e}.")
+        self.logger.error(f"PIGAS just finished execution with error \"{e}\".")
         sys.exit(1)
