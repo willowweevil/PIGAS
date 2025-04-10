@@ -20,6 +20,7 @@ def read_yaml_file(input_file=None):
         logging.error(f"File {input_file} not found.")
         sys.exit(1)
     except KeyboardInterrupt:
+        logging.error(f"File \"{input_file}\" reading was interrupted by user.")
         sys.exit(0)
     return data
 

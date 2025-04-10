@@ -56,14 +56,14 @@ class ScriptWorkflowHandler(HardwareInputSimulator):
         self.frame_start_time = time.time()
         if not self.pause_command:
             if self.pause_frame:
-                logging.info("Control script was removed from the pause.")
+                logging.info("PIGAS was removed from the pause.")
             self.pause_frame = None
             self.frame += 1
 
     def disable_script(self):
         report_disable = False
         if self.disable_command:
-            logging.info("Control script was disabled from game.")
+            logging.info("PIGAS was disabled from game.")
             if self.frame == 0:
                 logging.warning("Enable it by sending \'#disable\' in the party chat or /reload game interface.")
             self.release_movement_keys()
@@ -76,7 +76,7 @@ class ScriptWorkflowHandler(HardwareInputSimulator):
             if not self.pause_frame:
                 self.pause_frame = self.frame
             if self.pause_frame == self.frame:
-                logging.info("Control script was paused.")
+                logging.info("PIGAS was paused.")
                 self.release_movement_keys()
                 report_pause = True
             self.pause_frame += 1
