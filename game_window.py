@@ -6,6 +6,9 @@ import sys
 import mss
 from PIL import Image
 
+import win32com
+import win32com.client
+
 if 'win' in sys.platform.lower():
     import win32gui
 else:
@@ -208,6 +211,7 @@ class GameWindow:
                     sys.exit(1)
             case Platform.WINDOWS:
                 try:
+                    win32com.client.Dispatch("WScript.Shell").SendKeys('%')
                     win32gui.SetForegroundWindow(self.window_id)
                 except Exception as e:
                     error_code, function_name, _ = e.args
@@ -215,11 +219,12 @@ class GameWindow:
                         self.logger.error(
                             f"Failed to activate window {self.window_title} (id: {self.window_id}). "
                             f"Window not found.")
+                        sys.exit(1)
                     else:
                         self.logger.error(
                             f"Failed to activate window {self.window_title} (id: {self.window_id}). "
                             f"An unexpected error occurred: {e}")
-                    sys.exit(1)
+                        sys.exit(1)
             case _:
                 self.logger.error("Cannot activate window: unsupported system.")
                 sys.exit(1)
