@@ -14,10 +14,10 @@ venv.bak/
 .idea/
 
 # Project files
+screenshots/
 comment*
 config*
 context*
-*.png
 .*
 _*
 
