@@ -263,7 +263,7 @@ class GameWindow:
                 f"Took screenshot of area {width}x{height} (zero in {position_x + x_shift},{position_y + y_shift})")
             img = Image.frombytes("RGB", screenshot.size, screenshot.rgb)
             if savefig:
-                img.save(f"./screenshots/{savefig_prefix}_{position_x + x_shift}_{position_y + y_shift}_{height}_{width}.png")
+                img.save(f"{savefig_prefix}_{position_x + x_shift}_{position_y + y_shift}_{height}_{width}_debug.png")
         return img
 
 # def get_initial_monitor_parameters():
