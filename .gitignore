@@ -16,7 +16,7 @@ venv.bak/
 # Project files
 *debug*
 comment*
-config*
+config.yaml
 context*
 .*
 _*
