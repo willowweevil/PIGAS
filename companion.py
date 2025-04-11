@@ -278,6 +278,7 @@ class CompanionControlLoop(HardwareInputSimulator, GameWindow, CompanionProfile,
 
     def _define_action_behaviour(self):
         action_behaviour_mapping = {
+            'change_speed_command': Action.CHANGE_SPEED,
             'player_message': Action.RESPOND,
             'loot_command': Action.LOOT
         }
@@ -319,6 +320,10 @@ class CompanionControlLoop(HardwareInputSimulator, GameWindow, CompanionProfile,
         if self.mount_behaviour_is(Mount.UNMOUNTED):
             if self.session_data['companion_mounted']:
                 self.add_duty(Duty.UNMOUNT)
+
+    def _define_change_speed_duty(self):
+        if self.action_behaviour_is(Action.CHANGE_SPEED):
+            self.add_duty(Duty.CHANGE_SPEED)
 
     def _define_looting_duty(self):
         if self.action_behaviour_is(Action.LOOT):
@@ -411,6 +416,7 @@ class CompanionControlLoop(HardwareInputSimulator, GameWindow, CompanionProfile,
         self._define_mount_duty()
         self._define_unmount_duty()
         self._define_looting_duty()
+        self._define_change_speed_duty()
         self._define_heal_yourself_duty()
         self._define_defend_yourself_duty()
 
@@ -452,6 +458,7 @@ class CompanionControlLoop(HardwareInputSimulator, GameWindow, CompanionProfile,
         duty_to_state_mapping = {
             Duty.INITIALIZE: State.INITIALIZING,
             Duty.RESPOND: State.RESPONDING,
+            Duty.CHANGE_SPEED: State.CHANGING_SPEED,
             Duty.MOUNT: State.MOUNTING,
             Duty.UNMOUNT: State.UNMOUNTING,
             Duty.LOOT: State.LOOTING,
@@ -839,6 +846,10 @@ class CompanionControlLoop(HardwareInputSimulator, GameWindow, CompanionProfile,
     '''
     Other activities
     '''
+
+    def changing_speed(self):
+        self.send_message_to_chat("I'm going to change my moving speed (#run-walk)!", pause=2.0)
+        self.press_key("\\")
 
     def mounting(self):
         self.send_message_to_chat("I'm going to mount!")

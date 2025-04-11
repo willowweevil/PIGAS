@@ -167,8 +167,9 @@ class GinghamProcessor:
         only_heal_command = self.check_bool_pixel(data_pixels[0][2], 0.5) #True if round(data_pixels[0][2], 2) == 0.5 else False
         passive_command = self.check_bool_pixel(data_pixels[0][2], 0.0)
 
-        loot_command = self.check_bool_pixel(data_pixels[1][0], 1.0) # , _, _ = [val // 1.0 for val in data_pixels[1]]
+        loot_command = self.check_bool_pixel(data_pixels[1][0], 1.0)
         mount_command = self.check_bool_pixel(data_pixels[1][1], 1.0)
+        change_speed_command = self.check_bool_pixel(data_pixels[1][2], 1.0)
 
         companion_coordinates_pixels = data_pixels[2:4]
         companion_combat_status, companion_health, companion_mana = data_pixels[4]
@@ -196,6 +197,7 @@ class GinghamProcessor:
                         'passive_command': passive_command,
                         'loot_command': loot_command,
                         'mount_command': mount_command,
+                        'change_speed_command': change_speed_command,
                         'player_coordinates_pixels': player_coordinates_pixels,
                         'player_combat_status': player_combat_status,
                         'player_health': player_health,

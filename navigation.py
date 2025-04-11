@@ -174,7 +174,6 @@ class Navigator(BasicGeometry):
         }
 
     def _define_moving_constants(self, input_data, map_id):
-        # distances
 
         if map_id in WOW_AREAS.keys():
             distance_to_player_delta = WOW_AREAS[map_id] * 0.15

@@ -123,6 +123,9 @@ if __name__ == '__main__':
             if companion.state_is(State.RESPONDING):
                 companion.respond_to_player()
 
+            if companion.state_is(State.CHANGING_SPEED):
+                companion.changing_speed()
+
             ### mounting
             if companion.state_is(State.MOUNTING):
                 companion.mounting()

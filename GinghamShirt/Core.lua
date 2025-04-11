@@ -11,7 +11,6 @@ local AutoGreedFrame = CreateFrame("Frame")
 
 local ginghamPixelSize = 5
 
-
 local squareData = {
     { name = "CompanionControlSquare", yOffset = 0 },
     { name = "InteractionCommandsSquare", yOffset = -5 },
@@ -46,11 +45,10 @@ local lettersSquares = {}
 local squares = {}
 
 local commands = {
+    --- set condition
     pause = "#pause",
-    disable = "#disable",
     mount = "#mount",
     unmount = "#unmount",
-    loot = "#loot",
     stay = "#stay",
     follow = "#follow",
     step_by_step = "#step-by-step",
@@ -58,8 +56,14 @@ local commands = {
     defend = "#defend",
     passive = "#passive",
     only_heal = "#only-heal",
-    calibrate = "#calibrate",
 
+    --- disabled by companion
+    disable = "#disable",
+    loot = "#loot",
+    run_walk = "#run-walk",
+
+    --- misc
+    calibrate = "#calibrate",
     clean = "#clean",
     clear = "#clear"
 }
@@ -407,6 +411,9 @@ function AssistantPositionCalibrationSquareColor(self, event, message, sender, .
     end
 end
 
+--- Colors Letters Squares According to Received Message
+--- @param message string Chat Message
+--- @param sender string Sender of Message
 function LettersSquareColors(self, event, message, sender, ...)
     if color1 == nil or color2 == nil or color3 == nil then
         color1, color2, color3 = 0, 0, 0
@@ -467,6 +474,14 @@ function LettersSquareColors(self, event, message, sender, ...)
     end
 end
 
+function CleanLettersPixels(messageLengthPixel, messagePixels)
+    lettersSquares[messageLengthPixel].texture:SetTexture(0, 0, 0)
+    for i = 1, 85, 1 do
+        lettersSquares[string.format("%s_%d", messagePixels, i)].texture:SetAlpha(0)
+    end
+end
+
+--- Colors Cursor Objects Squares According to Cursor Point
 function CursorObjectInfoPixelsColors()
     if color1 == nil or color2 == nil or color3 == nil then
         color1, color2, color3 = 0, 0, 0
@@ -487,7 +502,7 @@ function CursorObjectInfoPixelsColors()
             local char = string.sub(message, i, i)
             local char_ascii = string.byte(char)
             if char_ascii > 27 and char_ascii < 127 then
-                color = (string.byte(char) - 27) / 100 --((string.byte(char) - 96) / 100) + 0.5
+                color = (string.byte(char) - 27) / 100
             end
             local squaresCounter = math.floor(i / 3) + ((i % 3 ~= 0) and 1 or 0)
             if i == #message then
@@ -520,15 +535,9 @@ function CleanCursorObjectPixels(cursorObjectMessageLengthPixel, cursorObjectPix
     end
 end
 
-function CleanLettersPixels(messageLengthPixel, messagePixels)
-    lettersSquares[messageLengthPixel].texture:SetTexture(0, 0, 0)
-    for i = 1, 85, 1 do
-        lettersSquares[string.format("%s_%d", messagePixels, i)].texture:SetAlpha(0)
-    end
-end
-
+--- Colors Companion Control Square
+--- @param message string incoming message
 function CompanionControlSquareColor(self, event, message, sender, ...)
-
     ---- program control (enable = 0.0, pause = 0.5, disable = 1.0)
     if programControlColor == nil then
         programControlColor = 0.0
@@ -543,11 +552,8 @@ function CompanionControlSquareColor(self, event, message, sender, ...)
     end
     if containCommand(message, commands.disable) then
         if programControlColor ~= 1.0 then
-            --SendChatMessage("The control script was #disabled!", "PARTY")
-            --movingControlColor = 1.0
             programControlColor = 1.0
         elseif programControlColor == 1 then
-            --SendChatMessage("Enable the control script!", "PARTY")
             programControlColor = 0.0
         end
     end
@@ -583,26 +589,21 @@ function CompanionControlSquareColor(self, event, message, sender, ...)
         SendChatMessage("Ok, just look, don't touch..", "PARTY")
         combatControlColor = 0.0
     end
-    --if containCommand(message, commands.combat) then
-    --    if combatControlColor == 0.0 then
-    --        SendChatMessage("I'll assist!", "PARTY")
-    --        combatControlColor = 1.0
-    --    elseif combatControlColor == 1.0 then
-    --        SendChatMessage("Ok, just look, don't touch..", "PARTY")
-    --        combatControlColor = 0.0
-    --    else
-    --        print("ERROR: Cannot recognize combatColorControl!")
-    --    end
-    --end
     squares["CompanionControlSquare"].texture:SetTexture(programControlColor, movingControlColor, combatControlColor)
 end
 
 function InteractionCommandsSquareColor(self, event, message, sender, ...)
+    ---- loot control (don't loot = 0.0, should loot = 1.0)
     if lootColor == nil then
         lootColor = 0
     end
+    ---- mount control (unmount = 0.0, mount = 1.0)
     if mountColor == nil then
         mountColor = 0
+    end
+    ---- moving speed control (don't change = 0.0, should change = 1.0)
+    if movingSpeedColor == nil then
+        movingSpeedColor = 0.0
     end
     if containCommand(message, commands.loot) then
         if lootColor == 0 then
@@ -619,7 +620,15 @@ function InteractionCommandsSquareColor(self, event, message, sender, ...)
     if containCommand(message, commands.unmount) then
         mountColor = 0
     end
-    squares["InteractionCommandsSquare"].texture:SetTexture(lootColor, mountColor, 0)
+    if containCommand(message, commands.run_walk) then
+        if movingSpeedColor == 0 then
+            movingSpeedColor = 1
+        else
+            movingSpeedColor = 0
+        end
+    end
+
+    squares["InteractionCommandsSquare"].texture:SetTexture(lootColor, mountColor, movingSpeedColor)
 end
 
 function SetCoordinates(character)
@@ -666,13 +675,12 @@ function SetConditionStatus(character)
     end
 end
 
-
 function MapIDSquareColor()
     local mapID = GetCurrentMapAreaID()
     if mapID < 0 then
-       mapID = 0
+        mapID = 0
     end
-    local color1, color2 = math.modf(mapID/255)
+    local color1, color2 = math.modf(mapID / 255)
     if color1 > 0 then
         color1 = 1 / color1
     end
