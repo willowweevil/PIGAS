@@ -106,15 +106,14 @@ if __name__ == '__main__':
 
             ###### companion logic
             ### movement
-            # doesn't move if WAITING_FOR_PLAYER, RESPONDING or INITIALIZING
+            # doesn't move if INITIALIZING, RESPONDING, WAITING_FOR_PLAYER, MOUNTING, UNMOUNTING
             if not companion.state_is_one_of(companion.movement_restricted_states):
-                # not companion.state_is_one_of([State.INITIALIZING, State.RESPONDING, State.WAITING_FOR_PLAYER]):
                 companion.rotate_to(Duty.ROTATE_TO_PLAYER)
                 companion.move_to(Duty.NEARING_WITH_PLAYER)
                 if companion.has_duty(Duty.AVOID_LOW_OBSTACLE):
                     companion.jump()
 
-            ### some actions at entering the game (buffing will be the other state)
+            ## some actions at entering the game (buffing will be the other state)
             if companion.state_is(State.INITIALIZING):
                 companion.entering_the_game()
                 companion.apply_buffing_rotation(ally_target='companion')

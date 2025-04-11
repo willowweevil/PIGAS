@@ -34,7 +34,12 @@ class CompanionProfile(object):
 
     @property
     def movement_restricted_states(self):
-        return [State.INITIALIZING, State.RESPONDING, State.WAITING_FOR_PLAYER, State.MOUNTING, State.UNMOUNTING]
+        return [State.INITIALIZING,
+                State.RESPONDING,
+                State.CHANGING_SPEED,
+                State.WAITING_FOR_PLAYER,
+                State.MOUNTING,
+                State.UNMOUNTING]
 
     def get_behaviours(self):
         return self.mount_behaviour, self.moving_behaviour, self.combat_behaviour, self.action_behaviour
@@ -646,7 +651,7 @@ class CompanionControlLoop(HardwareInputSimulator, GameWindow, CompanionProfile,
         return False
 
     def player_command_workflow(self):
-        command = self.session_data['player_command'][:].split(' ')[0].strip()
+        command = self.session_data['player_message'][:].split(' ')[0].strip()
         send_message = self.send_message_to_chat(f"Sorry, I don't know the command {command}!")
         return send_message
 
