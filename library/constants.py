@@ -105,7 +105,6 @@ WOW_EMOTES_PREFIXES = [
     "Hey guys, I'm about to",
     "LOL I",
     "Check this out - I'm gonna",
-    "",
     "Hold my ale while I",
     "Yeet! I'm about to",
     "My cat walked on keyboard and now I",

@@ -184,7 +184,7 @@ class CompanionControlLoop(HardwareInputSimulator, GameWindow, CompanionProfile,
         config_data = read_yaml_file(config)
         game_extension = config_data['game']['extension']
         companion_class = config_data['companion']['class']
-        self.directory = f"./database/game_classes/{game_extension}/{companion_class}"
+        self.directory = f"./data/class/{game_extension}/{companion_class}"
 
     def initialize_spellbook(self):
         spellbook_file = os.path.join(self.directory, "spellbook.yaml")
@@ -853,7 +853,7 @@ class CompanionControlLoop(HardwareInputSimulator, GameWindow, CompanionProfile,
     '''
 
     def changing_speed(self):
-        self.send_message_to_chat("I'm going to change my moving speed (#run-walk)!", pause=2.0)
+        self.send_message_to_chat("I'm going to change my #movement-speed!", pause=2.0)
         self.press_key("\\")
 
     def mounting(self):

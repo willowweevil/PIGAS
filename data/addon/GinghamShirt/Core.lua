@@ -48,7 +48,7 @@ local commands = {
     --- set condition
     pause = "#pause",
     mount = "#mount",
-    unmount = "#unmount",
+    unmount = "#dismount",
     stay = "#stay",
     follow = "#follow",
     step_by_step = "#step-by-step",
@@ -60,7 +60,7 @@ local commands = {
     --- disabled by companion
     disable = "#disable",
     loot = "#loot",
-    run_walk = "#run-walk",
+    run_walk = "#movement-speed",
 
     --- misc
     calibrate = "#calibrate",

@@ -1,0 +1,41 @@
+MACRO 40 "reload" INV_ENCHANT_SHARDBRILLIANTSMALL
+/reload
+END
+MACRO 41 "pause" Spell_Shadow_UnstableAffliction_1
+/p #pause
+END
+MACRO 42 "disable" Spell_Shadow_SacrificialShield
+/p #disable
+END
+MACRO 43 "loot" INV_Crate_08
+/p #loot
+END
+MACRO 44 "assist" Ability_Druid_SkinTeeth
+/p #assist
+END
+MACRO 45 "defend" INV_Shield_58
+/p #defend
+END
+MACRO 46 "only-heal" Ability_Vehicle_SonicShockwave
+/p #only-heal
+END
+MACRO 47 "passive" INV_Misc_Statue_09
+/p #passive
+END
+MACRO 48 "follow" Ability_Rogue_FleetFooted
+/p #follow
+END
+MACRO 49 "stay" INV_boots_cloth_05
+/p #stay
+END
+MACRO 50 "step-by-step" INV_misc_map_01
+/p #step-by-step
+END
+MACRO 51 "mount" ABILITY_MOUNT_DREADSTEED
+/p #mount
+/cast Striped Nightsaber
+END
+MACRO 52 "unmount" Spell_Nature_MentalQuickness
+/p #dismount
+/cast Striped Nightsaber
+END
