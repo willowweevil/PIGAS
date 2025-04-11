@@ -14,7 +14,7 @@ venv.bak/
 .idea/
 
 # Project files
-screenshots/
+*debug*
 comment*
 config*
 context*
