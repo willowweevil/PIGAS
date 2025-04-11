@@ -2,7 +2,10 @@ import yaml
 import openai
 import logging
 import sys
+import random
 
+def get_random(my_list):
+    return random.choice(my_list)
 
 def set_debug(config_file):
     debug_level = False

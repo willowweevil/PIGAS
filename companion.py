@@ -10,10 +10,11 @@ from library.miscellaneous import read_yaml_file
 from hardware_input import HardwareInputSimulator
 from game_window import GameWindow
 from gingham_processing import GinghamProcessor
-from library.miscellaneous import get_open_ai_response, read_the_context, write_the_context, read_the_last_line, \
-    add_message_to_context, clear_file
+from library.miscellaneous import  read_the_context, write_the_context, add_message_to_context
+from library.miscellaneous import get_open_ai_response, clear_file, read_the_last_line, get_random
+
 from library.entity_attributes import Action, Moving, Combat, Mount, Duty, State
-from library.constants import WOW_EMOTES
+from library.constants import WOW_EMOTES, WOW_EMOTES_PREFIXES
 
 
 class CompanionProfile(object):
@@ -583,9 +584,12 @@ class CompanionControlLoop(HardwareInputSimulator, GameWindow, CompanionProfile,
 
     def respond_to_player(self):
         message_sent = False
-        # commands first
-        if self.session_data['player_message'].startswith("&"):
-            message_sent = self.command_workflow()
+        # player commands
+        if self.session_data['player_message'].startswith("#"):
+            message_sent = self.player_command_workflow()
+        # console commands
+        if not message_sent and self.session_data['player_message'].startswith("&"):
+            message_sent = self.console_command_workflow()
         # add something in the context
         if not message_sent and self.session_data['player_message'].startswith("%"):
             add_message_to_context(self.context_file, self.session_data['player_message'][1:])
@@ -612,7 +616,6 @@ class CompanionControlLoop(HardwareInputSimulator, GameWindow, CompanionProfile,
         player_message = self.session_data['player_message']
         context = read_the_context(self.context_file)
         context += f"\n{player_message}"
-
         assistant_answer_start_time = time.time()
         self.logger.info(f"Got player message: {player_message}")
         self.logger.info("Getting response..")
@@ -629,14 +632,20 @@ class CompanionControlLoop(HardwareInputSimulator, GameWindow, CompanionProfile,
         for word in message_words:
             if word in WOW_EMOTES:
                 emote = re.sub(r'\W', '', word)
-                self.send_message_to_chat(f"Let's {emote}!")
+                emote_prefix = get_random(WOW_EMOTES_PREFIXES)
+                self.send_message_to_chat(f"{emote_prefix} {emote}!")
                 self.send_message_to_chat(f"{'/' + emote}", channel="/p")
                 return True
         return False
 
-    def command_workflow(self):
+    def player_command_workflow(self):
+        command = self.session_data['player_command'][:].split(' ')[0].strip()
+        send_message = self.send_message_to_chat(f"Sorry, I don't know the command {command}!")
+        return send_message
+
+    def console_command_workflow(self):
         command = self.session_data['player_message'][1:].strip()
-        self.send_message_to_chat(f"I'm going to type a: \"{command}\"!")
+        self.send_message_to_chat(f"Got the command: \"{command}\"!")
         self.send_message_to_chat(f"{command}", channel="/p")
         return True
 
@@ -680,7 +689,7 @@ class CompanionControlLoop(HardwareInputSimulator, GameWindow, CompanionProfile,
                             self.cast_spell(spell)
 
         if not enemy_is_target_of:
-            ally_target = self.combat_rotation.get("Attack Target Is Target Of")
+            enemy_is_target_of = self.combat_rotation.get("Attack Target Is Target Of")
         if enemy_is_target_of:
             self.target_the_enemy(target_of=enemy_is_target_of)
             attack_spells = self.combat_rotation.get("Attack Spells")

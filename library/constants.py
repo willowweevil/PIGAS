@@ -99,6 +99,24 @@ WOW_EMOTES = [
     "/yay", "/yell", "/yes", "/yummy"
 ]
 
+WOW_EMOTES_PREFIXES = [
+    "Let's",
+    "I'm gonna",
+    "Hey guys, I'm about to",
+    "LOL I",
+    "Check this out - I'm gonna",
+    "",
+    "Hold my ale while I",
+    "Yeet! I'm about to",
+    "My cat walked on keyboard and now I",
+    "Oops, I accidentally",
+    "By the ancient powers, I",
+    "The stars compel me to",
+    "As the prophecy foretold, I shall",
+    "Mystic energies guide me to",
+    "The whispers of the Void tell me to",
+]
+
 WOW_AREAS = {
     888: 1.0,   # Shadowglen
     894: 1.0,   # Ammen Vale
