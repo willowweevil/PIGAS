@@ -861,7 +861,7 @@ class CompanionControlLoop(HardwareInputSimulator, GameWindow, CompanionProfile,
         self.cast_spell("Mount", pause=3.0)
 
     def unmounting(self):
-        self.send_message_to_chat("I'm going to unmount!")
+        self.send_message_to_chat("I'm going to dismount!")
         self.cast_spell("Mount")
 
     def waiting_for_player(self):

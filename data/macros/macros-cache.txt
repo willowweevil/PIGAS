@@ -35,7 +35,7 @@ MACRO 51 "mount" ABILITY_MOUNT_DREADSTEED
 /p #mount
 /cast Striped Nightsaber
 END
-MACRO 52 "unmount" Spell_Nature_MentalQuickness
+MACRO 52 "dismount" Spell_Nature_MentalQuickness
 /p #dismount
 /cast Striped Nightsaber
 END
