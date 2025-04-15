@@ -1,0 +1,18 @@
+---
+game:
+  game-directory: ... # full path to directory with installed game
+  window-title: World of Warcraft # you can check the actual name in the task manager (default: World of Warcraft)
+  extension: cataclysm # only 'cataclysm' and 'wotlk' are supported (default: cataclysm)
+  fullscreen: false # 'true' or 'false' recommended to run it not in fullscreen mode (default: false)
+
+companion:
+  name: ... # nickname of your companion
+  class: ... # class of your companion
+  context_file: template.context.txt # context file for AI response (default: template.context.txt)
+
+other:
+  debug: false
+
+open-ai:
+  base_url: ... # api url
+  api_key: ... # api key

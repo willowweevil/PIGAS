@@ -4,9 +4,6 @@ import numpy as np
 import re
 from collections import Counter
 import sys
-import matplotlib as mpl
-
-mpl.use('TkAgg')
 
 
 class GinghamProcessor:
@@ -149,22 +146,27 @@ class GinghamProcessor:
 
     @staticmethod
     def get_map_id(pixel):
-        map_id = int(((1/pixel[0] if pixel[0] > 0 else 0) + pixel[1])*255)
+        map_id = int(((1 / pixel[0] if pixel[0] > 0 else 0) + pixel[1]) * 255)
         return map_id
 
     def to_dictionary(self, all_pixels):
         data_pixels, player_message_pixels, cursor_message_pixels = all_pixels[0], all_pixels[1], all_pixels[2]
 
         pause_script = True if 0.0 < data_pixels[0][0] < 1.0 else False
-        disable_script = self.check_bool_pixel(data_pixels[0][0], 1.0) #True if data_pixels[0][0] == 1.0 else False
+        disable_script = self.check_bool_pixel(data_pixels[0][0], 1.0)  # True if data_pixels[0][0] == 1.0 else False
 
-        follow_command = self.check_bool_pixel(data_pixels[0][1], 1.0) #True if round(data_pixels[0][1], 2) == 1.0 else False
-        step_by_step_command = self.check_bool_pixel(data_pixels[0][1], 0.5) #True if round(data_pixels[0][1], 2) == 0.5 else False
+        follow_command = self.check_bool_pixel(data_pixels[0][1],
+                                               1.0)  # True if round(data_pixels[0][1], 2) == 1.0 else False
+        step_by_step_command = self.check_bool_pixel(data_pixels[0][1],
+                                                     0.5)  # True if round(data_pixels[0][1], 2) == 0.5 else False
         stay_command = self.check_bool_pixel(data_pixels[0][1], 0.0)
 
-        assist_command = self.check_bool_pixel(data_pixels[0][2], 1.0) #True if round(data_pixels[0][2], 2) == 1.0 else False
-        defend_command = self.check_bool_pixel(data_pixels[0][2], 0.75) #True if round(data_pixels[0][2], 2) == 0.75 else False
-        only_heal_command = self.check_bool_pixel(data_pixels[0][2], 0.5) #True if round(data_pixels[0][2], 2) == 0.5 else False
+        assist_command = self.check_bool_pixel(data_pixels[0][2],
+                                               1.0)  # True if round(data_pixels[0][2], 2) == 1.0 else False
+        defend_command = self.check_bool_pixel(data_pixels[0][2],
+                                               0.75)  # True if round(data_pixels[0][2], 2) == 0.75 else False
+        only_heal_command = self.check_bool_pixel(data_pixels[0][2],
+                                                  0.5)  # True if round(data_pixels[0][2], 2) == 0.5 else False
         passive_command = self.check_bool_pixel(data_pixels[0][2], 0.0)
 
         loot_command = self.check_bool_pixel(data_pixels[1][0], 1.0)
@@ -182,9 +184,6 @@ class GinghamProcessor:
 
         player_message = self.get_message(player_message_pixels)
         cursor_message = self.get_message(cursor_message_pixels)
-
-        # if cursor_message:
-        #     print(self.cursor_message_parser(cursor_message))
 
         session_data = {'pause_script': pause_script,
                         'disable_script': disable_script,

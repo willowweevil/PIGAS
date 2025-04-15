@@ -1,5 +1,5 @@
 ## Interface: 40300
-## Title: Gingham Shirt
+## Title: GinghamShirt
 ## Notes: Export some data to a plaid format
 ## Author: Weevil Games
 ## Version: 0.2.0

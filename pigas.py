@@ -1,4 +1,5 @@
 import logging
+import sys
 
 from library.entity_attributes import *
 
@@ -7,42 +8,42 @@ from game_window import GameWindow
 from navigation import Navigator
 from companion import CompanionControlLoop
 from workflow_handler import ScriptWorkflowHandler
-from library.miscellaneous import set_debug
-
-config_file = 'config.yaml'
-
-is_debug = set_debug(config_file)
-
-logging.basicConfig(level=logging.INFO if not is_debug else logging.DEBUG,
-                    format="%(asctime)s %(levelname)s %(message)s")
-
-logging.getLogger('script_control').setLevel(logging.INFO if not is_debug else logging.DEBUG)
-logging.getLogger('game_window').setLevel(logging.INFO if not is_debug else logging.DEBUG)
-logging.getLogger('hardware_input').setLevel(logging.INFO if not is_debug else logging.DEBUG)
-logging.getLogger('navigation').setLevel(logging.INFO if not is_debug else logging.DEBUG)
-logging.getLogger('companion').setLevel(logging.INFO if not is_debug else logging.DEBUG)
+from library.miscellaneous import is_debug
 
 if __name__ == '__main__':
+    config_file = 'config.yaml'
     try:
+        # log level according to config
+        debug = is_debug(config_file)
+        logging.basicConfig(level=logging.INFO if not debug else logging.DEBUG,
+                            format="%(asctime)s %(levelname)s %(message)s")
+
+        logging.getLogger('game_window').setLevel(logging.INFO if not debug else logging.DEBUG)
+        logging.getLogger('script_control').setLevel(logging.INFO if not debug else logging.DEBUG)
+        logging.getLogger('hardware_input').setLevel(logging.INFO if not debug else logging.DEBUG)
+        logging.getLogger('navigation').setLevel(logging.INFO if not debug else logging.DEBUG)
+        logging.getLogger('companion').setLevel(logging.INFO if not debug else logging.DEBUG)
+
         # script workflow handler
         workflow_handler = ScriptWorkflowHandler(config_file=config_file)
 
         # game window
         game_window = GameWindow()
-        game_window.set_window_parameters(config_file=workflow_handler.config_file)
+        game_window.set_window_parameters(config_file=config_file)
 
         # gingham analyzer
         gingham = GinghamProcessor()
 
         # geometry and navigation
-        navigator = Navigator(config_file=workflow_handler.config_file)
+        navigator = Navigator(config_file=config_file)
 
         # companion actions
         companion = CompanionControlLoop()
         companion.initialize_companion(game_window=game_window,
-                                       config_file=workflow_handler.config_file)
+                                       expansion=workflow_handler.expansion,
+                                       config_file=config_file)
 
-        workflow_handler.execute_prestart_actions()
+        workflow_handler.perform_prestart_actions()
         while True:
             ### preparations
             # check if a game window still exists
@@ -56,10 +57,10 @@ if __name__ == '__main__':
                 game_window.ensure_window_active()
 
             # set session data
-            session_data = workflow_handler.set_session_data
+            session_data = workflow_handler.session_data
 
             # extend session data with gingham data
-            screenshot = game_window.take_screenshot(savefig=is_debug)
+            screenshot = game_window.take_screenshot(savefig=debug)
             gingham_pixels = gingham.pixels_analysis(data=screenshot,
                                                      n_monitoring_pixels=game_window.n_pixels['y'],
                                                      pixel_height=game_window.pixel_size['y'],
@@ -175,7 +176,7 @@ if __name__ == '__main__':
             workflow_handler.set_loop_control_execution_time()
 
     except KeyboardInterrupt:
-        ScriptWorkflowHandler().finish_script()
+        ScriptWorkflowHandler(config_file=config_file).finish_script()
 
-    # except Exception as e:
-    #     ScriptWorkflowHandler().unexpected_finish(e)
+    except Exception as e:
+        ScriptWorkflowHandler(config_file=config_file).unexpected_finish(e)

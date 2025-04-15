@@ -1,19 +1,23 @@
 import yaml
 import openai
 import logging
+import os
 import sys
 import random
 
-def get_random(my_list):
-    return random.choice(my_list)
 
-def set_debug(config_file):
+def is_debug(config_file):
     debug_level = False
     config = read_yaml_file(config_file)
     other_data = config.get('other')
     if other_data:
         debug_level = other_data.get('debug')
     return True if debug_level is True else False
+
+
+def get_random(my_list):
+    return random.choice(my_list)
+
 
 def read_yaml_file(input_file=None):
     try:
@@ -26,6 +30,7 @@ def read_yaml_file(input_file=None):
         logging.error(f"File \"{input_file}\" reading was interrupted by user.")
         sys.exit(0)
     return data
+
 
 def get_open_ai_response(input_message):
     connection_parameters = read_yaml_file('config.yaml')
@@ -44,16 +49,22 @@ def get_open_ai_response(input_message):
         logging.error(e)
         return None
 
+
 def read_the_context(context_file):
+    if not os.path.exists(context_file):
+        with open(context_file, 'w'):
+            pass
     with open(context_file, 'r') as file:
         context = file.read()
         file.close()
     return context
 
+
 def write_the_context(context_file, context):
     with open(context_file, "w", errors='ignore') as f:
         f.write(context)
         f.close()
+
 
 def read_the_last_line(file):
     with open(file, 'r', errors='ignore') as f:
@@ -62,11 +73,13 @@ def read_the_last_line(file):
             return lines[-1].strip()
         return None
 
+
 def add_message_to_context(context_file, message):
     context = read_the_context(context_file)
     if message != read_the_last_line(context_file):
         context += f"\n{message}"
         write_the_context(context_file, context)
+
 
 def clear_file(file_path):
     with open(file_path, 'r+') as file:

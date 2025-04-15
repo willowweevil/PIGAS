@@ -142,6 +142,7 @@ class CompanionControlLoop(HardwareInputSimulator, GameWindow, CompanionProfile,
         self.n_pixels = None
         self.screenshot_shift = None
 
+        self.expansion = None
         self.directory = None
 
         self.name = None
@@ -162,13 +163,14 @@ class CompanionControlLoop(HardwareInputSimulator, GameWindow, CompanionProfile,
             self.logger.addHandler(handler)
             self.logger.propagate = False
 
-    def initialize_companion(self, game_window, config_file=None):
+    def initialize_companion(self, game_window, expansion, config_file=None):
         self.game_window = game_window
         self.window_position = game_window.window_position
         self.window_size = game_window.window_size
         self.pixel_size = game_window.pixel_size
         self.n_pixels = game_window.n_pixels
         self.screenshot_shift = game_window.screenshot_shift
+        self.expansion = expansion
         self.set_companion_directory(config_file)
         self.set_companion_name(config_file)
         self.set_context_file(config_file)
@@ -182,9 +184,15 @@ class CompanionControlLoop(HardwareInputSimulator, GameWindow, CompanionProfile,
 
     def set_companion_directory(self, config):
         config_data = read_yaml_file(config)
-        game_extension = config_data['game']['extension']
-        companion_class = config_data['companion']['class']
-        self.directory = f"./data/class/{game_extension}/{companion_class}"
+        companion_config = config_data.get('companion')
+        if not companion_config:
+            self.logger.error(f"Companion config is not set! Please, check the \"{config}\" file!")
+            sys.exit(1)
+        companion_class = companion_config.get('class')
+        if not companion_class:
+            self.logger.error(f"Companion class is not set! Please, check the \"{config}\" file!")
+            sys.exit(1)
+        self.directory = f"./data/class/{self.expansion}/{companion_class}"
 
     def initialize_spellbook(self):
         spellbook_file = os.path.join(self.directory, "spellbook.yaml")
