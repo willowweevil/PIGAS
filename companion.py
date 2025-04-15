@@ -529,7 +529,7 @@ class CompanionControlLoop(HardwareInputSimulator, GameWindow, CompanionProfile,
     def search_and_click(self, area_geometry):
         keywords = {
             'break': {
-                'gathering': ['herbalism', 'mining', 'skinnable'],
+                'gathering': ['herbalism', 'mining'],
                 'looting': ['corpse', 'requires', self.name.lower()]
             },
             'pass': ['player']
