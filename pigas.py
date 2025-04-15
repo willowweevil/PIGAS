@@ -153,7 +153,7 @@ if __name__ == '__main__':
 
             ### healing
             # player
-            if companion.state_is(State.HEALING_PLAYER):
+            if companion.state_is(State.HEALING_PLAYER) and not companion.has_duty(Duty.ROTATE_TO_PLAYER):
                 companion.apply_healing_rotation(target='player')
 
             # yourself
@@ -164,7 +164,7 @@ if __name__ == '__main__':
             # help to player
             if companion.state_is(State.ATTACKING_TO_HELP):
                 companion.rotate_to(Duty.ROTATE_TO_PLAYER_FACING)
-                if not companion.has_duty(Duty.ROTATE_TO_PLAYER_FACING):
+                if not companion.has_one_of_duties([Duty.ROTATE_TO_PLAYER_FACING, Duty.ROTATE_TO_PLAYER]):
                     companion.apply_combat_rotation(ally_target=None,
                                                     enemy_is_target_of='player')
 
