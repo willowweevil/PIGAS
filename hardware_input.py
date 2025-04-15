@@ -30,7 +30,7 @@ class HardwareInputSimulator:
         except AttributeError:
             self.pressed_keys.add(str(key))
 
-        self.logger.debug(f'Pressed keys: {self.pressed_keys}')
+        #self.logger.debug(f'Pressed keys: {self.pressed_keys}')
 
     def on_key_release(self, key):
         """Handle the key release event."""
