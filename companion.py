@@ -10,7 +10,7 @@ from library.miscellaneous import read_yaml_file
 from hardware_input import HardwareInputSimulator
 from game_window import GameWindow
 from gingham_processing import GinghamProcessor
-from library.miscellaneous import  read_the_context, write_the_context, add_message_to_context
+from library.miscellaneous import read_the_context, write_the_context, add_message_to_context
 from library.miscellaneous import get_open_ai_response, clear_file, read_the_last_line, get_random
 
 from library.entity_attributes import Action, Moving, Combat, Mount, Duty, State
@@ -427,16 +427,7 @@ class CompanionControlLoop(HardwareInputSimulator, GameWindow, CompanionProfile,
                     elif checking_angle > angle_delta:
                         self.add_duty(rotation_duties['clockwise'])
 
-    def define_duties(self):
-        self._define_initialize_duty()
-        self._define_response_to_message_duty()
-        self._define_mount_duty()
-        self._define_unmount_duty()
-        self._define_looting_duty()
-        self._define_change_speed_duty()
-        self._define_heal_yourself_duty()
-        self._define_defend_yourself_duty()
-
+    def _define_player_presence_duties(self):
         ### define duties which depend on the player (player should be nearby)
         if self.session_data['player_position'] and self.session_data['distance_from_companion_to_player'] < \
                 self.session_data['max_distance_from_companion_to_player']:
@@ -471,29 +462,49 @@ class CompanionControlLoop(HardwareInputSimulator, GameWindow, CompanionProfile,
         else:
             self.add_duty(Duty.WAITING_FOR_PLAYER)
 
+    def define_duties(self):
+        self._define_initialize_duty()
+        self._define_response_to_message_duty()
+        self._define_mount_duty()
+        self._define_unmount_duty()
+        self._define_looting_duty()
+        self._define_change_speed_duty()
+        self._define_heal_yourself_duty()
+        self._define_defend_yourself_duty()
+
+        self._define_player_presence_duties()
+
     def define_state(self):
-        duty_to_state_mapping = {
-            Duty.INITIALIZE: State.INITIALIZING,
-            Duty.RESPOND: State.RESPONDING,
-            Duty.CHANGE_SPEED: State.CHANGING_SPEED,
-            Duty.MOUNT: State.MOUNTING,
-            Duty.UNMOUNT: State.UNMOUNTING,
-            Duty.LOOT: State.LOOTING,
-            Duty.HEAL_YOURSELF: State.HEALING_YOURSELF,
-            Duty.DEFEND_YOURSELF: State.ATTACKING_TO_DEFEND,
-            Duty.WAITING_FOR_PLAYER: State.WAITING_FOR_PLAYER,
-            Duty.NEARING_TO_LOOT: State.NEARING_FOR_LOOTING,
-            Duty.NEARING_TO_HEAL_PLAYER: State.NEARING_TO_HEAL_PLAYER,
-            Duty.HEAL_PLAYER: State.HEALING_PLAYER,
-            Duty.NEARING_TO_HELP_IN_COMBAT: State.NEARING_TO_HELP_IN_COMBAT,
-            Duty.HELP_IN_COMBAT: State.ATTACKING_TO_HELP,
-        }
-        for duty, state in duty_to_state_mapping.items():
-            if self.has_duty(duty):
-                self.set_state_to(state)
-                break
+
+        if self.has_duty(Duty.WAITING_FOR_PLAYER) and self.has_duty(Duty.HEAL_YOURSELF):
+            self.set_state_to(State.HEALING_YOURSELF)
+
+        elif self.has_duty(Duty.WAITING_FOR_PLAYER) and self.has_duty(Duty.DEFEND_YOURSELF):
+            self.set_state_to(State.ATTACKING_TO_DEFEND)
+
         else:
-            self.set_state_to(State.NEUTRAL)
+            duty_to_state_mapping = {
+                Duty.INITIALIZE: State.INITIALIZING,
+                Duty.RESPOND: State.RESPONDING,
+                Duty.CHANGE_SPEED: State.CHANGING_SPEED,
+                Duty.MOUNT: State.MOUNTING,
+                Duty.UNMOUNT: State.UNMOUNTING,
+                Duty.LOOT: State.LOOTING,
+                Duty.WAITING_FOR_PLAYER: State.WAITING_FOR_PLAYER,
+                Duty.NEARING_TO_LOOT: State.NEARING_FOR_LOOTING,
+                Duty.NEARING_TO_HEAL_PLAYER: State.NEARING_TO_HEAL_PLAYER,
+                Duty.HEAL_PLAYER: State.HEALING_PLAYER,
+                Duty.NEARING_TO_HELP_IN_COMBAT: State.NEARING_TO_HELP_IN_COMBAT,
+                Duty.HELP_IN_COMBAT: State.ATTACKING_TO_HELP,
+                Duty.HEAL_YOURSELF: State.HEALING_YOURSELF,
+                Duty.DEFEND_YOURSELF: State.ATTACKING_TO_DEFEND,
+            }
+            for duty, state in duty_to_state_mapping.items():
+                if self.has_duty(duty):
+                    self.set_state_to(state)
+                    break
+            else:
+                self.set_state_to(State.NEUTRAL)
 
     def get_profile(self):
         self.logger.debug(f"Companion behaviours: {self.get_behaviours()}")
