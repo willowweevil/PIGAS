@@ -477,14 +477,14 @@ class CompanionControlLoop(HardwareInputSimulator, GameWindow, CompanionProfile,
             Duty.MOUNT: State.MOUNTING,
             Duty.UNMOUNT: State.UNMOUNTING,
             Duty.LOOT: State.LOOTING,
+            Duty.HEAL_YOURSELF: State.HEALING_YOURSELF,
+            Duty.DEFEND_YOURSELF: State.ATTACKING_TO_DEFEND,
             Duty.WAITING_FOR_PLAYER: State.WAITING_FOR_PLAYER,
             Duty.NEARING_TO_LOOT: State.NEARING_FOR_LOOTING,
             Duty.NEARING_TO_HEAL_PLAYER: State.NEARING_TO_HEAL_PLAYER,
             Duty.HEAL_PLAYER: State.HEALING_PLAYER,
-            Duty.HEAL_YOURSELF: State.HEALING_YOURSELF,
             Duty.NEARING_TO_HELP_IN_COMBAT: State.NEARING_TO_HELP_IN_COMBAT,
             Duty.HELP_IN_COMBAT: State.ATTACKING_TO_HELP,
-            Duty.DEFEND_YOURSELF: State.ATTACKING_TO_DEFEND,
         }
         for duty, state in duty_to_state_mapping.items():
             if self.has_duty(duty):
