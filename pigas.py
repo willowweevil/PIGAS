@@ -107,7 +107,9 @@ if __name__ == '__main__':
 
             ###### companion logic
             ### movement
-            # doesn't move if INITIALIZING, RESPONDING, WAITING_FOR_PLAYER, MOUNTING, UNMOUNTING
+            # doesn't move if:
+            # INITIALIZING, RESPONDING, WAITING_FOR_PLAYER, MOUNTING, UNMOUNTING,
+            # ATTACKING_FOR_DEFEND, HEALING_YOURSELF
             if not companion.state_is_one_of(companion.movement_restricted_states):
                 companion.rotate_to(Duty.ROTATE_TO_PLAYER)
                 companion.move_to(Duty.NEARING_WITH_PLAYER)

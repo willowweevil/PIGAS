@@ -39,7 +39,9 @@ class CompanionProfile(object):
                 State.CHANGING_SPEED,
                 State.WAITING_FOR_PLAYER,
                 State.MOUNTING,
-                State.UNMOUNTING]
+                State.UNMOUNTING,
+                State.ATTACKING_TO_DEFEND,
+                State.HEALING_YOURSELF]
 
     def get_behaviours(self):
         return self.mount_behaviour, self.moving_behaviour, self.combat_behaviour, self.action_behaviour
