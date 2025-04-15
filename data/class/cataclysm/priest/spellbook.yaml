@@ -3,7 +3,7 @@
 Penance:
   action_button: "1"
   cooldown: 12
-  cast_time: 0
+  cast_time: 2
   action_page_number: 1
 Smite:
   action_button: "2"

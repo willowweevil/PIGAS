@@ -712,34 +712,35 @@ class CompanionControlLoop(HardwareInputSimulator, GameWindow, CompanionProfile,
                     self.cast_spell(spell)
 
     def apply_combat_rotation(self, ally_target=None, enemy_is_target_of=None):
+        # support
         if self.should_support:
-            if not ally_target:
-                ally_target = self.combat_rotation.get("Support Target")
+            ally_target = self.combat_rotation.get("Support Target") if not ally_target else ally_target
             if ally_target:
                 support_spells = self.combat_rotation.get("Support Spells")
                 if support_spells:
                     for spell in support_spells:
                         if self.spellbook[spell]['ready']:
                             self.target_the_ally(target=ally_target)
-                            self.cast_spell(spell)
-
-        if not enemy_is_target_of:
-            enemy_is_target_of = self.combat_rotation.get("Attack Target Is Target Of")
+                            if self.cast_spell(spell):
+                                return
+        # attack
+        enemy_is_target_of = self.combat_rotation.get("Attack Target Is Target Of") if not enemy_is_target_of else enemy_is_target_of
         if enemy_is_target_of:
             self.target_the_enemy(target_of=enemy_is_target_of)
             attack_spells = self.combat_rotation.get("Attack Spells")
             if attack_spells:
                 for spell in attack_spells:
-                    self.cast_spell(spell)
+                    if self.cast_spell(spell):
+                        return
 
     def apply_healing_rotation(self, target=None):
-        if not target:
-            target = self.healing_rotation.get("Healing Target")
+        target = self.healing_rotation.get("Healing Target") if not target else target
         self.target_the_ally(target=target)
         healing_spells = self.healing_rotation.get("Healing Spells")
         if healing_spells:
             for spell in healing_spells:
-                self.cast_spell(spell)
+                if self.cast_spell(spell):
+                    return
 
     def cast_spell(self, spell, pause=2.0):
         spell_info = self.spellbook.get(spell)
@@ -755,8 +756,10 @@ class CompanionControlLoop(HardwareInputSimulator, GameWindow, CompanionProfile,
                 else:
                     self.logger.debug(f"Going to cast a {spell}.")
                     self._perform_casting_actions_sequence(spell_info, pause=pause_after_cast)
+                return True
         else:
             self.send_message_to_chat(f"Sorry, I don't know spell \"{spell}\". Please, check spell and rotation books.")
+        return False
 
     def _perform_casting_actions_sequence(self, spell_data, pause):
         action_page_number = str(spell_data['action_page_number'])
