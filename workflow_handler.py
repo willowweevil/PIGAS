@@ -194,6 +194,7 @@ class ScriptWorkflowHandler(HardwareInputSimulator):
                 for line in lines:
                     if 'version' in line.lower():
                         version = line.split(' ')[-1]
+            file.close()
         except FileNotFoundError:
             addon_directory = '/'.join(filepath.split('/')[:-2])
             self.logger.error(f"Cannot find \"{self.addon_name}\" addon in {addon_directory}. Please, check if it exists.")
