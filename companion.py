@@ -215,12 +215,14 @@ class CompanionControlLoop(HardwareInputSimulator, GameWindow, CompanionProfile,
 
     def set_should_heal_and_support(self):
         if self.healing_rotation:
-            if self.healing_rotation.get("Healing Spells"):
-                if len(self.healing_rotation.get("Healing Spells")) > 0:
+            healing_spells = self.healing_rotation.get("Healing Spells")
+            if healing_spells:
+                if len(healing_spells) > 0:
                     self.should_heal = True
         if self.combat_rotation:
-            if self.combat_rotation.get("Combat Spells"):
-                if len(self.combat_rotation.get("Support Spells")) > 0:
+            support_spells = self.combat_rotation.get("Support Spells")
+            if support_spells:
+                if len(support_spells) > 0:
                     self.should_support = True
 
     @property

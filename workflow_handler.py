@@ -211,7 +211,7 @@ class ScriptWorkflowHandler(HardwareInputSimulator):
 
         if actual_version != installed_version:
             self.logger.error(
-                f"Installed addon is not actual (actual version is {actual_version} and installed version is {installed_version})!"
-                f"Please, copy the actual addon version to {os.path.join(self.game_directory, 'Interface', 'AddOns')}"
+                f"Installed addon is not actual (actual version is {actual_version} and installed version is {installed_version})! "
+                f"Please, copy the actual addon version to {os.path.join(self.game_directory, 'Interface', 'AddOns')} "
                 f"by yourself!")
             sys.exit(0)
