@@ -148,7 +148,7 @@ class ScriptWorkflowHandler(HardwareInputSimulator):
 
         self.expansion = game_config.get("expansion")
         if not self.expansion:
-            self.logger.error(f"Game extension is not set! Please, check the \"{self.config_file}\" file!")
+            self.logger.error(f"Game expansion is not set! Please, check the \"{self.config_file}\" file!")
             sys.exit(1)
 
         counts = self.get_program_runs_count()
@@ -198,6 +198,9 @@ class ScriptWorkflowHandler(HardwareInputSimulator):
             addon_directory = '/'.join(filepath.split('/')[:-2])
             self.logger.error(f"Cannot find \"{self.addon_name}\" addon in {addon_directory}. Please, check if it exists.")
             sys.exit(1)
+        except PermissionError:
+            self.logger.error(f"Cannot check version of installed \"{self.addon_name}\" addon. "
+                              f"Please, be sure to use the actual version.")
         return version
 
     def check_addon_version(self):
@@ -208,6 +211,6 @@ class ScriptWorkflowHandler(HardwareInputSimulator):
         if actual_version != installed_version:
             self.logger.error(
                 f"Installed addon is not actual (actual version is {actual_version} and installed version is {installed_version})!"
-                f"Please, copy the actual addon version to {self.get_addon_version(os.path.join(self.game_directory, 'Interface', 'AddOns'))}"
-                f"by youself!")
+                f"Please, copy the actual addon version to {os.path.join(self.game_directory, 'Interface', 'AddOns')}"
+                f"by yourself!")
             sys.exit(0)
