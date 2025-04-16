@@ -541,7 +541,7 @@ class CompanionControlLoop(HardwareInputSimulator, GameWindow, CompanionProfile,
         keywords = {
             'break': {
                 'gathering': ['herbalism', 'mining'],
-                'looting': ['corpse', 'requires', self.name.lower()]
+                'looting': ['corpse', 'loot', self.name.lower()]
             },
             'pass': ['player']
         }
@@ -665,6 +665,8 @@ class CompanionControlLoop(HardwareInputSimulator, GameWindow, CompanionProfile,
     def emotion_workflow(self):
         message_words = self.session_data['player_message'].split(' ')
         for word in message_words:
+            for character in '.,!?':
+                word = word.replace(character, '')
             if word in WOW_EMOTES:
                 emote = re.sub(r'\W', '', word)
                 emote_prefix = get_random(WOW_EMOTES_PREFIXES)
