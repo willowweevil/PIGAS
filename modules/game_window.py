@@ -7,6 +7,7 @@ import mss
 from PIL import Image
 
 from library.miscellaneous import stop_execution
+from library.errors import GameWindowError
 
 if 'win' in sys.platform.lower():
     import win32gui
@@ -56,10 +57,6 @@ class GameWindow:
         self.window_size = None
 
         self.logger = logging.getLogger('game_window')
-        # if not self.logger.hasHandlers():
-        #     handler = logging.StreamHandler()
-        #     self.logger.addHandler(handler)
-        #     self.logger.propagate = False
 
     def set_platform(self):
         if sys.platform in ['linux', 'linux2']:
@@ -69,25 +66,24 @@ class GameWindow:
         elif sys.platform in ['Mac', 'darwin', 'os2', 'os2emx']:
             self.platform = Platform.MACOS
         else:
-            self.logger.error(f"Cannot define platform: {sys.platform}")
-            stop_execution(1)
+            raise GameWindowError(f"Cannot define platform: {sys.platform}")
         self.logger.debug(f"System platform was defined as {str(self.platform).split('.')[1]}.")
 
     def set_window_title(self, config=None):
         config_data = read_yaml_file(config)
         game_config = config_data.get('game')
         if not game_config:
-            self.logger.error(f"Game config is not set! Please, check the \"{config}\" file!")
+            raise GameWindowError(f"Game config is not set! Please, check the \"{config}\" file!")
 
         self.window_title = game_config.get('window-title')
         if not self.window_title:
-            self.logger.error(f"Window title is not set! Please, check the \"{config}\" file!")
+            raise GameWindowError(f"Window title is not set! Please, check the \"{config}\" file!")
 
     def set_fullscreen_mode(self, config):
         config_data = read_yaml_file(config)
         game_config = config_data.get('game')
         if not game_config:
-            self.logger.error(f"Game config is not set! Please, check the \"{config}\" file!")
+            raise GameWindowError(f"Game config is not set! Please, check the \"{config}\" file!")
         self.fullscreen_mode = game_config.get('fullscreen', False)
 
     def set_window_parameters(self, config_file=None):
@@ -133,8 +129,7 @@ class GameWindow:
                 win32gui.EnumWindows(enum_callback, None)
             case _:
                 window_ids = None
-                self.logger.error("Cannot define window ID: unsupported system.")
-                stop_execution(1)
+                raise GameWindowError("Cannot define window ID: unsupported system.")
 
         if len(window_ids) > 0:
             self.logger.debug(
@@ -143,8 +138,7 @@ class GameWindow:
                 self.logger.debug(f'The first one will be used.')
             self.window_id = window_ids[0]
         else:
-            self.logger.error(f"\"{self.window_title}\": no window found.")
-            stop_execution(1)
+            raise GameWindowError(f"\"{self.window_title}\": no window found.")
 
     def _get_window_geometry(self):
         match self.platform:
@@ -153,20 +147,15 @@ class GameWindow:
                     result = subprocess.run(['xdotool', 'getwindowgeometry', self.window_id], capture_output=True,
                                             text=True)
                 except subprocess.CalledProcessError as e:
-                    result = None
-                    self.logger.error(f"Failed to identify active window geometry. Error: {e}")
-                    stop_execution(1)
+                    raise GameWindowError(f"Failed to identify active window geometry. Error: {e}")
                 except Exception as e:
-                    result = None
-                    self.logger.error(f"An unexpected error occurred during game window geometry defining: {e}")
-                    stop_execution(1)
+                    raise GameWindowError(f"An unexpected error occurred during game window geometry defining: {e}")
                 return result.stdout.split('\n')
             case Platform.WINDOWS:
                 result = win32gui.GetWindowRect(self.window_id)
                 return result
             case _:
-                self.logger.error("Cannot get window geometry: unsupported system.")
-                stop_execution(1)
+                raise GameWindowError("Cannot get window geometry: unsupported system.")
 
     def _set_window_geometry(self):
         window_raw_info = self._get_window_geometry()
@@ -181,9 +170,7 @@ class GameWindow:
                 position = left, top
                 size = width, height
             case _:
-                position, size = None, None
-                self.logger.error("Cannot set window geometry: unsupported system.")
-                stop_execution(1)
+                raise GameWindowError("Cannot set window geometry: unsupported system.")
 
         self.logger.debug(f"Window position: x={position[0]}, y={position[1]}")
         self.logger.debug(f"Window size: {size[0]}x{size[1]}")
@@ -199,9 +186,7 @@ class GameWindow:
                 result = win32gui.GetForegroundWindow()
                 current_window = win32gui.GetWindowText(result)
             case _:
-                current_window = None
-                self.logger.error("Cannot activate window: unsupported system.")
-                stop_execution(1)
+                raise GameWindowError("Cannot activate window: unsupported system.")
 
         return current_window
 
@@ -213,15 +198,13 @@ class GameWindow:
                     subprocess.run(['xdotool', 'windowactivate', self.window_id], capture_output=True, text=True)
                     self.logger.info(f"Window {self.window_title} (ID: {self.window_id}) activated successfully.")
                 except subprocess.CalledProcessError as e:
-                    self.logger.error(
+                    raise GameWindowError(
                         f"Failed to activate window {self.window_title} (id: {self.window_id}). "
                         f"Error: {e}")
-                    stop_execution(1)
                 except Exception as e:
-                    self.logger.error(
+                    raise GameWindowError(
                         f"Failed to activate window {self.window_title} (id: {self.window_id}). "
                         f"An unexpected error occurred: {e}")
-                    stop_execution(1)
             case Platform.WINDOWS:
                 try:
                     win32com.client.Dispatch("WScript.Shell").SendKeys('%')
@@ -229,18 +212,15 @@ class GameWindow:
                 except Exception as e:
                     error_code, function_name, _ = e.args
                     if error_code == 1400 and function_name == 'SetForegroundWindow':
-                        self.logger.error(
+                        raise GameWindowError(
                             f"Failed to activate window {self.window_title} (id: {self.window_id}). "
                             f"Window not found.")
-                        stop_execution(1)
                     else:
-                        self.logger.error(
+                        raise GameWindowError(
                             f"Failed to activate window {self.window_title} (id: {self.window_id}). "
                             f"An unexpected error occurred: {e}")
-                        stop_execution(1)
             case _:
-                self.logger.error("Cannot activate window: unsupported system.")
-                stop_execution(1)
+                raise GameWindowError("Cannot activate window: unsupported system.")
 
     def ensure_window_active(self):
         current_active_window = self._get_current_active_window()
@@ -249,8 +229,7 @@ class GameWindow:
                 time.sleep(1)
                 self._activate_window()
             else:
-                self.logger.error(f"Cannot activate window {self.window_title}. No windows found.")
-                stop_execution(1)
+                raise GameWindowError(f"Cannot activate window {self.window_title}. No windows found.")
 
     def ensure_window_exists(self):
         self._set_window_id()
@@ -273,36 +252,10 @@ class GameWindow:
                 area = {"top": position_y + y_shift, "left": position_x + x_shift, "width": width, "height": height}
                 screenshot = sct.grab(area)
             except mss.ScreenShotError:
-                self.logger.error("An error occurs during the screenshot.")
-                stop_execution(1)
+                raise GameWindowError("An error occurs during the screenshot.")
             self.logger.debug(
                 f"Took screenshot of area {width}x{height} (zero in {position_x + x_shift},{position_y + y_shift})")
             img = Image.frombytes("RGB", screenshot.size, screenshot.rgb)
             if savefig:
                 img.save(f"{savefig_prefix}_{position_x + x_shift}_{position_y + y_shift}_{height}_{width}_debug.png")
         return img
-
-# def get_initial_monitor_parameters():
-#     hdmi_monitor_shift_x, hdmi_monitor_shift_y = None, None
-#     try:
-#         xrandr = subprocess.Popen('xrandr', stdout=subprocess.PIPE)
-#         output = subprocess.check_output(('grep', 'HDMI'), stdin=xrandr.stdout)
-#         xrandr.wait()
-#         hdmi_monitor_shift_x, hdmi_monitor_shift_y = re.search(r"[0-9]{3,4}x[0-9]{3,4}", str(output))[0].split('x')
-#         logging.info("Second HDMI monitor found. The game window should be on the first (native) screen.")
-#     except subprocess.CalledProcessError as e:
-#         logging.info("Second HDMI monitor not found.")
-#
-#     return hdmi_monitor_shift_x, hdmi_monitor_shift_y
-
-# def run_game():
-#     start_game_command = read_yaml_file('config.yaml')['game']['run']
-#     try:
-#         subprocess.run(['nohup'] + start_game_command.split(' ') + ['&'], capture_output=True, text=True)
-#         logging.info("The game successfully started.")
-#     except subprocess.CalledProcessError as e:
-#         logging.error(f"Failed to start the game. Error: {e}")
-#         exit(1)
-#     except Exception as e:
-#         logging.error(f"An unexpected error occurred at game start: {e}")
-#         exit(1)

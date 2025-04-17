@@ -1,13 +1,11 @@
-import logging
-import sys
 
 from library.entity_attributes import *
 
-from gingham_processing import GinghamProcessor
-from game_window import GameWindow
-from navigation import Navigator
-from companion import CompanionControlLoop
-from workflow_handler import ScriptWorkflowHandler
+from modules.gingham_processing import GinghamProcessor
+from modules.game_window import GameWindow
+from modules.navigation import Navigator
+from modules.companion import CompanionControlLoop
+from modules.workflow_handler import ScriptWorkflowHandler
 from library.miscellaneous import is_debug, setup_logging
 
 if __name__ == '__main__':
@@ -23,14 +21,6 @@ if __name__ == '__main__':
                           'navigation',
                           'companion'
                       ])
-        # logging.basicConfig(level=logging.INFO if not debug else logging.DEBUG,
-        #                     format="%(asctime)s %(levelname)s %(message)s")
-        #
-        # logging.getLogger('game_window').setLevel(logging.INFO if not debug else logging.DEBUG)
-        # logging.getLogger('script_control').setLevel(logging.INFO if not debug else logging.DEBUG)
-        # logging.getLogger('hardware_input').setLevel(logging.INFO if not debug else logging.DEBUG)
-        # logging.getLogger('navigation').setLevel(logging.INFO if not debug else logging.DEBUG)
-        # logging.getLogger('companion').setLevel(logging.INFO if not debug else logging.DEBUG)
 
         # script workflow handler
         workflow_handler = ScriptWorkflowHandler(config_file=config_file)

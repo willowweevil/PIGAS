@@ -1,13 +1,10 @@
-import logging
-
 import numpy as np
 import re
 from collections import Counter
-import sys
 
+from library.errors import GinghamProcessorError
 
 class GinghamProcessor:
-
     @staticmethod
     def _get_image_array(data,
                          n_pixels=None,
@@ -21,8 +18,8 @@ class GinghamProcessor:
         try:
             img = data.convert("RGB")
         except AttributeError:
-            logging.error("No screenshot for processing.")
-            sys.exit(1)
+            raise GinghamProcessorError("No screenshot found for processing.")
+
         img_array = np.array(img)[x_from_to['from']:x_from_to['to'], y_from_to['from']:y_from_to['to'], :]
         if rotate_90:
             img_array = np.rot90(img_array, 1)

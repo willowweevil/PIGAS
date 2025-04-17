@@ -1,12 +1,14 @@
 import logging
 import time
-import sys
 import os
 import shutil
 
-from hardware_input import HardwareInputSimulator
+from modules.hardware_input import HardwareInputSimulator
+
 from library.miscellaneous import read_yaml_file
 from library.miscellaneous import stop_execution
+
+from library.errors import WorkflowHandlerError
 
 
 class ScriptWorkflowHandler(HardwareInputSimulator):
@@ -31,10 +33,6 @@ class ScriptWorkflowHandler(HardwareInputSimulator):
         self.initialization()
 
         self.logger = logging.getLogger('script_control')
-        # if not self.logger.hasHandlers():
-        #     handler = logging.StreamHandler()
-        #     self.logger.addHandler(handler)
-        #     self.logger.propagate = False
 
     @property
     def streaming(self):
@@ -44,8 +42,7 @@ class ScriptWorkflowHandler(HardwareInputSimulator):
             is_streaming = other_data.get('streaming', False)
             comment_file = other_data.get('comment_file', None)
             if is_streaming and not comment_file:
-                self.logger.error("Streaming is active, but comment file is not found!")
-                stop_execution(1)
+                raise WorkflowHandlerError("Streaming is active, but comment file is not found!")
         else:
             is_streaming, comment_file = False, None
         return is_streaming, comment_file
@@ -66,7 +63,7 @@ class ScriptWorkflowHandler(HardwareInputSimulator):
         self.frame_start_time = time.time()
         if not self.pause_command:
             if self.pause_frame:
-                logging.info("PIGAS was removed from the pause.")
+                self.logger.info("PIGAS was removed from the pause.")
             self.pause_frame = None
             self.frame += 1
 
@@ -75,7 +72,7 @@ class ScriptWorkflowHandler(HardwareInputSimulator):
         if self.disable_command:
             logging.info("PIGAS was disabled from game.")
             if self.frame == 0:
-                logging.warning("Enable it by sending \'#disable\' in the party chat or /reload game interface.")
+                self.logger.warning("Please enter the \"/reload\" command to reload the game interface.")
             self.release_movement_keys()
             report_disable = True
         return report_disable
@@ -86,7 +83,7 @@ class ScriptWorkflowHandler(HardwareInputSimulator):
             if not self.pause_frame:
                 self.pause_frame = self.frame
             if self.pause_frame == self.frame:
-                logging.info("PIGAS was paused.")
+                self.logger.info("PIGAS was paused.")
                 self.release_movement_keys()
                 report_pause = True
             self.pause_frame += 1
@@ -110,7 +107,8 @@ class ScriptWorkflowHandler(HardwareInputSimulator):
         stop_execution(0)
 
     def unexpected_finish(self, e):
-        self.logger.info(f"PIGAS just finished execution with error \"{e}\".")
+        self.logger.error(e)
+        #self.logger.info("PIGAS just finished executing.")
         stop_execution(1)
 
     def get_program_runs_count(self):
@@ -139,18 +137,15 @@ class ScriptWorkflowHandler(HardwareInputSimulator):
     def initialization(self):
         game_config = read_yaml_file(self.config_file).get("game")
         if not game_config:
-            self.logger.error(f"Incorrect \"{self.config_file}\" file!")
-            stop_execution(1)
+            raise WorkflowHandlerError(f"Incorrect \"{self.config_file}\" file!")
 
         self.game_directory = game_config.get("game-directory")
         if not self.game_directory:
-            self.logger.error(f"Game directory is not set! Please, check the \"{self.config_file}\" file!")
-            stop_execution(1)
+            raise WorkflowHandlerError(f"Game directory is not set! Please, check the \"{self.config_file}\" file!")
 
         self.expansion = game_config.get("expansion")
         if not self.expansion:
-            self.logger.error(f"Game expansion is not set! Please, check the \"{self.config_file}\" file!")
-            stop_execution(1)
+            raise WorkflowHandlerError(f"Game expansion is not set! Please, check the \"{self.config_file}\" file!")
 
         counts = self.get_program_runs_count()
         if counts == 0:
@@ -198,8 +193,9 @@ class ScriptWorkflowHandler(HardwareInputSimulator):
             file.close()
         except FileNotFoundError:
             addon_directory = '/'.join(filepath.split('/')[:-2])
-            self.logger.error(f"Cannot find \"{self.addon_name}\" addon in {addon_directory}. Please, check if it exists.")
-            stop_execution(1)
+            raise WorkflowHandlerError(
+                f"Cannot find \"{self.addon_name}\" addon in {addon_directory}. Please, check if it exists.")
+
         except PermissionError:
             self.logger.error(f"Cannot check version of installed \"{self.addon_name}\" addon. "
                               f"Please, be sure to use the actual version.")
@@ -211,8 +207,7 @@ class ScriptWorkflowHandler(HardwareInputSimulator):
             os.path.join(self.game_directory, 'Interface', 'AddOns', self.addon_name, f'{self.addon_name}.toc'))
 
         if actual_version != installed_version:
-            self.logger.error(
+            raise WorkflowHandlerError(
                 f"Installed addon is not actual (actual version is {actual_version} and installed version is {installed_version})! "
                 f"Please, copy the actual addon version to {os.path.join(self.game_directory, 'Interface', 'AddOns')} "
                 f"by yourself!")
-            stop_execution(0)

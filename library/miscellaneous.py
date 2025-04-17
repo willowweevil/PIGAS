@@ -28,7 +28,7 @@ def setup_logging(loggers, debug=False):
     file_handler.setLevel(logging.DEBUG if debug else logging.INFO)
 
     # Apply to root logger (captures all modules)
-    logging.root.setLevel(logging.DEBUG)  # Set to lowest level (handlers filter further)
+    logging.root.setLevel(logging.DEBUG)  # Set to the lowest level (handlers filter further)
     logging.root.addHandler(console_handler)
     logging.root.addHandler(file_handler)
 
@@ -42,7 +42,8 @@ def setup_logging(loggers, debug=False):
 
 def stop_execution(code, input_message="\nPress Enter to exit...\n"):
     time.sleep(0.5)
-    input(input_message)
+    if 'win' in sys.platform.lower():
+        input(input_message)
     sys.exit(code)
 
 def is_debug(config_file):
