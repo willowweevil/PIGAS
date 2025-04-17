@@ -50,5 +50,5 @@ if %ERRORLEVEL% GEQ 8 (
 
 :: Keep window open
 echo.
-echo Script finished. Check output above for errors.
+echo Build finished.
 pause

@@ -5,3 +5,4 @@ pillow
 PyYAML
 pynput
 pywin32
+nuitka
