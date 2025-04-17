@@ -4,5 +4,4 @@ openai
 pillow
 PyYAML
 pynput
-win32gui
-win32api
+pywin32
