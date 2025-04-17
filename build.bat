@@ -36,9 +36,9 @@ if not exist "%BUILD_DIRECTORY%" (
 )
 
 :: Copying files to build directory
+move "pigas.exe" "%BUILD_DIRECTORY%"
 copy /Y "template.config.yaml" "%BUILD_DIRECTORY%"
 copy /Y "template.context.txt" "%BUILD_DIRECTORY%"
-copy /Y "pigas.exe" "%BUILD_DIRECTORY%"
 copy /y "README.txt" "%BUILD_DIRECTORY%"
 robocopy "data" "%BUILD_DIRECTORY%/data" /E /COPYALL /IS
 if %ERRORLEVEL% GEQ 8 (
