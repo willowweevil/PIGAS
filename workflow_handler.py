@@ -6,6 +6,7 @@ import shutil
 
 from hardware_input import HardwareInputSimulator
 from library.miscellaneous import read_yaml_file
+from library.miscellaneous import stop_execution
 
 
 class ScriptWorkflowHandler(HardwareInputSimulator):
@@ -30,10 +31,10 @@ class ScriptWorkflowHandler(HardwareInputSimulator):
         self.initialization()
 
         self.logger = logging.getLogger('script_control')
-        if not self.logger.hasHandlers():
-            handler = logging.StreamHandler()
-            self.logger.addHandler(handler)
-            self.logger.propagate = False
+        # if not self.logger.hasHandlers():
+        #     handler = logging.StreamHandler()
+        #     self.logger.addHandler(handler)
+        #     self.logger.propagate = False
 
     @property
     def streaming(self):
@@ -44,7 +45,7 @@ class ScriptWorkflowHandler(HardwareInputSimulator):
             comment_file = other_data.get('comment_file', None)
             if is_streaming and not comment_file:
                 self.logger.error("Streaming is active, but comment file is not found!")
-                sys.exit(1)
+                stop_execution(1)
         else:
             is_streaming, comment_file = False, None
         return is_streaming, comment_file
@@ -106,11 +107,11 @@ class ScriptWorkflowHandler(HardwareInputSimulator):
         self.stop_keyboard_listener()
         self.release_movement_keys()
         self.logger.info("PIGAS has been disabled.")
-        sys.exit(0)
+        stop_execution(0)
 
     def unexpected_finish(self, e):
         self.logger.info(f"PIGAS just finished execution with error \"{e}\".")
-        sys.exit(1)
+        stop_execution(1)
 
     def get_program_runs_count(self):
         if os.path.exists(self.program_runs_count_file):
@@ -139,17 +140,17 @@ class ScriptWorkflowHandler(HardwareInputSimulator):
         game_config = read_yaml_file(self.config_file).get("game")
         if not game_config:
             self.logger.error(f"Incorrect \"{self.config_file}\" file!")
-            sys.exit(1)
+            stop_execution(1)
 
         self.game_directory = game_config.get("game-directory")
         if not self.game_directory:
             self.logger.error(f"Game directory is not set! Please, check the \"{self.config_file}\" file!")
-            sys.exit(1)
+            stop_execution(1)
 
         self.expansion = game_config.get("expansion")
         if not self.expansion:
             self.logger.error(f"Game expansion is not set! Please, check the \"{self.config_file}\" file!")
-            sys.exit(1)
+            stop_execution(1)
 
         counts = self.get_program_runs_count()
         if counts == 0:
@@ -185,7 +186,7 @@ class ScriptWorkflowHandler(HardwareInputSimulator):
 
         self.logger.info("The initialization finished! Please, restart PIGAS.")
         self.increment_program_runs_count()
-        sys.exit(0)
+        stop_execution(0)
 
     def get_addon_version(self, filepath=None):
         try:
@@ -198,7 +199,7 @@ class ScriptWorkflowHandler(HardwareInputSimulator):
         except FileNotFoundError:
             addon_directory = '/'.join(filepath.split('/')[:-2])
             self.logger.error(f"Cannot find \"{self.addon_name}\" addon in {addon_directory}. Please, check if it exists.")
-            sys.exit(1)
+            stop_execution(1)
         except PermissionError:
             self.logger.error(f"Cannot check version of installed \"{self.addon_name}\" addon. "
                               f"Please, be sure to use the actual version.")
@@ -214,4 +215,4 @@ class ScriptWorkflowHandler(HardwareInputSimulator):
                 f"Installed addon is not actual (actual version is {actual_version} and installed version is {installed_version})! "
                 f"Please, copy the actual addon version to {os.path.join(self.game_directory, 'Interface', 'AddOns')} "
                 f"by yourself!")
-            sys.exit(0)
+            stop_execution(0)

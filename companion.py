@@ -4,7 +4,6 @@ import numpy as np
 import time
 import logging
 import re
-import sys
 
 from library.miscellaneous import read_yaml_file
 from hardware_input import HardwareInputSimulator
@@ -12,6 +11,7 @@ from game_window import GameWindow
 from gingham_processing import GinghamProcessor
 from library.miscellaneous import read_the_context, write_the_context, add_message_to_context
 from library.miscellaneous import get_open_ai_response, clear_file, read_the_last_line, get_random
+from library.miscellaneous import stop_execution
 
 from library.entity_attributes import Action, Moving, Combat, Mount, Duty, State
 from library.constants import WOW_EMOTES, WOW_EMOTES_PREFIXES
@@ -160,10 +160,10 @@ class CompanionControlLoop(HardwareInputSimulator, GameWindow, CompanionProfile,
         self.session_data = {}
 
         self.logger = logging.getLogger('companion')
-        if not self.logger.hasHandlers():
-            handler = logging.StreamHandler()
-            self.logger.addHandler(handler)
-            self.logger.propagate = False
+        # if not self.logger.hasHandlers():
+        #     handler = logging.StreamHandler()
+        #     self.logger.addHandler(handler)
+        #     self.logger.propagate = False
 
     def initialize_companion(self, game_window, expansion, config_file=None):
         self.game_window = game_window
@@ -182,18 +182,28 @@ class CompanionControlLoop(HardwareInputSimulator, GameWindow, CompanionProfile,
 
     def set_context_file(self, config):
         config_data = read_yaml_file(config)
-        self.context_file = config_data['companion']['context_file']
+        companion_config = config_data.get('companion')
+        if not companion_config:
+            self.logger.error(f"Companion config is not set! Please, check the \"{config}\" file!")
 
-    def set_companion_directory(self, config):
+        self.context_file = companion_config.get('context_file')
+        if not self.context_file:
+            self.logger.error(f"Context file is not set! Please, check the \"{config}\" file!")
+
+    def get_companion_config(self, config):
         config_data = read_yaml_file(config)
         companion_config = config_data.get('companion')
         if not companion_config:
             self.logger.error(f"Companion config is not set! Please, check the \"{config}\" file!")
-            sys.exit(1)
+            stop_execution(1)
+        return companion_config
+
+    def set_companion_directory(self, config):
+        companion_config = self.get_companion_config(config)
         companion_class = companion_config.get('class')
         if not companion_class:
             self.logger.error(f"Companion class is not set! Please, check the \"{config}\" file!")
-            sys.exit(1)
+            stop_execution(1)
         self.directory = f"./data/class/{self.expansion}/{companion_class}"
 
     def initialize_spellbook(self):
@@ -207,13 +217,21 @@ class CompanionControlLoop(HardwareInputSimulator, GameWindow, CompanionProfile,
     def set_rotations(self):
         rotations_file = os.path.join(self.directory, "rotations.yaml")
         rotations = read_yaml_file(rotations_file)
+
         self.combat_rotation = rotations.get("Combat Rotation")
         self.healing_rotation = rotations.get("Healing Rotation")
         self.buffing_rotation = rotations.get("Buffing Rotation")
 
     def set_companion_name(self, config):
-        config_data = read_yaml_file(config)
-        self.name = config_data['companion']['name']
+        companion_config = self.get_companion_config(config)
+        if not companion_config:
+            self.logger.error(f"Companion config is not set! Please, check the \"{config}\" file!")
+            stop_execution(1)
+
+        self.name = companion_config.get('name')
+        if not self.name:
+            self.logger.error(f"Companion name is not set! Please, check the \"{config}\" file!")
+            stop_execution(1)
 
     def set_should_heal_and_support(self):
         if self.healing_rotation:
@@ -615,7 +633,7 @@ class CompanionControlLoop(HardwareInputSimulator, GameWindow, CompanionProfile,
     def workflow_report(self, report_disable=False):
         if report_disable:
             self.send_message_to_chat("The control script was #disabled!")
-            sys.exit(0)
+            stop_execution(0)
 
     def respond_to_player(self):
         message_sent = False

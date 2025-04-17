@@ -67,10 +67,10 @@ class Navigator(BasicGeometry):
         self.predefined_navigation_constants = self.set_predefined_navigation_constants()
 
         self.logger = logging.getLogger('navigation')
-        if not self.logger.hasHandlers():
-            handler = logging.StreamHandler()
-            self.logger.addHandler(handler)
-            self.logger.propagate = False
+        # if not self.logger.hasHandlers():
+        #     handler = logging.StreamHandler()
+        #     self.logger.addHandler(handler)
+        #     self.logger.propagate = False
 
 
     def set_predefined_navigation_constants(self):

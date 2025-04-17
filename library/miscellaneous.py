@@ -1,10 +1,49 @@
 import yaml
 import openai
-import logging
 import os
 import sys
+import time
 import random
+import logging
 
+logging.basicConfig(level=logging.ERROR,
+                    format="%(asctime)s %(levelname)s %(message)s")
+
+
+def setup_logging(loggers, debug=False):
+    # Clear any existing handlers (important to avoid duplicates)
+    logging.root.handlers = []
+
+    # Create formatter
+    formatter = logging.Formatter("%(asctime)s %(levelname)s %(message)s")
+
+    # --- Console Handler (STDOUT) ---
+    console_handler = logging.StreamHandler(sys.stdout)
+    console_handler.setFormatter(formatter)
+    console_handler.setLevel(logging.DEBUG if debug else logging.INFO)
+
+    # --- File Handler (main.log) ---
+    file_handler = logging.FileHandler("pigas.log", mode='w')
+    file_handler.setFormatter(formatter)
+    file_handler.setLevel(logging.DEBUG if debug else logging.INFO)
+
+    # Apply to root logger (captures all modules)
+    logging.root.setLevel(logging.DEBUG)  # Set to lowest level (handlers filter further)
+    logging.root.addHandler(console_handler)
+    logging.root.addHandler(file_handler)
+
+    # Configure specific loggers (optional, if you want different levels)
+
+    for logger_name in loggers:
+        logger = logging.getLogger(logger_name)
+        logger.setLevel(logging.DEBUG if debug else logging.INFO)
+        # Ensure loggers propagate to root (so both handlers receive messages)
+        logger.propagate = True  # Default is True, but explicit is safer
+
+def stop_execution(code, input_message="\nPress Enter to exit...\n"):
+    time.sleep(0.5)
+    input(input_message)
+    sys.exit(code)
 
 def is_debug(config_file):
     debug_level = False
@@ -25,10 +64,9 @@ def read_yaml_file(input_file=None):
             data = yaml.safe_load(file)
     except FileNotFoundError:
         logging.error(f"File {input_file} not found.")
-        sys.exit(1)
-    except KeyboardInterrupt:
-        logging.error(f"File \"{input_file}\" reading was interrupted by user.")
-        sys.exit(0)
+        stop_execution(1)
+    # except KeyboardInterrupt:
+    #     logging.error(f"File \"{input_file}\" reading was interrupted by user.")
     return data
 
 

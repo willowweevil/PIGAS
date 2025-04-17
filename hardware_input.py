@@ -18,10 +18,10 @@ class HardwareInputSimulator:
         self.listener.start()
 
         self.logger = logging.getLogger('hardware_input')
-        if not self.logger.hasHandlers():
-            handler = logging.StreamHandler()
-            self.logger.addHandler(handler)
-            self.logger.propagate = False
+        # if not self.logger.hasHandlers():
+        #     handler = logging.StreamHandler()
+        #     self.logger.addHandler(handler)
+        #     self.logger.propagate = False
 
     def on_key_press(self, key):
         """Handle the key press event."""
