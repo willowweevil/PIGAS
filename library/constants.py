@@ -179,7 +179,7 @@ WOW_AREAS = {
     39: 1.0,  # Westfall
     40: 1.0,  # Wetlands
     301: 1.0,  # Stormwind City
-    341: 1.5,  # Ironforge
+    341: 3.0,  # Ironforge
     382: 1.0,  # Undercity
     462: 1.0,  # Eversong Woods
     463: 1.0,  # Ghostlands
