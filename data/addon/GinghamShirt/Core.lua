@@ -371,7 +371,7 @@ end
 function SlashCmdList.DISTANCE(msg, editbox)
     local player_x, player_y = GetPlayerMapPosition("party1")
     local assistant_x, assistant_y = GetPlayerMapPosition("player")
-    local distance = math.sqrt((player_x - assistant_x) ^ 2 + (player_y - assistant_y) ^ 2)
+    local distance = math.sqrt((player_x - assistant_x) ^ 2 + (player_y - assistant_y) ^ 2) * 100
     local mapID = GetCurrentMapAreaID()
     local mapName, _, _ = GetMapInfo()
     print(format("Distance between assistant and player is %.2f. Map: %s. MapID: %d", distance, mapName, mapID))
