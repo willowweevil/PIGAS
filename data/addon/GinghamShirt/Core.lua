@@ -1,5 +1,6 @@
 SLASH_ASSISTANT_POSITION1 = '/assistant_position'
 SLASH_PLAYER_POSITION1 = '/player_position'
+SLASH_DISTANCE1='/distance'
 
 local math = getfenv(0).math
 
@@ -365,6 +366,15 @@ function SlashCmdList.PLAYER_POSITION(msg, editbox)
     local pitch = GetUnitPitch("party1")
     local x, y = GetPlayerMapPosition("party1")
     print(format("Main Character Coordinates %.2f %.2f %.2f %.2f", x * 100, y * 100, facing, pitch))
+end
+
+function SlashCmdList.DISTANCE(msg, editbox)
+    local player_x, player_y = GetPlayerMapPosition("party1")
+    local assistant_x, assistant_y = GetPlayerMapPosition("player")
+    local distance = math.sqrt((player_x - assistant_x) ^ 2 + (player_y - assistant_y) ^ 2)
+    local mapID = GetCurrentMapAreaID()
+    local mapName, _, _ = GetMapInfo()
+    print(format("Distance between assistant and player is %.2f. Map: %s. MapID: %d", distance, mapName, mapID))
 end
 
 
