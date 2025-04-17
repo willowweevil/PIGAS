@@ -8,6 +8,8 @@ from modules.companion import CompanionControlLoop
 from modules.workflow_handler import ScriptWorkflowHandler
 from library.miscellaneous import is_debug, setup_logging
 
+from library.miscellaneous import unexpected_finish
+
 if __name__ == '__main__':
     config_file = 'config.yaml'
     try:
@@ -179,4 +181,4 @@ if __name__ == '__main__':
         ScriptWorkflowHandler(config_file=config_file).finish_script()
 
     except Exception as e:
-        ScriptWorkflowHandler(config_file=config_file).unexpected_finish(e)
+        unexpected_finish(e)

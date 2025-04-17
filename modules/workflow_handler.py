@@ -106,10 +106,11 @@ class ScriptWorkflowHandler(HardwareInputSimulator):
         self.logger.info("PIGAS has been disabled.")
         stop_execution(0)
 
-    def unexpected_finish(self, e):
+    def unexpected_finish(self, e: Exception):
+        print("insode!")
         self.logger.error(e)
-        #self.logger.info("PIGAS just finished executing.")
-        stop_execution(1)
+        # self.logger.info("PIGAS just finished executing.")
+        stop_execution(2)
 
     def get_program_runs_count(self):
         if os.path.exists(self.program_runs_count_file):
@@ -171,13 +172,23 @@ class ScriptWorkflowHandler(HardwareInputSimulator):
         # copy addon
         addon_src = self.addon_directory
         addon_dst = os.path.join(self.game_directory, 'Interface', 'AddOns', self.addon_name)
-        self.logger.info(f"Copying \"{self.addon_name}\" addon to {addon_dst}.")
-        if not os.path.exists(addon_dst):
-            shutil.copytree(addon_src, addon_dst)
+        self.logger.info(
+            f"Make an attempt to copy \"{self.addon_name}\" addon to {os.path.join("YOUR_GAME_DIRECTORY", 'Interface', 'AddOns', self.addon_name)}.")
+        if os.path.exists(addon_dst):
+            print(
+                f"\nIt seems that addon already exists in \"{os.path.join("YOUR_GAME_DIRECTORY", 'Interface', 'AddOns', self.addon_name)}\"! "
+                f"\nOverride it [Y/N]?")
+            answer = input("Please, enter Y to override addon and N to remain it.\n")
+            if answer.lower() == 'y':
+                self.logger.info("Going to override addon.")
+                shutil.rmtree(addon_dst)
+                shutil.copytree(addon_src, addon_dst)
+                self.logger.info("Copying finished.")
+            else:
+                self.logger.info("Skip copy addon.")
         else:
-            self.logger.info(f"Destination directory {addon_dst} already exists! If you need to upgrade the addon, "
-                             f"please copy it by yourself!")
-        self.logger.info("Copying finished.")
+            shutil.copytree(addon_src, addon_dst)
+            self.logger.info("Copying finished.")
 
         self.logger.info("The initialization finished! Please, restart PIGAS.")
         self.increment_program_runs_count()
@@ -189,7 +200,7 @@ class ScriptWorkflowHandler(HardwareInputSimulator):
                 lines = file.readlines()
                 for line in lines:
                     if 'version' in line.lower():
-                        version = line.split(' ')[-1]
+                        version = line.split(' ')[-1].strip()
             file.close()
         except FileNotFoundError:
             addon_directory = '/'.join(filepath.split('/')[:-2])
@@ -207,7 +218,7 @@ class ScriptWorkflowHandler(HardwareInputSimulator):
             os.path.join(self.game_directory, 'Interface', 'AddOns', self.addon_name, f'{self.addon_name}.toc'))
 
         if actual_version != installed_version:
-            raise WorkflowHandlerError(
-                f"Installed addon is not actual (actual version is {actual_version} and installed version is {installed_version})! "
-                f"Please, copy the actual addon version to {os.path.join(self.game_directory, 'Interface', 'AddOns')} "
-                f"by yourself!")
+            self.logger.error(
+                f"Installed addon version is not actual! Actual version is {actual_version} and your version is {installed_version}! "
+                f"Please, copy the actual addon version to \"{os.path.join("YOUR_GAME_DIRECTORY", 'Interface', 'AddOns')}\"!")
+            self.copy_addon()

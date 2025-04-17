@@ -46,6 +46,10 @@ def stop_execution(code, input_message="\nPress Enter to exit...\n"):
         input(input_message)
     sys.exit(code)
 
+def unexpected_finish(e):
+    logging.error(e)
+    stop_execution(1)
+
 def is_debug(config_file):
     debug_level = False
     config = read_yaml_file(config_file)
