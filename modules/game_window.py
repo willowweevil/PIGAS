@@ -6,7 +6,6 @@ import sys
 import mss
 from PIL import Image
 
-from library.miscellaneous import stop_execution
 from library.errors import GameWindowError
 
 if 'win' in sys.platform.lower():
@@ -251,8 +250,8 @@ class GameWindow:
             try:
                 area = {"top": position_y + y_shift, "left": position_x + x_shift, "width": width, "height": height}
                 screenshot = sct.grab(area)
-            except mss.ScreenShotError:
-                raise GameWindowError("An error occurs during the screenshot.")
+            except mss.ScreenShotError as e:
+                raise GameWindowError(f"An error occurs during the screenshot: {e}")
             self.logger.debug(
                 f"Took screenshot of area {width}x{height} (zero in {position_x + x_shift},{position_y + y_shift})")
             img = Image.frombytes("RGB", screenshot.size, screenshot.rgb)

@@ -6,7 +6,7 @@ from modules.game_window import GameWindow
 from modules.navigation import Navigator
 from modules.companion import CompanionControlLoop
 from modules.workflow_handler import ScriptWorkflowHandler
-from library.miscellaneous import is_debug, setup_logging
+from library.miscellaneous import is_debug, setup_logging, debug_pressed_keys
 
 from library.miscellaneous import unexpected_finish
 
@@ -108,8 +108,9 @@ if __name__ == '__main__':
             ###### companion logic
             ### movement
             # doesn't move if:
-            # INITIALIZING, RESPONDING, WAITING_FOR_PLAYER, MOUNTING, UNMOUNTING,
-            # ATTACKING_FOR_DEFEND, HEALING_YOURSELF
+            # actions: INITIALIZING, RESPONDING, CHANGING_SPEED, MOUNTING, UNMOUNTING,
+            # stay: STAYING, WAITING_FOR_PLAYER,
+            # combat: ATTACKING_TO_DEFEND, HEALING_YOURSELF
             if not companion.state_is_one_of(companion.movement_restricted_states):
                 companion.rotate_to(Duty.ROTATE_TO_PLAYER)
                 companion.move_to(Duty.NEARING_WITH_PLAYER)

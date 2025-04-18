@@ -18,6 +18,7 @@ from library.entity_attributes import Action, Moving, Combat, Mount, Duty, State
 from library.constants import WOW_EMOTES, WOW_EMOTES_PREFIXES
 from library.errors import CompanionControlError
 
+
 class CompanionProfile(object):
     def __init__(self):
         self.mount_behaviour = Mount.UNMOUNTED
@@ -37,12 +38,23 @@ class CompanionProfile(object):
     def movement_restricted_states(self):
         return [State.INITIALIZING,
                 State.RESPONDING,
+                State.LOOTING,
                 State.CHANGING_SPEED,
                 State.WAITING_FOR_PLAYER,
+                State.STAYING,
                 State.MOUNTING,
                 State.UNMOUNTING,
                 State.ATTACKING_TO_DEFEND,
                 State.HEALING_YOURSELF]
+
+    @property
+    def movement_exceed_states(self):
+        return [State.NEUTRAL,
+                State.NEARING_FOR_LOOTING,
+                State.NEARING_TO_HEAL_PLAYER,
+                State.NEARING_TO_HELP_IN_COMBAT,
+                State.ATTACKING_TO_HELP,
+                State.HEALING_PLAYER]
 
     def get_behaviours(self):
         return self.mount_behaviour, self.moving_behaviour, self.combat_behaviour, self.action_behaviour
@@ -242,6 +254,50 @@ class CompanionControlLoop(HardwareInputSimulator, GameWindow, CompanionProfile,
         position_y = self.window_position[1] + self.window_size[1] / 3 * 2
         return position_x, position_y
 
+    # '''
+    # Hardware Input
+    # '''
+    #
+    # @property
+    # def pressed_keys(self):
+    #     hardware_input = HardwareInputSimulator()
+    #     return hardware_input.pressed_keys
+    #
+    # @staticmethod
+    # def move_mouse_to_default_position(game_window):
+    #     hardware_input = HardwareInputSimulator()
+    #     hardware_input.move_mouse_to_default_position(game_window)
+    #
+    # @staticmethod
+    # def click_mouse(button='right', click_count=1, pause=0):
+    #     hardware_input = HardwareInputSimulator()
+    #     hardware_input.click_mouse(button, click_count, pause)
+    #
+    # @staticmethod
+    # def move_mouse_to(x, y, pause=0):
+    #     hardware_input = HardwareInputSimulator()
+    #     hardware_input.move_mouse_to(x, y, pause)
+    #
+    # @staticmethod
+    # def press_key(key, pause=0.2):
+    #     hardware_input = HardwareInputSimulator()
+    #     hardware_input.press_key(key, pause)
+    #
+    # @staticmethod
+    # def type_text(message, key_delay=20, pause=1.0):
+    #     hardware_input = HardwareInputSimulator()
+    #     hardware_input.type_text(message, key_delay, pause)
+    #
+    # @staticmethod
+    # def hold_key(key):
+    #     hardware_input = HardwareInputSimulator()
+    #     hardware_input.hold_key(key)
+    #
+    # @staticmethod
+    # def release_key(key):
+    #     hardware_input = HardwareInputSimulator()
+    #     hardware_input.release_key(key)
+
     '''
     Session Updates
     '''
@@ -389,6 +445,8 @@ class CompanionControlLoop(HardwareInputSimulator, GameWindow, CompanionProfile,
             if self.session_data['distance_from_companion_to_player'] >= self.session_data[
                 'distance_to_player_delta']:
                 self.add_duty(Duty.NEARING_WITH_PLAYER)
+        elif self.moving_behaviour_is(Moving.STAY):
+            self.add_duty(Duty.STAY_IN_PLACE)
 
     def _define_nearing_for_looting_duty(self):
         if self.has_duty(Duty.NEARING_WITH_PLAYER):
@@ -507,6 +565,7 @@ class CompanionControlLoop(HardwareInputSimulator, GameWindow, CompanionProfile,
                 Duty.HELP_IN_COMBAT: State.ATTACKING_TO_HELP,
                 Duty.HEAL_YOURSELF: State.HEALING_YOURSELF,
                 Duty.DEFEND_YOURSELF: State.ATTACKING_TO_DEFEND,
+                Duty.STAY_IN_PLACE: State.STAYING,
             }
             for duty, state in duty_to_state_mapping.items():
                 if self.has_duty(duty):
@@ -735,7 +794,8 @@ class CompanionControlLoop(HardwareInputSimulator, GameWindow, CompanionProfile,
                             if self.cast_spell(spell):
                                 return
         # attack
-        enemy_is_target_of = self.combat_rotation.get("Attack Target Is Target Of") if not enemy_is_target_of else enemy_is_target_of
+        enemy_is_target_of = self.combat_rotation.get(
+            "Attack Target Is Target Of") if not enemy_is_target_of else enemy_is_target_of
         if enemy_is_target_of:
             self.target_the_enemy(target_of=enemy_is_target_of)
             attack_spells = self.combat_rotation.get("Attack Spells")

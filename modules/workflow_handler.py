@@ -17,6 +17,7 @@ class ScriptWorkflowHandler(HardwareInputSimulator):
         self.program_runs_count_file = '.local'
         self.addon_name = 'GinghamShirt'
         self.addon_directory = f'./data/addon/{self.addon_name}'
+
         self.expansion = None
         self.game_directory = None
 
@@ -33,6 +34,16 @@ class ScriptWorkflowHandler(HardwareInputSimulator):
         self.initialization()
 
         self.logger = logging.getLogger('script_control')
+
+    # @staticmethod
+    # def release_movement_keys():
+    #     hardware_input = HardwareInputSimulator()
+    #     hardware_input.release_movement_keys()
+    #
+    # @staticmethod
+    # def stop_keyboard_listener():
+    #     hardware_input = HardwareInputSimulator()
+    #     hardware_input.stop_keyboard_listener()
 
     @property
     def streaming(self):
@@ -178,7 +189,11 @@ class ScriptWorkflowHandler(HardwareInputSimulator):
             print(
                 f"\nIt seems that addon already exists in \"{os.path.join("YOUR_GAME_DIRECTORY", 'Interface', 'AddOns', self.addon_name)}\"! "
                 f"\nOverride it [Y/N]?")
-            answer = input("Please, enter Y to override addon and N to remain it.\n")
+            try:
+                answer = input("Please, enter Y to override addon and N to remain it.\n")
+            except KeyboardInterrupt:
+                raise WorkflowHandlerError()
+
             if answer.lower() == 'y':
                 self.logger.info("Going to override addon.")
                 shutil.rmtree(addon_dst)

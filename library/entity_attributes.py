@@ -31,8 +31,10 @@ class Duty(Enum):
     INITIALIZE = auto()
     LOOT = auto()
     RESPOND = auto()
-    WAITING_FOR_PLAYER = auto()
     CHANGE_SPEED = auto()
+    # stay
+    WAITING_FOR_PLAYER = auto()
+    STAY_IN_PLACE = auto()
     # nearing
     NEARING_WITH_PLAYER = auto()
     NEARING_TO_LOOT = auto()
@@ -63,6 +65,7 @@ class State(Enum):
     NEARING_FOR_LOOTING = auto()
     LOOTING = auto()
     CHANGING_SPEED = auto()
+    STAYING = auto()
     NEARING_TO_HEAL_PLAYER = auto()
     HEALING_PLAYER = auto()
     HEALING_YOURSELF = auto()

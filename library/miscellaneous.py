@@ -32,18 +32,18 @@ def setup_logging(loggers, debug=False):
     logging.root.addHandler(console_handler)
     logging.root.addHandler(file_handler)
 
-    # Configure specific loggers (optional, if you want different levels)
-
     for logger_name in loggers:
         logger = logging.getLogger(logger_name)
         logger.setLevel(logging.DEBUG if debug else logging.INFO)
-        # Ensure loggers propagate to root (so both handlers receive messages)
-        logger.propagate = True  # Default is True, but explicit is safer
+        logger.propagate = True
 
 def stop_execution(code, input_message="\nPress Enter to exit...\n"):
     time.sleep(0.5)
     if 'win' in sys.platform.lower():
-        input(input_message)
+        try:
+            input(input_message)
+        except KeyboardInterrupt:
+            pass
     sys.exit(code)
 
 def unexpected_finish(e):
@@ -58,6 +58,13 @@ def is_debug(config_file):
         debug_level = other_data.get('debug')
     return True if debug_level is True else False
 
+def debug_pressed_keys(config_file):
+    debug_level = False
+    config = read_yaml_file(config_file)
+    other_data = config.get('other')
+    if other_data:
+        debug_level = other_data.get('pressed_keys')
+    return True if debug_level is True else False
 
 def get_random(my_list):
     return random.choice(my_list)
