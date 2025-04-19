@@ -20,6 +20,7 @@ class ScriptWorkflowHandler(HardwareInputSimulator):
 
         self.expansion = None
         self.game_directory = None
+        self.account = None
 
         self.config_file = config_file
         self.frame = 0
@@ -159,24 +160,28 @@ class ScriptWorkflowHandler(HardwareInputSimulator):
         if not self.expansion:
             raise WorkflowHandlerError(f"Game expansion is not set! Please, check the \"{self.config_file}\" file!")
 
+        self.account = game_config.get("account")
+        if not self.account:
+            raise WorkflowHandlerError(f"Account is not set! Please, check the \"{self.config_file}\" file!")
+
         counts = self.get_program_runs_count()
         if counts == 0:
             self.logger.info("Welcome to PIGAS: Personal In-Game Adventure Sidekick!")
             self.logger.info("It's seems it's the first run of PIGAS.. Let's initialization begins!")
             time.sleep(2)
-            self.copy_config()
+            self.copy_config(copy_from=f"./data/config/{self.expansion}/Config.wtf",
+                             copy_to=f"{os.path.join(self.game_directory, 'WTF', 'Config.wtf')}")
+            self.copy_config(copy_from=f"./data/config/{self.expansion}/bindings-cache.wtf",
+                             copy_to=f"{os.path.join(self.game_directory, 'WTF', 'Account', f'{self.account.upper()}', 'bindings-cache.wtf')}")
             self.copy_addon()
         else:
             self.increment_program_runs_count()
 
         self.check_addon_version()
 
-    def copy_config(self):
-        # copy Config.wtf
-        config_src = f"./data/config/{self.expansion}/Config.wtf"
-        config_dst = f"{os.path.join(self.game_directory, 'WTF', 'Config.wtf')}"
-        self.logger.info(f"Copying \"Config.wtf\" to {config_dst}.")
-        shutil.copy2(config_src, config_dst)
+    def copy_config(self, copy_from=None, copy_to=None):
+        self.logger.info(f"Copying \"{copy_from}\" to \"{copy_to}\".")
+        shutil.copy2(copy_from, copy_to)
         self.logger.info("Copying finished.")
 
     def copy_addon(self):
