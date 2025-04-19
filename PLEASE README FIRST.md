@@ -15,20 +15,57 @@ Your companion is just another player tied to you!
 ### How to start
 #### In-Game Companion
 1. Install World of Warcraft to the second PC or virtual machine. In this case, you could use the VirtualBox to install Windows or Ubuntu (only with Xorg window manager) operating systems.
-2. If you are using `Ubuntu` install `xdotool` via `sudo apt install xdotool`.
-3. Rename `template.config.yaml` to `config.yaml`; `template.context.yaml` to `context.txt`.
-4. Fill all fields in `config.yaml`.
-5. Run `pigas.exe` to begin program initialization. It will copy `Config.wtf` and Addon to game directory.
-6. Set initial skills and rotation in `data\class\YOUR_EXPANSION\COMPANION_CLASS` (see below for the part __How to set skills/rotations__).
-7. Enter the game as your companion.
-8. Run `pigas.exe`
+- If you are using `Ubuntu` install `xdotool` via `sudo apt install xdotool`.
+- If you are using `Windows` on `MacOS` via `Parallels` please, be sure to set `Scaled` resolution mode in `Configure-Hardware-Graphics` menu and set correct resolution in `Windows` (e.g., `1920x1200`). 
+2. Rename `template.config.yaml` to `config.yaml`; `template.context.yaml` to `context.txt`.
+3. Fill all fields in `config.yaml`.
+4. Run `pigas.exe` to begin program initialization. It will copy `Config.wtf` and Addon to game directory.
+5. Set initial skills and rotation in `data\class\GAME_EXPANSION\COMPANION_CLASS` (see below for the part __How to set skills/rotations__).
+6. Enter the game as your companion.
+7. Run `pigas.exe`
 
 #### Player
 1. Copy file `data\macros\macros-cache.txt` to `GAME_DIRECTORY\WTF\Account\YOUR_ACCOUNT\macros-cache.txt`. It contains all commands to control your companion.
 2. Send a party invite to your companion.
 
 ### How to set skills/rotations
-
+In `data\class\GAME_EXPANSION\COMPANION_CLASS` you will find some examples of spellbook and rotations. 
+To use your companion spells, you should:
+1. Add the necessary and known by you companion spells in `spellbook.yaml`. Spell should be placed on the action bar in the game.  In `spellbook.yaml` you should fill the button on spell in keyboard, spell name, cast time, cooldown (for time spells it should be their action time) and action bar number.
+2. Fill the rotations in `rotations.yaml`. For combat rotation, you could add support spells (like Power Word: Shield) and target for them ('Player' or 'Player Pet'). 'Attack Target Is Target Of' field means the target to attack (e.g., player's target).
+3. For this version of PIGAS, buffing spells will be used at the start.
 ### How to play
 
-Companion get commands from your player (they should be in party).
+Companion get commands from your player (player and companion should be in one party).
+Companion recognize these commands:
+- `#stay` to stay in one place;
+- `#follow` to follow by player;
+- `#assist` - to help player in combat;
+- `#defend` - to defend yourself and player;
+- `#only-heal` - to use only heal spells;
+- `#passive` - to do nothing in combat;
+- `#mount` - to mount (spell `Mount` should be in `spellbook`);
+- `#dismount` - to dismount;
+- `#loot` - to move on player position and try to loot something;
+- `#movement-speed` - to change movement speed (run/walk);
+- `#pause` - paused PIGAS;
+- `#disable` - to disable PIGAS.
+
+You could send some emotions to a companion (`Let's /dance!`) or commands (e.g., `&/cast 0 1` or `&.server info`).
+To add some text to your context use `%Now we are in the Orgrimmar.`
+
+### Some extra config parameters
+Some extra parameters are supported in `config.yaml`:
+1. Fullscreen mode
+```
+game:
+    fullscreen: false # recommended to run not in fullscreen mode (default: false)
+```
+It's recommended to play with a companion in windowed more,
+however, you could set `fullscreen: true` and change you game window to fullscreen in game.
+2. Debug
+```
+other:
+  debug: true
+```
+3. 
