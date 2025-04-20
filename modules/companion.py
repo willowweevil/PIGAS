@@ -615,7 +615,7 @@ class CompanionControlLoop(HardwareInputSimulator, GameWindow, CompanionProfile,
         }
         cursor_message, break_reason = self._scan_area(area_geometry, keywords, should_break=True)
         if break_reason:
-            self.click_mouse(button='left', pause=1)
+            self.click_mouse(button='right', pause=1)
             return cursor_message, break_reason
         return None, None
 
