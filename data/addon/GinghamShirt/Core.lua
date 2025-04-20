@@ -4,53 +4,6 @@ SLASH_DISTANCE1 = '/distance'
 
 local math = getfenv(0).math
 
-local ginghamPixelSize = 5
-
-local EventFrame = CreateFrame("Frame")
-local AcceptPartyLogicFrame = CreateFrame("Frame")
-local LootingFrame = CreateFrame("Frame")
-local AutoGreedFrame = CreateFrame("Frame")
-
-local squares = {
-    { name = "CompanionControlSquare", yOffset = 0 },
-    { name = "InteractionCommandsSquare", yOffset = -5 },
-    { name = "AssistantCoordinatesSquare1", yOffset = -10 },
-    { name = "AssistantCoordinatesSquare2", yOffset = -15 },
-    { name = "AssistantConditionSquare1", yOffset = -20 },
-    { name = "MainCharacterCoordinatesSquare1", yOffset = -25 },
-    { name = "MainCharacterCoordinatesSquare2", yOffset = -30 },
-    { name = "MainCharacterConditionSquare1", yOffset = -35 },
-    { name = "AssistantConditionSquare2", yOffset = -40 },
-    { name = "MapIDSquare", yOffset = -45 }
-}
-
-local lettersSquares = {}
-lettersSquares[1] = { name = "MessageLengthPixel", xOffset = 0, yOffset = -50 }
-for i = 2, 86, 1 do
-    lettersSquares[i] = { name = string.format("LettersSquare_%d", i - 1), xOffset = ginghamPixelSize * (i - 1), yOffset = 0 }
-end
-
-local cursorObjectsPixels = {}
-cursorObjectsPixels[1] = { name = "CursorObjectMessageLengthPixel", xOffset = 0, yOffset = -55 }
-for i = 2, 86, 1 do
-    cursorObjectsPixels[i] = { name = string.format("CursorObjectPixel_%d", i - 1), xOffset = ginghamPixelSize * (i - 1), yOffset = -5 }
-end
-
-local calibrationPixelsFirstLayer = {}
-for i = 1, 85, 1 do
-    calibrationPixelsFirstLayer[i] = { name = string.format("CalibrationPixelFirstLayer_%d", i), xOffset = ginghamPixelSize * (i), yOffset = -10 }
-end
-
-local calibrationPixelsSecondLayer = {}
-for i = 1, 85, 1 do
-    calibrationPixelsSecondLayer[i] = { name = string.format("CalibrationPixelSecondLayer_%d", i), xOffset = ginghamPixelSize * (i), yOffset = -15 }
-end
-
-local calibrationPixelsThirdLayer = {}
-for i = 1, 85, 1 do
-    calibrationPixelsThirdLayer[i] = { name = string.format("CalibrationPixelThirdLayer_%d", i), xOffset = ginghamPixelSize * (i), yOffset = -20 }
-end
-
 local commands = {
     --- set condition
     pause = "#pause",
@@ -63,12 +16,10 @@ local commands = {
     defend = "#defend",
     passive = "#passive",
     only_heal = "#only-heal",
-
     --- disabled by companion
     disable = "#disable",
     loot = "#loot",
     run_walk = "#movement-speed",
-
     --- misc
     calibrate = "#calibrate",
     clean = "#clean",
@@ -79,12 +30,67 @@ local states = {
     looting = "looting"
 }
 
+local ginghamPixelSize = 5
 local cursorObjectInfo
 local mouseOverObject
 local previousMessage
 local lootMessage
 local assistantState
 local programControlColor
+
+local squares = {
+    "CompanionControlSquare",
+    "InteractionCommandsSquare",
+    "AssistantCoordinatesSquare1",
+    "AssistantCoordinatesSquare2",
+    "AssistantConditionSquare1",
+    "MainCharacterCoordinatesSquare1",
+    "MainCharacterCoordinatesSquare2",
+    "MainCharacterConditionSquare1",
+    "AssistantConditionSquare2",
+    "MapIDSquare"
+}
+local lettersSquares = {}
+local cursorObjectsPixels = {}
+local calibrationPixels = {}
+
+for i, name in ipairs(squares) do
+    squares[i] = {
+        name = name,
+        yOffset = -(ginghamPixelSize * (i - 1))
+    }
+end
+
+lettersSquares[1] = { name = "MessageLengthPixel",
+                      xOffset = 0,
+                      yOffset = -ginghamPixelSize*#squares }
+
+cursorObjectsPixels[1] = { name = "CursorObjectMessageLengthPixel",
+                           xOffset = 0,
+                           yOffset = -ginghamPixelSize*(#squares+1) }
+
+for i = 1, 85, 1 do
+    lettersSquares[i+1] = { name = string.format("LettersSquare_%d", i),
+                            xOffset = ginghamPixelSize * i,
+                            yOffset = 0 }
+end
+
+for i = 1, 85, 1 do
+    cursorObjectsPixels[i+1] = { name = string.format("CursorObjectPixel_%d", i),
+                                 xOffset = ginghamPixelSize * i,
+                                 yOffset = -ginghamPixelSize }
+end
+
+for i = 1, 82, 1 do
+    calibrationPixels[i] = { name = string.format("CalibrationPixel_%d", i),
+                             xOffset = ginghamPixelSize*(i%9) ,--#ginghamPixelSize * (i%9),
+                             yOffset = - ginghamPixelSize*(i % 9 + 2)  }
+end
+
+local EventFrame = CreateFrame("Frame")
+local AcceptPartyLogicFrame = CreateFrame("Frame")
+local LootingFrame = CreateFrame("Frame")
+local AutoGreedFrame = CreateFrame("Frame")
 
 function EventFrame:OnEvent(event, ...)
     print("GinghamShirt is active")
@@ -109,16 +115,9 @@ function EventFrame:PLAYER_LOGIN()
     end
     cursorObjectsPixels["CursorObjectMessageLengthPixel"].texture:SetTexture(0, 0, 0)
 
-    for _, data in ipairs(calibrationPixelsFirstLayer) do
-        print(calibrationPixelsFirstLayer)
-        print(data.name)
-        calibrationPixelsFirstLayer[data.name] = CreateSquare(data.name, data.xOffset, data.yOffset)
-    end
-    for _, data in ipairs(calibrationPixelsSecondLayer) do
-        calibrationPixelsSecondLayer[data.name] = CreateSquare(data.name, data.xOffset, data.yOffset)
-    end
-    for _, data in ipairs(calibrationPixelsThirdLayer) do
-        calibrationPixelsThirdLayer[data.name] = CreateSquare(data.name, data.xOffset, data.yOffset)
+    for _, data in ipairs(calibrationPixels) do
+        --print(data.xOffset, data.yOffset)
+        calibrationPixels[data.name] = CreateSquare(data.name, data.xOffset, data.yOffset)
     end
 
     for _, squareName in ipairs({ "CompanionControlSquare", "InteractionCommandsSquare" }) do
@@ -173,7 +172,7 @@ function EventFrame:OnUpdate()
 
     -- AnnounceLoot()
 
-    CalibrationControl(calibrationPixelsFirstLayer, calibrationPixelsSecondLayer, calibrationPixelsThirdLayer)
+    CalibrationControl()
 
 end
 
@@ -436,7 +435,7 @@ end
 
 function CleanTextSquares(container, textLengthSquare, textSquares)
     container[textLengthSquare].texture:SetTexture(0, 0, 0)
-    for i = 1, 85, 1 do
+    for i = 1, #container-1, 1 do
         container[string.format("%s_%d", textSquares, i)].texture:SetAlpha(0)
     end
 end
@@ -646,24 +645,15 @@ function SetMapIDSquareColor()
     squares["MapIDSquare"].texture:SetTexture(color1, color2, 0)
 end
 
-function CalibrationControl(firstContainer, secondContainer, thirdContainer)
+function CalibrationControl()
     if programControlColor == 0.25 then
-        print(programControlColor)
-        print('calibration')
-        for i = 1, 85, 1 do
-            firstContainer[string.format("CalibrationPixelFirstLayer_%d", i)].texture:SetAlpha(1)
-            secondContainer[string.format("CalibrationPixelSecondLayer_%d", i)].texture:SetAlpha(1)
-            thirdContainer[string.format("CalibrationPixelThirdLayer_%d", i)].texture:SetAlpha(1)
-            firstContainer[string.format("CalibrationPixelFirstLayer_%d", i)].texture:SetTexture((i + 1) % 2, 0, 0)
-            secondContainer[string.format("CalibrationPixelSecondLayer_%d", i)].texture:SetTexture(0, i % 2, 0)
-            thirdContainer[string.format("CalibrationPixelThirdLayer_%d", i)].texture:SetTexture(0, 0, (i + 1) % 2)
+        for i = 1, #calibrationPixels, 1 do
+            calibrationPixels[string.format("CalibrationPixel_%d", i)].texture:SetAlpha(1)
+            calibrationPixels[string.format("CalibrationPixel_%d", i)].texture:SetTexture((i + 1) % 2, 0, 0)
         end
     else
-        for i = 1, 85, 1 do
-            print('not calibration')
-            firstContainer[string.format("CalibrationPixelFirstLayer_%d", i)].texture:SetAlpha(0)
-            secondContainer[string.format("CalibrationPixelSecondLayer_%d", i)].texture:SetAlpha(0)
-            thirdContainer[string.format("CalibrationPixelThirdLayer_%d", i)].texture:SetAlpha(0)
+        for i = 1, #calibrationPixels, 1 do
+            calibrationPixels[string.format("CalibrationPixel_%d", i)].texture:SetAlpha(0)
         end
     end
 end
