@@ -1,14 +1,8 @@
 SLASH_ASSISTANT_POSITION1 = '/assistant_position'
 SLASH_PLAYER_POSITION1 = '/player_position'
-SLASH_DISTANCE1='/distance'
+SLASH_DISTANCE1 = '/distance'
 
 local math = getfenv(0).math
-
-local cursorObjectInfo
-local mouseOverObject
-
-local lettersSquares = {}
-local squares = {}
 
 local ginghamPixelSize = 5
 
@@ -17,7 +11,7 @@ local AcceptPartyLogicFrame = CreateFrame("Frame")
 local LootingFrame = CreateFrame("Frame")
 local AutoGreedFrame = CreateFrame("Frame")
 
-local squareData = {
+local squares = {
     { name = "CompanionControlSquare", yOffset = 0 },
     { name = "InteractionCommandsSquare", yOffset = -5 },
     { name = "AssistantCoordinatesSquare1", yOffset = -10 },
@@ -27,19 +21,34 @@ local squareData = {
     { name = "MainCharacterCoordinatesSquare2", yOffset = -30 },
     { name = "MainCharacterConditionSquare1", yOffset = -35 },
     { name = "AssistantConditionSquare2", yOffset = -40 },
-    { name = "MapIDSquare", yOffset = -45 },
+    { name = "MapIDSquare", yOffset = -45 }
 }
 
-local lettersSquaresData = {}
-lettersSquaresData[1] = { name = "MessageLengthPixel", xOffset = 0, yOffset = -50 }
+local lettersSquares = {}
+lettersSquares[1] = { name = "MessageLengthPixel", xOffset = 0, yOffset = -50 }
 for i = 2, 86, 1 do
-    lettersSquaresData[i] = { name = string.format("LettersSquare_%d", i - 1), xOffset = ginghamPixelSize * (i - 1), yOffset = 0 }
+    lettersSquares[i] = { name = string.format("LettersSquare_%d", i - 1), xOffset = ginghamPixelSize * (i - 1), yOffset = 0 }
 end
 
-local cursorObjectsPixelsData = {}
-cursorObjectsPixelsData[1] = { name = "CursorObjectMessageLengthPixel", xOffset = 0, yOffset = -55 }
+local cursorObjectsPixels = {}
+cursorObjectsPixels[1] = { name = "CursorObjectMessageLengthPixel", xOffset = 0, yOffset = -55 }
 for i = 2, 86, 1 do
-    cursorObjectsPixelsData[i] = { name = string.format("CursorObjectPixel_%d", i - 1), xOffset = ginghamPixelSize * (i - 1), yOffset = -5 }
+    cursorObjectsPixels[i] = { name = string.format("CursorObjectPixel_%d", i - 1), xOffset = ginghamPixelSize * (i - 1), yOffset = -5 }
+end
+
+local calibrationPixelsFirstLayer = {}
+for i = 1, 85, 1 do
+    calibrationPixelsFirstLayer[i] = { name = string.format("CalibrationPixelFirstLayer_%d", i), xOffset = ginghamPixelSize * (i), yOffset = -10 }
+end
+
+local calibrationPixelsSecondLayer = {}
+for i = 1, 85, 1 do
+    calibrationPixelsSecondLayer[i] = { name = string.format("CalibrationPixelSecondLayer_%d", i), xOffset = ginghamPixelSize * (i), yOffset = -15 }
+end
+
+local calibrationPixelsThirdLayer = {}
+for i = 1, 85, 1 do
+    calibrationPixelsThirdLayer[i] = { name = string.format("CalibrationPixelThirdLayer_%d", i), xOffset = ginghamPixelSize * (i), yOffset = -20 }
 end
 
 local commands = {
@@ -70,10 +79,12 @@ local states = {
     looting = "looting"
 }
 
+local cursorObjectInfo
+local mouseOverObject
 local previousMessage
 local lootMessage
 local assistantState
-local previousItem
+local programControlColor
 
 function EventFrame:OnEvent(event, ...)
     print("GinghamShirt is active")
@@ -84,19 +95,31 @@ EventFrame:SetScript("OnEvent", EventFrame.OnEvent)
 EventFrame:RegisterEvent("PLAYER_LOGIN")
 
 function EventFrame:PLAYER_LOGIN()
-    for _, data in ipairs(squareData) do
+    for _, data in ipairs(squares) do
         squares[data.name] = CreateSquare(data.name, data.xOffset, data.yOffset)
     end
 
-    for _, data in ipairs(lettersSquaresData) do
+    for _, data in ipairs(lettersSquares) do
         lettersSquares[data.name] = CreateSquare(data.name, data.xOffset, data.yOffset)
     end
     lettersSquares["MessageLengthPixel"].texture:SetTexture(0, 0, 0)
 
-    for _, data in ipairs(cursorObjectsPixelsData) do
-        cursorObjectsPixelsData[data.name] = CreateSquare(data.name, data.xOffset, data.yOffset)
+    for _, data in ipairs(cursorObjectsPixels) do
+        cursorObjectsPixels[data.name] = CreateSquare(data.name, data.xOffset, data.yOffset)
     end
-    cursorObjectsPixelsData["CursorObjectMessageLengthPixel"].texture:SetTexture(0, 0, 0)
+    cursorObjectsPixels["CursorObjectMessageLengthPixel"].texture:SetTexture(0, 0, 0)
+
+    for _, data in ipairs(calibrationPixelsFirstLayer) do
+        print(calibrationPixelsFirstLayer)
+        print(data.name)
+        calibrationPixelsFirstLayer[data.name] = CreateSquare(data.name, data.xOffset, data.yOffset)
+    end
+    for _, data in ipairs(calibrationPixelsSecondLayer) do
+        calibrationPixelsSecondLayer[data.name] = CreateSquare(data.name, data.xOffset, data.yOffset)
+    end
+    for _, data in ipairs(calibrationPixelsThirdLayer) do
+        calibrationPixelsThirdLayer[data.name] = CreateSquare(data.name, data.xOffset, data.yOffset)
+    end
 
     for _, squareName in ipairs({ "CompanionControlSquare", "InteractionCommandsSquare" }) do
         squares[squareName]:RegisterEvent("CHAT_MSG_PARTY")
@@ -104,10 +127,10 @@ function EventFrame:PLAYER_LOGIN()
         squares[squareName]:RegisterEvent("CHAT_MSG_WHISPER")
     end
 
-    for _, innerSquareData in ipairs(lettersSquaresData) do
-        lettersSquares[innerSquareData.name]:RegisterEvent("CHAT_MSG_PARTY")
-        lettersSquares[innerSquareData.name]:RegisterEvent("CHAT_MSG_PARTY_LEADER")
-        lettersSquares[innerSquareData.name]:SetScript("OnEvent", SetPlayerMessageSquaresColors)
+    for _, innerSquare in ipairs(lettersSquares) do
+        lettersSquares[innerSquare.name]:RegisterEvent("CHAT_MSG_PARTY")
+        lettersSquares[innerSquare.name]:RegisterEvent("CHAT_MSG_PARTY_LEADER")
+        lettersSquares[innerSquare.name]:SetScript("OnEvent", SetPlayerMessageSquaresColors)
     end
 
     squares["CompanionControlSquare"]:SetScript("OnEvent", SetCompanionControlSquareColor)
@@ -148,9 +171,9 @@ function EventFrame:OnUpdate()
     SetCursorObjectInfoSquaresColor()
     SetPlayerMessageSquaresColors()
 
-    AcceptQuest()
-
     -- AnnounceLoot()
+
+    CalibrationControl(calibrationPixelsFirstLayer, calibrationPixelsSecondLayer, calibrationPixelsThirdLayer)
 
 end
 
@@ -321,16 +344,6 @@ function GetUnitsInfo()
     return false
 end
 
-function GetItemInfo()
-    if not UnitExists("mouseover") then
-        local itemName = GameTooltip:GetItem()
-        if itemName and itemName ~= previousItem then
-            print("Cursor is over an item: " .. itemName)
-            previousItem = itemName
-        end
-    end
-end
-
 function GetGameObjectsInfo()
     if mouseOverObject then
         if not UnitExists("mouseover") then
@@ -466,7 +479,7 @@ function SetCursorObjectInfoSquaresColor()
     end
 
     if not cursorObjectInfo then
-        CleanTextSquares(cursorObjectsPixelsData, "CursorObjectMessageLengthPixel", "CursorObjectPixel")
+        CleanTextSquares(cursorObjectsPixels, "CursorObjectMessageLengthPixel", "CursorObjectPixel")
     end
 
     if cursorObjectInfo then
@@ -474,8 +487,8 @@ function SetCursorObjectInfoSquaresColor()
         message = string.lower(message)
         local messageLen1, messageLen23 = math.modf(#message / 100)
         local messageLen2, messageLen3 = math.modf(messageLen23 * 100 / 10)
-        cursorObjectsPixelsData["CursorObjectMessageLengthPixel"].texture:SetTexture(messageLen1 / 10, messageLen2 / 10, messageLen3)
-        ColorTextSquares(cursorObjectsPixelsData, message, 'CursorObjectPixel')
+        cursorObjectsPixels["CursorObjectMessageLengthPixel"].texture:SetTexture(messageLen1 / 10, messageLen2 / 10, messageLen3)
+        ColorTextSquares(cursorObjectsPixels, message, 'CursorObjectPixel')
     end
 end
 
@@ -495,7 +508,7 @@ end
 --- Colors Companion Control Square
 --- @param message string incoming message
 function SetCompanionControlSquareColor(self, event, message, sender, ...)
-    ---- program control (enable = 0.0, pause = 0.5, disable = 1.0)
+    ---- program control (enable = 0.0, calibration = 0.25, pause = 0.5, disable = 1.0)
     if programControlColor == nil then
         programControlColor = 0.0
     end
@@ -520,6 +533,15 @@ function SetCompanionControlSquareColor(self, event, message, sender, ...)
             programControlColor = 0.5
         elseif programControlColor == 0.5 then
             SendChatMessage("The control script was removed from the pause! I'm alive!", "PARTY")
+            programControlColor = 0.0
+        end
+    end
+    if containCommand(message, commands.calibrate) then
+        if programControlColor == 0.0 then
+            SendChatMessage("PIGAS calibration begin! Control script is on pause now!", "PARTY")
+            programControlColor = 0.25
+        elseif programControlColor == 0.25 then
+            SendChatMessage("End of the calibration. Check logs for the results.", "PARTY")
             programControlColor = 0.0
         end
     end
@@ -622,5 +644,26 @@ function SetMapIDSquareColor()
         color1 = 1 / color1
     end
     squares["MapIDSquare"].texture:SetTexture(color1, color2, 0)
+end
 
+function CalibrationControl(firstContainer, secondContainer, thirdContainer)
+    if programControlColor == 0.25 then
+        print(programControlColor)
+        print('calibration')
+        for i = 1, 85, 1 do
+            firstContainer[string.format("CalibrationPixelFirstLayer_%d", i)].texture:SetAlpha(1)
+            secondContainer[string.format("CalibrationPixelSecondLayer_%d", i)].texture:SetAlpha(1)
+            thirdContainer[string.format("CalibrationPixelThirdLayer_%d", i)].texture:SetAlpha(1)
+            firstContainer[string.format("CalibrationPixelFirstLayer_%d", i)].texture:SetTexture((i + 1) % 2, 0, 0)
+            secondContainer[string.format("CalibrationPixelSecondLayer_%d", i)].texture:SetTexture(0, i % 2, 0)
+            thirdContainer[string.format("CalibrationPixelThirdLayer_%d", i)].texture:SetTexture(0, 0, (i + 1) % 2)
+        end
+    else
+        for i = 1, 85, 1 do
+            print('not calibration')
+            firstContainer[string.format("CalibrationPixelFirstLayer_%d", i)].texture:SetAlpha(0)
+            secondContainer[string.format("CalibrationPixelSecondLayer_%d", i)].texture:SetAlpha(0)
+            thirdContainer[string.format("CalibrationPixelThirdLayer_%d", i)].texture:SetAlpha(0)
+        end
+    end
 end

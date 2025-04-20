@@ -2,17 +2,14 @@
 game:
   game-directory: ... # full path to directory with installed game
   window-title: World of Warcraft # you can check the actual title in the task manager (default: World of Warcraft)
-  extension: cataclysm # only 'cataclysm' and 'wotlk' are supported (default: cataclysm)
+  expansion: cataclysm # only 'cataclysm' and 'wotlk' are supported (default: cataclysm)
+  account:  # name of your account (need to copy a config-file with bind keys)
 
 
 companion:
-  account:  # name of your account (need to copy a config-file with bind keys)
   name:  # nickname of your companion
   class:  # class of your companion
   context_file: context.txt # context file for AI response (default: context.txt)
-
-other:
-  debug: false # show debug messages in console and log: 'false' or 'true' (default: false)
 
 open-ai:
   base_url:  # api url
