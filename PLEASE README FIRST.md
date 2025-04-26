@@ -17,7 +17,7 @@ Your companion is just another player tied to you!
 1. Install World of Warcraft to the second PC or virtual machine. In this case, you could use the VirtualBox to install Windows or Ubuntu (only with Xorg window manager) operating systems.
 - If you are using `Ubuntu` install `xdotool` via `sudo apt install xdotool`.
 - If you are using `Windows` on `MacOS` via `Parallels` please, be sure to set `Scaled` resolution mode in `Configure-Hardware-Graphics` menu and set correct resolution in `Windows` (e.g., `1920x1200`). 
-2. Rename `template.config.yaml` to `config.yaml`; `template.context.yaml` to `context.txt`.
+2. Rename `template.config.yaml` to `config.yaml`; `template.context.txt` to `context.txt`.
 3. Fill all fields in `config.yaml`.
 4. Run `pigas.exe` to begin program initialization. It will copy `Config.wtf` and Addon to game directory.
 5. Set initial skills and rotation in `data\class\GAME_EXPANSION\COMPANION_CLASS` (see below for the part __How to set skills/rotations__).
@@ -68,4 +68,10 @@ however, you could set `fullscreen: true` and change you game window to fullscre
 other:
   debug: true
 ```
-3. 
+
+3. Open-AI
+```
+open-ai:
+  base_url:  # api url
+  api_key:  # api key
+```
