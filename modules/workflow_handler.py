@@ -182,6 +182,8 @@ class ScriptWorkflowHandler(HardwareInputSimulator):
     def copy_config(self, copy_from=None, copy_to=None):
         self.logger.info(f"Copying \"{copy_from}\" to \"{copy_to}\".")
         copy_to_dir = '/'.join(copy_to.split('/')[:-1])
+        if not copy_to_dir:
+            copy_to_dir = '\\'.join(copy_to.split('\\')[:-1])
         os.makedirs(copy_to_dir, exist_ok=True)
         shutil.copy2(copy_from, copy_to)
         self.logger.info("Copying finished.")

@@ -1,6 +1,6 @@
 # PIGAS
 ## Personal In-Game Adventure Sidekick
-### v0.3.0
+### v0.4.0
 
 ### Before you started
 PIGAS allows you to get your second-hand companion in World of Warcraft video game.
