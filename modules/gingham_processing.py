@@ -2,8 +2,6 @@ import numpy as np
 import re
 from collections import Counter
 
-import matplotlib.image as mpimg
-
 from library.errors import GinghamProcessorError
 from library.constants import CALIBRATION_ARRAY
 
