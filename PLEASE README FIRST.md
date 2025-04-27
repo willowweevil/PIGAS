@@ -1,6 +1,6 @@
 # PIGAS
 ## Personal In-Game Adventure Sidekick
-### v0.4.0
+### v0.5.0
 
 ### Before you started
 PIGAS allows you to get your second-hand companion in World of Warcraft video game.
@@ -15,8 +15,8 @@ Your companion is just another player tied to you!
 ### How to start
 #### In-Game Companion
 1. Install World of Warcraft to the second PC or virtual machine. In this case, you could use the VirtualBox to install Windows or Ubuntu (only with Xorg window manager) operating systems.
-- If you are using `Ubuntu` install `xdotool` via `sudo apt install xdotool`.
-- If you are using `Windows` on `MacOS` via `Parallels` please, be sure to set `Scaled` resolution mode in `Configure-Hardware-Graphics` menu and set correct resolution in `Windows` (e.g., `1920x1200`). 
+   - If you are using `Ubuntu` install `xdotool` via `sudo apt install xdotool`.
+   - If you are using `Windows` on `MacOS` via `Parallels` please, be sure to set `Scaled` resolution mode in `Configure-Hardware-Graphics` menu and set correct resolution in `Windows` (e.g., `1920x1200`). 
 2. Rename `template.config.yaml` to `config.yaml`; `template.context.txt` to `context.txt`.
 3. Fill all fields in `config.yaml`.
 4. Run `pigas.exe` to begin program initialization. It will copy `Config.wtf` and Addon to game directory.
@@ -56,22 +56,23 @@ To add some text to your context use `%Now we are in the Orgrimmar.`
 
 ### Some extra config parameters
 Some extra parameters are supported in `config.yaml`:
-1. Fullscreen mode
-```
-game:
-    fullscreen: false # recommended to run not in fullscreen mode (default: false)
-```
-It's recommended to play with a companion in windowed more,
-however, you could set `fullscreen: true` and change you game window to fullscreen in game.
-2. Debug
-```
-other:
-  debug: true
-```
-
-3. Open-AI
-```
-open-ai:
-  base_url:  # api url
-  api_key:  # api key
-```
+1. Debug
+    ```
+    other:
+      debug: true
+    ```
+2. Open-AI
+    ```
+    open-ai:
+      base_url:  # api url
+      api_key:  # api key
+    ```
+3. Distances fix
+    ```
+    navigation:
+        distance_to_player_delta: 0.15
+        mounted_distance_coefficient: 1.25
+        looting_distance_coefficient: 0.5
+        start_to_avoid_obstacles_distance_coefficient: 3.0
+        start_to_wait_player_distance_coefficient: 50.0
+    ```

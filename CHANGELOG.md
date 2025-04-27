@@ -5,6 +5,10 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [0.5.0] - 2025-04-18
+### Added
+- Add Gingham Shirt position calibration
+
 ## [0.4.0] - 2025-04-18
 ### Added
 - Copy a keybindings file to game directory, override addon if it exists 

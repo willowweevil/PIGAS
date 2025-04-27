@@ -21,7 +21,7 @@ local commands = {
     loot = "#loot",
     run_walk = "#movement-speed",
     --- misc
-    calibrate = "#calibrate",
+    calibrate = "#calibration",
     clean = "#clean",
     clear = "#clear"
 }
@@ -81,10 +81,10 @@ for i = 1, 85, 1 do
                                  yOffset = -ginghamPixelSize }
 end
 
-for i = 1, 82, 1 do
+for i = 1, 49, 1 do
     calibrationPixels[i] = { name = string.format("CalibrationPixel_%d", i),
-                             xOffset = ginghamPixelSize*(i%9) ,--#ginghamPixelSize * (i%9),
-                             yOffset = - ginghamPixelSize*(i % 9 + 2)  }
+                             xOffset = ginghamPixelSize*(((i - 1) % 7) + 1) ,
+                             yOffset = - ginghamPixelSize*(math.floor((i - 1) / 7) + 5)  }
 end
 
 local EventFrame = CreateFrame("Frame")
@@ -537,10 +537,8 @@ function SetCompanionControlSquareColor(self, event, message, sender, ...)
     end
     if containCommand(message, commands.calibrate) then
         if programControlColor == 0.0 then
-            SendChatMessage("PIGAS calibration begin! Control script is on pause now!", "PARTY")
             programControlColor = 0.25
         elseif programControlColor == 0.25 then
-            SendChatMessage("End of the calibration. Check logs for the results.", "PARTY")
             programControlColor = 0.0
         end
     end
@@ -649,7 +647,7 @@ function CalibrationControl()
     if programControlColor == 0.25 then
         for i = 1, #calibrationPixels, 1 do
             calibrationPixels[string.format("CalibrationPixel_%d", i)].texture:SetAlpha(1)
-            calibrationPixels[string.format("CalibrationPixel_%d", i)].texture:SetTexture((i + 1) % 2, 0, 0)
+            calibrationPixels[string.format("CalibrationPixel_%d", i)].texture:SetTexture(i%2, 0, 0)
         end
     else
         for i = 1, #calibrationPixels, 1 do

@@ -180,22 +180,24 @@ class Navigator(BasicGeometry):
         mounted_distance_coefficient = 1.25
         looting_distance_coefficient = 0.5
         start_to_avoid_obstacles_distance_coefficient = 3.0
-        start_to_wait_player_coefficient = 50.0
+        start_to_wait_player_distance_coefficient = 50.0
 
         if self.predefined_navigation_constants:
+            distance_to_player_delta = self.predefined_navigation_constants.get('distance_to_player_delta',
+                                                                                distance_to_player_delta)
             mounted_distance_coefficient = self.predefined_navigation_constants.get('mounted_distance_coefficient',
                                                                                     mounted_distance_coefficient)
             looting_distance_coefficient = self.predefined_navigation_constants.get('looting_distance_coefficient',
                                                                                     looting_distance_coefficient)
             start_to_avoid_obstacles_distance_coefficient = self.predefined_navigation_constants.get(
                 'start_to_avoid_obstacles_distance_coefficient', start_to_avoid_obstacles_distance_coefficient)
-            start_to_wait_player_coefficient = self.predefined_navigation_constants.get(
-                'start_to_wait_player_coefficient', start_to_avoid_obstacles_distance_coefficient)
+            start_to_wait_player_distance_coefficient = self.predefined_navigation_constants.get(
+                'start_to_wait_player_distance_coefficient', start_to_wait_player_distance_coefficient)
 
         mounted_distance_to_player_delta = distance_to_player_delta * mounted_distance_coefficient
         looting_distance_to_player_delta = distance_to_player_delta * looting_distance_coefficient
         distance_to_start_avoid_obstacles = distance_to_player_delta * start_to_avoid_obstacles_distance_coefficient
-        max_distance_from_companion_to_player = distance_to_player_delta * start_to_wait_player_coefficient
+        max_distance_from_companion_to_player = distance_to_player_delta * start_to_wait_player_distance_coefficient
 
         # angles
         rotation_to_player_angle_delta_min = 10  # min angle (degrees in one side of rotation)

@@ -6,9 +6,11 @@ import time
 import random
 import logging
 
+from library.errors import CommonError
+from library.platforms import Platform
+
 logging.basicConfig(level=logging.ERROR,
                     format="%(asctime)s %(levelname)s %(message)s")
-
 
 def setup_logging(loggers, debug=False):
     # Clear any existing handlers (important to avoid duplicates)
@@ -37,9 +39,22 @@ def setup_logging(loggers, debug=False):
         logger.setLevel(logging.DEBUG if debug else logging.INFO)
         logger.propagate = True
 
+def define_system_platform():
+    if sys.platform in ['linux', 'linux2']:
+        platform = Platform.LINUX
+    elif sys.platform in ['Windows', 'win32', 'cygwin']:
+        platform = Platform.WINDOWS
+    elif sys.platform in ['Mac', 'darwin', 'os2', 'os2emx']:
+        platform = Platform.MACOS
+    else:
+        raise CommonError(f"Cannot define platform: {sys.platform}")
+    #logging.debug(f"System platform was defined as {str(platform).split('.')[1]}.")
+    return platform
+
 def stop_execution(code, input_message="\nPress Enter to exit...\n"):
     time.sleep(0.5)
-    if 'win' in sys.platform.lower():
+    platform = define_system_platform()
+    if platform == Platform.WINDOWS:
         try:
             input(input_message)
         except KeyboardInterrupt:

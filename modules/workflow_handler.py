@@ -2,6 +2,7 @@ import logging
 import time
 import os
 import shutil
+import tkinter as tk
 
 from modules.hardware_input import HardwareInputSimulator
 
@@ -32,6 +33,11 @@ class ScriptWorkflowHandler(HardwareInputSimulator):
         self.pause_command = False
         self.disable_command = False
 
+        self.companion = None
+        self.gingham = None
+        self.navigator = None
+        self.game_window = None
+
         self.initialization()
 
         self.logger = logging.getLogger('script_control')
@@ -45,6 +51,14 @@ class ScriptWorkflowHandler(HardwareInputSimulator):
     # def stop_keyboard_listener():
     #     hardware_input = HardwareInputSimulator()
     #     hardware_input.stop_keyboard_listener()
+
+    @staticmethod
+    def define_screen_resolution():
+        root = tk.Tk()
+        width = root.winfo_screenwidth()
+        height = root.winfo_screenheight()
+        root.destroy()
+        return width, height
 
     @property
     def streaming(self):
@@ -108,7 +122,11 @@ class ScriptWorkflowHandler(HardwareInputSimulator):
         _ = self.pause_script()
         return report_disable
 
-    def perform_prestart_actions(self):
+    def set_modules(self, companion=None, gingham=None, navigator=None, game_window=None):
+        self.companion = companion
+        self.gingham = gingham
+        self.navigator = navigator
+        self.game_window = game_window
         self.logger.info("PIGAS is ready to start.")
         time.sleep(1)
 
@@ -119,7 +137,6 @@ class ScriptWorkflowHandler(HardwareInputSimulator):
         stop_execution(0)
 
     def unexpected_finish(self, e: Exception):
-        print("insode!")
         self.logger.error(e)
         # self.logger.info("PIGAS just finished executing.")
         stop_execution(2)
@@ -148,6 +165,17 @@ class ScriptWorkflowHandler(HardwareInputSimulator):
         return counts + 1
 
     def initialization(self):
+        screen_resolution = self.define_screen_resolution()
+        screen_proportions = round(screen_resolution[0] / screen_resolution[1], 2)
+        if screen_proportions == round(16/9, 2):
+            resolution_suffix = "16x9"
+        elif screen_proportions == round(16/10, 2):
+            resolution_suffix = "16x10"
+        else:
+            resolution_suffix = "16x9"
+            self.logger.warning(f"Cannot define screen proportions (found screen resolution is {screen_resolution[0]}x{screen_resolution[1]})."
+                                f"Please, set resolution in game manually.")
+
         game_config = read_yaml_file(self.config_file).get("game")
         if not game_config:
             raise WorkflowHandlerError(f"Incorrect \"{self.config_file}\" file!")
@@ -169,15 +197,26 @@ class ScriptWorkflowHandler(HardwareInputSimulator):
             self.logger.info("Welcome to PIGAS: Personal In-Game Adventure Sidekick!")
             self.logger.info("It's seems it's the first run of PIGAS.. Let's initialization begins!")
             time.sleep(2)
-            self.copy_config(copy_from=f"./data/config/{self.expansion}/Config.wtf",
+            self.copy_config(copy_from=f"./data/config/{self.expansion}/Config_{resolution_suffix}.wtf",
                              copy_to=f"{os.path.join(self.game_directory, 'WTF', 'Config.wtf')}")
             self.copy_config(copy_from=f"./data/config/{self.expansion}/bindings-cache.wtf",
                              copy_to=f"{os.path.join(self.game_directory, 'WTF', 'Account', f'{self.account.upper()}', 'bindings-cache.wtf')}")
             self.copy_addon()
         else:
             self.increment_program_runs_count()
-
         self.check_addon_version()
+
+
+    def calibration_workflow(self, debug=False):
+        if self.frame == 1:
+            self.companion.send_message_to_chat("PIGAS #calibration begins!")
+            time.sleep(1)
+            calibrated = self.game_window.define_gingham_screenshot_shift(savefig=debug)
+            if calibrated:
+                self.companion.send_message_to_chat("PIGAS #calibration complete!")
+            else:
+                self.companion.send_message_to_chat("PIGAS #calibration failed! Please try to change window game resolution!")
+                raise WorkflowHandlerError("Failed to find \"Gingham Shirt\" position.")
 
     def copy_config(self, copy_from=None, copy_to=None):
         self.logger.info(f"Copying \"{copy_from}\" to \"{copy_to}\".")
@@ -230,3 +269,23 @@ class ScriptWorkflowHandler(HardwareInputSimulator):
             self.logger.error(
                 f"Installed addon version is not actual! Actual version is {actual_version} and your version is {installed_version}!")
             self.copy_addon()
+
+        # system_platform = define_system_platform()
+        # if system_platform == Platform.LINUX:
+        #     try:
+        #         xdpyinfo = subprocess.Popen('xdpyinfo', stdout=subprocess.PIPE)
+        #         output = subprocess.check_output(('grep', 'dimensions'), stdin=xdpyinfo.stdout)
+        #     except subprocess.CalledProcessError as e:
+        #         self.logger.error("Cannot define screenshot resolution.")
+
+# def get_initial_monitor_parameters():
+#     hdmi_monitor_shift_x, hdmi_monitor_shift_y = None, None
+#     try:
+#         xrandr = subprocess.Popen('xrandr', stdout=subprocess.PIPE)
+#         output = subprocess.check_output(('grep', 'HDMI'), stdin=xrandr.stdout)
+#         xrandr.wait()
+#         hdmi_monitor_shift_x, hdmi_monitor_shift_y = re.search(r"[0-9]{3,4}x[0-9]{3,4}", str(output))[0].split('x')
+#         logging.info("Second HDMI monitor found. The game window should be on the first (native) screen.")
+#     except subprocess.CalledProcessError as e:
+#         logging.info("Second HDMI monitor not found.")
+#     return hdmi_monitor_shift_x, hdmi_monitor_shift_y

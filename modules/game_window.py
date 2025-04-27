@@ -6,9 +6,14 @@ import sys
 import mss
 from PIL import Image
 
-from library.errors import GameWindowError
+from library.miscellaneous import define_system_platform
 
-if 'win' in sys.platform.lower():
+from library.errors import GameWindowError
+from library.platforms import Platform
+
+from modules.gingham_processing import GinghamProcessor
+
+if define_system_platform() == Platform.WINDOWS:
     import win32gui
     import win32com.client
 else:
@@ -48,8 +53,6 @@ class GameWindow:
 
         self.platform = None
 
-        self.fullscreen_mode = None
-
         self.window_title = None
         self.window_id = None
         self.window_position = None
@@ -57,18 +60,10 @@ class GameWindow:
 
         self.logger = logging.getLogger('game_window')
 
-    def set_platform(self):
-        if sys.platform in ['linux', 'linux2']:
-            self.platform = Platform.LINUX
-        elif sys.platform in ['Windows', 'win32', 'cygwin']:
-            self.platform = Platform.WINDOWS
-        elif sys.platform in ['Mac', 'darwin', 'os2', 'os2emx']:
-            self.platform = Platform.MACOS
-        else:
-            raise GameWindowError(f"Cannot define platform: {sys.platform}")
-        self.logger.debug(f"System platform was defined as {str(self.platform).split('.')[1]}.")
+    def _set_system_platform(self):
+        self.platform = define_system_platform()
 
-    def set_window_title(self, config=None):
+    def _set_window_title(self, config=None):
         config_data = read_yaml_file(config)
         game_config = config_data.get('game')
         if not game_config:
@@ -78,36 +73,31 @@ class GameWindow:
         if not self.window_title:
             raise GameWindowError(f"Window title is not set! Please, check the \"{config}\" file!")
 
-    def set_fullscreen_mode(self, config):
-        config_data = read_yaml_file(config)
-        game_config = config_data.get('game')
-        if not game_config:
-            raise GameWindowError(f"Game config is not set! Please, check the \"{config}\" file!")
-        self.fullscreen_mode = game_config.get('fullscreen', False)
+    def define_gingham_screenshot_shift(self, savefig=False):
+        img = self.take_screenshot(savefig=savefig, savefig_prefix='calibration', screenshot_type='calibration')
+        calibration_array_index = GinghamProcessor().get_calibration_array_position(img)
+        if calibration_array_index[0] == -1:
+            return False
+        self.screenshot_shift = {'x': calibration_array_index[1] - 5, 'y': calibration_array_index[0] - 25}
+        self.logger.debug(f"Screenshot shift was set to: {self.screenshot_shift}")
+        return True
 
     def set_window_parameters(self, config_file=None):
         if not self.platform:
-            self.set_platform()
+            self._set_system_platform()
         if not self.window_title:
-            self.set_window_title(config_file)
+            self._set_window_title(config_file)
         if not self.window_id:
             self._set_window_id()
         if not self.window_position or not self.window_size:
             self._set_window_geometry()
-        if not self.fullscreen_mode:
-            self.set_fullscreen_mode(config_file)
 
-        match self.platform:
-            case Platform.LINUX:
-                if not self.fullscreen_mode:
-                    self.screenshot_shift = {'x': 14, 'y': 49}
-                else:
-                    self.screenshot_shift = {'x': 0, 'y': 0}
-            case Platform.WINDOWS:
-                if not self.fullscreen_mode:
-                    self.screenshot_shift = {'x': 9, 'y': 38}  # {'x': 8, 'y': 31}
-                else:
-                    self.screenshot_shift = {'x': 0, 'y': 0}
+        self.logger.debug(f"Successfully set game window parameters: "
+                          f"platform={self.platform}; "
+                          f"title={self.window_title}; "
+                          f"id={self.window_id}; "
+                          f"position={self.window_position}; "
+                          f"size={self.window_size}.")
 
     def _set_window_id(self):
         """Find the window ID by title."""
@@ -233,7 +223,7 @@ class GameWindow:
     def ensure_window_exists(self):
         self._set_window_id()
 
-    def _get_screenshot_geometry(self):
+    def _get_gingham_screenshot_geometry(self):
         position_x, position_y = self.window_position
         width = self.pixel_size['x'] * self.n_pixels['x']
         height = self.pixel_size['y'] * self.n_pixels['y']
@@ -244,8 +234,29 @@ class GameWindow:
             x_shift, y_shift = 0, 0
         return position_x, position_y, width, height, x_shift, y_shift
 
-    def take_screenshot(self, savefig=False, savefig_prefix='main'):
-        position_x, position_y, width, height, x_shift, y_shift = self._get_screenshot_geometry()
+    def _get_window_screenshot_geometry(self):
+        position_x, position_y = self.window_position
+        width, height = self.window_size
+        x_shift, y_shift = 0, 0
+        return position_x, position_y, width, height, x_shift, y_shift
+
+    def _get_calibration_screenshot_geometry(self):
+        position_x, position_y = self.window_position
+        width, height = [val // 2 for val in self.window_size]
+        x_shift, y_shift = 0, 0
+        return position_x, position_y, width, height, x_shift, y_shift
+
+    def take_screenshot(self, savefig=False, savefig_prefix='gingham', screenshot_type='gingham'):
+        match screenshot_type:
+            case 'gingham':
+                position_x, position_y, width, height, x_shift, y_shift = self._get_gingham_screenshot_geometry()
+            case 'window':
+                position_x, position_y, width, height, x_shift, y_shift = self._get_window_screenshot_geometry()
+            case 'calibration':
+                position_x, position_y, width, height, x_shift, y_shift = self._get_calibration_screenshot_geometry()
+            case _:
+                raise GameWindowError(f"Unknown screenshot type: {screenshot_type}.")
+
         with mss.mss() as sct:
             try:
                 area = {"top": position_y + y_shift, "left": position_x + x_shift, "width": width, "height": height}
@@ -256,5 +267,8 @@ class GameWindow:
                 f"Took screenshot of area {width}x{height} (zero in {position_x + x_shift},{position_y + y_shift})")
             img = Image.frombytes("RGB", screenshot.size, screenshot.rgb)
             if savefig:
-                img.save(f"{savefig_prefix}_{position_x + x_shift}_{position_y + y_shift}_{height}_{width}_debug.png")
+                img.save(
+                    f"screenshot_{savefig_prefix}_zero_{position_x + x_shift},{position_y + y_shift}_size_{width}x{height}_debug.png")
         return img
+
+

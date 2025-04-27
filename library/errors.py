@@ -11,3 +11,6 @@ class WorkflowHandlerError(Exception):
 
 class GinghamProcessorError(Exception):
     """Raise Gingham Processor error"""
+
+class CommonError(Exception):
+    """Raise Common error"""

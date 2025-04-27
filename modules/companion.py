@@ -657,7 +657,7 @@ class CompanionControlLoop(HardwareInputSimulator, GameWindow, CompanionProfile,
     def _get_cursor_message_for_scan(self, cursor_x, cursor_y):
         self.move_mouse_to(cursor_x, cursor_y)
         time.sleep(0.1)  # the pause must be here, because new gingham shirts pixels are updating some time
-        scan_gingham_shirt = self.take_screenshot(savefig=False, savefig_prefix='scan')
+        scan_gingham_shirt = self.take_screenshot(savefig=False, savefig_prefix='looting')
         _, _, cursor_pixels = self.pixels_analysis(
             data=scan_gingham_shirt,
             n_monitoring_pixels=self.n_pixels['y'],
@@ -928,22 +928,22 @@ class CompanionControlLoop(HardwareInputSimulator, GameWindow, CompanionProfile,
         self.press_key('space')  # , pause=1.5)
 
     def start_rotation_clockwise(self):
-        self.hold_key("d")
+        self.hold_key("key.right")
 
     def start_rotation_counterclockwise(self):
-        self.hold_key("a")
+        self.hold_key("key.left")
 
     def stop_rotation_clockwise(self):
-        self.release_key("d")
+        self.release_key("key.right")
 
     def stop_rotation_counterclockwise(self):
-        self.release_key("a")
+        self.release_key("key.left")
 
     def start_moving_forward(self):
-        self.hold_key("w")
+        self.hold_key("key.up")
 
     def stop_moving_forward(self):
-        self.release_key("w")
+        self.release_key("key.up")
 
     '''
     Other activities

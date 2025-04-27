@@ -1,3 +1,4 @@
+import time
 
 from library.entity_attributes import *
 
@@ -43,7 +44,7 @@ if __name__ == '__main__':
                                        expansion=workflow_handler.expansion,
                                        config_file=config_file)
 
-        workflow_handler.perform_prestart_actions()
+        workflow_handler.set_modules(companion, gingham, navigator, game_window)
         while True:
             ### preparations
             # check if a game window still exists
@@ -55,6 +56,10 @@ if __name__ == '__main__':
             # activate a window
             if not workflow_handler.pause_command:
                 game_window.ensure_window_active()
+
+                # gingham calibration at first frame run
+                workflow_handler.calibration_workflow(debug=debug)
+
 
             # set session data
             session_data = workflow_handler.session_data
