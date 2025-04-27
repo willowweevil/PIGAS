@@ -543,36 +543,35 @@ class CompanionControlLoop(HardwareInputSimulator, GameWindow, CompanionProfile,
 
     def define_state(self):
 
-        if self.has_duty(Duty.WAITING_FOR_PLAYER) and self.has_duty(Duty.HEAL_YOURSELF):
-            self.set_state_to(State.HEALING_YOURSELF)
-
-        elif self.has_duty(Duty.WAITING_FOR_PLAYER) and self.has_duty(Duty.DEFEND_YOURSELF):
-            self.set_state_to(State.ATTACKING_TO_DEFEND)
-
+        # if self.has_duty(Duty.WAITING_FOR_PLAYER) and self.has_duty(Duty.HEAL_YOURSELF):
+        #     self.set_state_to(State.HEALING_YOURSELF)
+        #
+        # elif self.has_duty(Duty.WAITING_FOR_PLAYER) and self.has_duty(Duty.DEFEND_YOURSELF):
+        #     self.set_state_to(State.ATTACKING_TO_DEFEND)
+        # else:
+        duty_to_state_mapping = {
+            Duty.INITIALIZE: State.INITIALIZING,
+            Duty.RESPOND: State.RESPONDING,
+            Duty.CHANGE_SPEED: State.CHANGING_SPEED,
+            Duty.MOUNT: State.MOUNTING,
+            Duty.UNMOUNT: State.UNMOUNTING,
+            Duty.LOOT: State.LOOTING,
+            Duty.WAITING_FOR_PLAYER: State.WAITING_FOR_PLAYER,
+            Duty.NEARING_TO_LOOT: State.NEARING_FOR_LOOTING,
+            Duty.NEARING_TO_HEAL_PLAYER: State.NEARING_TO_HEAL_PLAYER,
+            Duty.HEAL_PLAYER: State.HEALING_PLAYER,
+            Duty.NEARING_TO_HELP_IN_COMBAT: State.NEARING_TO_HELP_IN_COMBAT,
+            Duty.HELP_IN_COMBAT: State.ATTACKING_TO_HELP,
+            Duty.HEAL_YOURSELF: State.HEALING_YOURSELF,
+            Duty.DEFEND_YOURSELF: State.ATTACKING_TO_DEFEND,
+            Duty.STAY_IN_PLACE: State.STAYING,
+        }
+        for duty, state in duty_to_state_mapping.items():
+            if self.has_duty(duty):
+                self.set_state_to(state)
+                break
         else:
-            duty_to_state_mapping = {
-                Duty.INITIALIZE: State.INITIALIZING,
-                Duty.RESPOND: State.RESPONDING,
-                Duty.CHANGE_SPEED: State.CHANGING_SPEED,
-                Duty.MOUNT: State.MOUNTING,
-                Duty.UNMOUNT: State.UNMOUNTING,
-                Duty.LOOT: State.LOOTING,
-                Duty.WAITING_FOR_PLAYER: State.WAITING_FOR_PLAYER,
-                Duty.NEARING_TO_LOOT: State.NEARING_FOR_LOOTING,
-                Duty.NEARING_TO_HEAL_PLAYER: State.NEARING_TO_HEAL_PLAYER,
-                Duty.HEAL_PLAYER: State.HEALING_PLAYER,
-                Duty.NEARING_TO_HELP_IN_COMBAT: State.NEARING_TO_HELP_IN_COMBAT,
-                Duty.HELP_IN_COMBAT: State.ATTACKING_TO_HELP,
-                Duty.HEAL_YOURSELF: State.HEALING_YOURSELF,
-                Duty.DEFEND_YOURSELF: State.ATTACKING_TO_DEFEND,
-                Duty.STAY_IN_PLACE: State.STAYING,
-            }
-            for duty, state in duty_to_state_mapping.items():
-                if self.has_duty(duty):
-                    self.set_state_to(state)
-                    break
-            else:
-                self.set_state_to(State.NEUTRAL)
+            self.set_state_to(State.NEUTRAL)
 
     def get_profile(self):
         self.logger.debug(f"Companion behaviours: {self.get_behaviours()}")
@@ -928,22 +927,22 @@ class CompanionControlLoop(HardwareInputSimulator, GameWindow, CompanionProfile,
         self.press_key('space')  # , pause=1.5)
 
     def start_rotation_clockwise(self):
-        self.hold_key("key.right")
+        self.hold_key("d")
 
     def start_rotation_counterclockwise(self):
-        self.hold_key("key.left")
+        self.hold_key("a")
 
     def stop_rotation_clockwise(self):
-        self.release_key("key.right")
+        self.release_key("d")
 
     def stop_rotation_counterclockwise(self):
-        self.release_key("key.left")
+        self.release_key("a")
 
     def start_moving_forward(self):
-        self.hold_key("key.up")
+        self.hold_key("w")
 
     def stop_moving_forward(self):
-        self.release_key("key.up")
+        self.release_key("w")
 
     '''
     Other activities
