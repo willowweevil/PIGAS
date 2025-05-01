@@ -5,7 +5,6 @@ game:
   expansion: cataclysm # only 'cataclysm' and 'wotlk' are supported (default: cataclysm)
   account:  # name of your account (need to copy a config-file with bind keys)
 
-
 companion:
   name:  # nickname of your companion
   class:  # class of your companion

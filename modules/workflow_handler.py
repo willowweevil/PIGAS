@@ -243,6 +243,7 @@ class ScriptWorkflowHandler(HardwareInputSimulator):
         stop_execution(0)
 
     def get_addon_version(self, filepath=None):
+        version = None
         try:
             with open(filepath, 'r') as file:
                 lines = file.readlines()
@@ -256,7 +257,7 @@ class ScriptWorkflowHandler(HardwareInputSimulator):
                 f"Cannot find \"{self.addon_name}\" addon in {addon_directory}. Please, check if it exists.")
 
         except PermissionError:
-            self.logger.error(f"Cannot check version of installed \"{self.addon_name}\" addon. "
+            self.logger.error(f"Cannot check version of \"{self.addon_name}\" addon. "
                               f"Please, be sure to use the actual version.")
         return version
 
@@ -265,7 +266,12 @@ class ScriptWorkflowHandler(HardwareInputSimulator):
         installed_version = self.get_addon_version(
             os.path.join(self.game_directory, 'Interface', 'AddOns', self.addon_name, f'{self.addon_name}.toc'))
 
-        if actual_version != installed_version:
+        if actual_version is None or installed_version is None:
+            if actual_version is None:
+                self.logger.error("Can't check actual version of addon.")
+            if installed_version is None:
+                self.logger.error("Can't check installed version of addon.")
+        elif actual_version != installed_version:
             self.logger.error(
                 f"Installed addon version is not actual! Actual version is {actual_version} and your version is {installed_version}!")
             self.copy_addon()

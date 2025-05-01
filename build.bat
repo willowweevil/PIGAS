@@ -41,7 +41,7 @@ mkdir %BUILD_DIRECTORY% 2>nul || rem
 move "pigas.exe" "%BUILD_DIRECTORY%"
 copy /Y "template.config.yaml" "%BUILD_DIRECTORY%"
 copy /Y "template.context.txt" "%BUILD_DIRECTORY%"
-copy /y "README.txt" "%BUILD_DIRECTORY%"
+copy /y "PLEASE README FIRST.md" "%BUILD_DIRECTORY%"
 robocopy "data" "%BUILD_DIRECTORY%/data" /E /COPYALL /IS
 
 
