@@ -14,7 +14,6 @@ venv.bak/
 .idea/
 
 # Project files
-for_game/
 *debug*
 *.log
 comment*
