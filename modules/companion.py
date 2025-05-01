@@ -264,7 +264,7 @@ class CompanionControlLoop(HardwareInputSimulator, GameWindow, CompanionProfile,
                 if len(support_spells) > 0:
                     self.should_support = True
 
-            combat_spells = self.combat_rotation.get("Combat Spells")
+            combat_spells = self.combat_rotation.get("Attack Spells")
             if combat_spells:
                 if len(combat_spells) > 0:
                     self.should_attack = True
