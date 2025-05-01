@@ -61,9 +61,11 @@ def stop_execution(code, input_message="\nPress Enter to exit...\n"):
             pass
     sys.exit(code)
 
-def unexpected_finish(e, extra=None):
-    if extra is not None:
-        e = ': '.join([extra, str(e)])
+def unexpected_finish(e, title=None, traceback=None):
+    if title:
+        e = ': '.join([title, str(e)])
+    if traceback:
+        e = '\n'.join([e, traceback])
     logging.error(e)
     stop_execution(1)
 

@@ -169,6 +169,7 @@ class CompanionControlLoop(HardwareInputSimulator, GameWindow, CompanionProfile,
 
         self.should_heal = False
         self.should_support = False
+        self.should_attack = False
 
         self.session_data = {}
 
@@ -187,7 +188,7 @@ class CompanionControlLoop(HardwareInputSimulator, GameWindow, CompanionProfile,
         self.set_context_file(config_file)
         self.initialize_spellbook()
         self.set_rotations()
-        self.set_should_heal_and_support()
+        self.set_should_heal_support_attack()
 
     def set_context_file(self, config):
         config_data = read_yaml_file(config)
@@ -223,7 +224,6 @@ class CompanionControlLoop(HardwareInputSimulator, GameWindow, CompanionProfile,
             raise CompanionControlError(f"Companion class is not set! Please, check the \"{config}\" file!")
         data_directory = self.get_data_directory(config)
         self.directory = f"./{data_directory}/class/{self.expansion}/{companion_class}"
-        print(self.directory)
 
     def initialize_spellbook(self):
         spellbook_file = os.path.join(self.directory, "spellbook.yaml")
@@ -252,7 +252,7 @@ class CompanionControlLoop(HardwareInputSimulator, GameWindow, CompanionProfile,
         if not self.name:
             raise CompanionControlError(f"Companion name is not set! Please, check the \"{config}\" file!")
 
-    def set_should_heal_and_support(self):
+    def set_should_heal_support_attack(self):
         if self.healing_rotation:
             healing_spells = self.healing_rotation.get("Healing Spells")
             if healing_spells:
@@ -263,6 +263,11 @@ class CompanionControlLoop(HardwareInputSimulator, GameWindow, CompanionProfile,
             if support_spells:
                 if len(support_spells) > 0:
                     self.should_support = True
+
+            combat_spells = self.combat_rotation.get("Combat Spells")
+            if combat_spells:
+                if len(combat_spells) > 0:
+                    self.should_attack = True
 
     @property
     def companion_position_on_screen(self):
@@ -808,24 +813,26 @@ class CompanionControlLoop(HardwareInputSimulator, GameWindow, CompanionProfile,
                             if self.cast_spell(spell):
                                 return
         # attack
-        enemy_is_target_of = self.combat_rotation.get(
-            "Attack Target Is Target Of") if not enemy_is_target_of else enemy_is_target_of
-        if enemy_is_target_of:
-            self.target_the_enemy(target_of=enemy_is_target_of)
-            attack_spells = self.combat_rotation.get("Attack Spells")
-            if attack_spells:
-                for spell in attack_spells:
-                    if self.cast_spell(spell):
-                        return
+        if self.should_attack:
+            enemy_is_target_of = self.combat_rotation.get(
+                "Attack Target Is Target Of") if not enemy_is_target_of else enemy_is_target_of
+            if enemy_is_target_of:
+                self.target_the_enemy(target_of=enemy_is_target_of)
+                attack_spells = self.combat_rotation.get("Attack Spells")
+                if attack_spells:
+                    for spell in attack_spells:
+                        if self.cast_spell(spell):
+                            return
 
     def apply_healing_rotation(self, target=None):
-        target = self.healing_rotation.get("Healing Target") if not target else target
-        self.target_the_ally(target=target)
-        healing_spells = self.healing_rotation.get("Healing Spells")
-        if healing_spells:
-            for spell in healing_spells:
-                if self.cast_spell(spell):
-                    return
+        if self.should_heal:
+            target = self.healing_rotation.get("Healing Target") if not target else target
+            self.target_the_ally(target=target)
+            healing_spells = self.healing_rotation.get("Healing Spells")
+            if healing_spells:
+                for spell in healing_spells:
+                    if self.cast_spell(spell):
+                        return
 
     def cast_spell(self, spell, pause=2.0):
         spell_info = self.spellbook.get(spell)

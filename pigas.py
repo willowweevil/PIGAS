@@ -1,4 +1,4 @@
-import time
+import traceback
 
 from library.entity_attributes import *
 from library.errors import *
@@ -194,5 +194,7 @@ if __name__ == '__main__':
             CommonError) as e:
         unexpected_finish(e)
 
-    # except Exception as e:
-    #     unexpected_finish(e, extra="Unhandled exception occurs")
+    except Exception as e:
+        unexpected_finish(e,
+                          title="Unhandled exception occurs",
+                          traceback=str(traceback.format_exc()))
