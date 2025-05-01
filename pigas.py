@@ -43,6 +43,7 @@ if __name__ == '__main__':
         companion = CompanionControlLoop()
         companion.initialize_companion(game_window=game_window,
                                        expansion=workflow_handler.expansion,
+                                       debug=debug,
                                        config_file=config_file)
 
         workflow_handler.set_modules(companion, gingham, navigator, game_window)

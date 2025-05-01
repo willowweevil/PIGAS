@@ -157,6 +157,8 @@ class CompanionControlLoop(HardwareInputSimulator, GameWindow, CompanionProfile,
         self.n_pixels = None
         self.screenshot_shift = None
 
+        self.debug = False
+
         self.expansion = None
         self.directory = None
 
@@ -175,7 +177,7 @@ class CompanionControlLoop(HardwareInputSimulator, GameWindow, CompanionProfile,
 
         self.logger = logging.getLogger('companion')
 
-    def initialize_companion(self, game_window, expansion, config_file=None):
+    def initialize_companion(self, game_window, expansion, debug, config_file=None):
         self.game_window = game_window
         self.window_position = game_window.window_position
         self.window_size = game_window.window_size
@@ -183,6 +185,7 @@ class CompanionControlLoop(HardwareInputSimulator, GameWindow, CompanionProfile,
         self.n_pixels = game_window.n_pixels
         self.screenshot_shift = game_window.screenshot_shift
         self.expansion = expansion
+        self.debug = debug
         self.set_companion_directory(config_file)
         self.set_companion_name(config_file)
         self.set_context_file(config_file)
@@ -677,7 +680,7 @@ class CompanionControlLoop(HardwareInputSimulator, GameWindow, CompanionProfile,
     def _get_cursor_message_for_scan(self, cursor_x, cursor_y):
         self.move_mouse_to(cursor_x, cursor_y)
         time.sleep(0.1)  # the pause must be here, because new gingham shirts pixels are updating some time
-        scan_gingham_shirt = self.take_screenshot(savefig=False, savefig_prefix='looting')
+        scan_gingham_shirt = self.take_screenshot(savefig=self.debug, savefig_prefix='looting')
         _, _, cursor_pixels = self.pixels_analysis(
             data=scan_gingham_shirt,
             n_monitoring_pixels=self.n_pixels['y'],
@@ -984,7 +987,7 @@ class CompanionControlLoop(HardwareInputSimulator, GameWindow, CompanionProfile,
 
     def waiting_for_player(self):
         if not self.waiting_announced:
-            self.send_message_to_chat("Hey! I don't see you! I'll be waiting for you here..")
+            self.send_message_to_chat("Hey! It seems that you are too far! I will wait for you here..")
         self.waiting_announced = True
 
     def entering_the_game(self):

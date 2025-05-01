@@ -8,8 +8,3 @@
 # Buffs
 
 # Other
-Mount:
-  action_button: "="
-  cooldown: 0
-  cast_time: 0
-  action_page_number: 1

@@ -213,6 +213,7 @@ class ScriptWorkflowHandler(HardwareInputSimulator):
             time.sleep(1)
             calibrated = self.game_window.define_gingham_screenshot_shift(savefig=debug)
             if calibrated:
+                self.companion.screenshot_shift = self.game_window.screenshot_shift
                 self.companion.send_message_to_chat("PIGAS #calibration complete!")
             else:
                 self.companion.send_message_to_chat("PIGAS #calibration failed! Please try to change window game resolution!")

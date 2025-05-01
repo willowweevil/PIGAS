@@ -27,7 +27,7 @@ class HardwareInputSimulator:
         except AttributeError:
             self.pressed_keys.add(str(key))
 
-        #self.logger.debug(f'Pressed keys: {self.pressed_keys}')
+        # self.logger.debug(f'Pressed keys: {self.pressed_keys}')
 
     def on_key_release(self, key):
         """Handle the key release event."""
@@ -61,10 +61,8 @@ class HardwareInputSimulator:
         time.sleep(pause)
 
     def move_mouse_to_default_position(self, game_window):
-        delta_x = 50
-        delta_y = 50
-        position_x = game_window.window_position[0] + game_window.window_size[0] - delta_x
-        position_y = game_window.window_position[1] + game_window.window_size[1] - delta_y
+        position_x = game_window.window_position[0] + 0.93 * game_window.window_size[0]
+        position_y = game_window.window_position[1] + 0.12 * game_window.window_size[1]
         self.move_mouse_to(position_x, position_y)
 
     def move_mouse_to(self, x, y, pause=0):

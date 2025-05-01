@@ -10,24 +10,20 @@ Your companion is just another player tied to you!
 **Some useful notes:**
 - This version of PIGAS could work only with Windows and Ubuntu (only with Xorg window manager).
 - PIGAS 100% works with *Wrath of the Lich-King (3.3.5a)* and *Cataclysm (4.3.4)* expansions. Workability with other extensions didn't test yet.
-- Recommended to use range-attack classes for a companion with healing and supporting spells (priest or druid are the best in this case).
+- Recommended to use range-attack classes for a companion with healing and supporting spells (priest, druid, shaman).
 
 ### How to start
-#### In-Game Companion
 1. Install World of Warcraft to the second PC or virtual machine. In this case, you could use the VirtualBox to install Windows or Ubuntu (only with Xorg window manager) operating systems.
    - If you are using `Ubuntu` install `xdotool` via `sudo apt install xdotool`.
    - If you are using `Windows` on `MacOS` via `Parallels` please, be sure to set `Scaled` resolution mode in `Configure-Hardware-Graphics` menu and set correct resolution in `Windows` (e.g., `1920x1200`). 
 2. Rename `tmp.config.yaml` to `config.yaml`; `tmp.context.txt` to `context.txt`.
 3. Fill all fields in `config.yaml` (check `data\example\config.yaml` for an example)
-4. Run `pigas.exe` to begin program initialization. It will copy `Config.wtf` and Addon to game directory.
-5. Set initial skills and rotation in `data\class\GAME_EXPANSION\COMPANION_CLASS` (see below for the part __How to set skills/rotations__).
+4. Run `pigas.exe` to begin program initialization. It will copy `configs and addon to game directory.
+5. Set initial skills and rotation in `data\class\GAME_EXPANSION\COMPANION_CLASS` 
+   (see below for the part __How to set skills/rotations__).
 6. Enter the game as your companion.
-7. Send party invite from your player to your companion.
+7. Send a party invite from your player to your companion.
 8. Run `pigas.exe`
-
-#### Player
-1. Copy file `data\macros\macros-cache.txt` to `GAME_DIRECTORY\WTF\Account\YOUR_ACCOUNT\macros-cache.txt`. It contains all commands to control your companion.
-2. Send a party invite to your companion.
 
 ### How to set skills/rotations
 In `data\class\GAME_EXPANSION\COMPANION_CLASS` you will find some ready to use examples of spellbook and rotations. 
@@ -36,8 +32,8 @@ To use your companion spells, you should:
 1. Add the necessary and known by you companion spells in `spellbook.yaml`. Spell should be placed on the action bar in the game.  In `spellbook.yaml` you should fill the button on spell in keyboard, spell name, cast time, cooldown (for time spells it should be their action time) and action bar number.
 2. Fill the rotations in `rotations.yaml`. For combat rotation, you could add support spells (like Power Word: Shield) and target for them ('Player' or 'Player Pet'). 'Attack Target Is Target Of' field means the target to attack (e.g., player's target).
 3. For this version of PIGAS, buffing spells will be used at the start.
-### How to play
 
+### How to play
 Companion get commands from your player (player and companion should be in one party).
 Companion recognize these commands:
 - `#stay` to stay in one place;
@@ -55,6 +51,14 @@ Companion recognize these commands:
 
 You could send some emotions to a companion (`Let's /dance!`) or commands (e.g., `&/cast 0 1` or `&.server info`).
 To add some text to your context use `%Now we are in the Orgrimmar.`
+   
+### Some other info
+1. You could copy file `.data\macro\macros-cache.txt` to your player client
+   (to the directory `\WTF\Account\YOUR_PlAYER_ACCOUNT`) to easily control your companion.
+2. To reinstall PIGAS just delete hidden file `.local` from `pigas` directory.
+3. If you have some troubles with distances between player and companion you could check 
+   the distance with command `\distance` and set the distance manually using config 
+   (check the __Some extra config parameters__ part in this manual).
 
 ### Some extra config parameters
 Some extra parameters are supported in `config.yaml`:
