@@ -22,7 +22,8 @@ Your companion is just another player tied to you!
 4. Run `pigas.exe` to begin program initialization. It will copy `Config.wtf` and Addon to game directory.
 5. Set initial skills and rotation in `data\class\GAME_EXPANSION\COMPANION_CLASS` (see below for the part __How to set skills/rotations__).
 6. Enter the game as your companion.
-7. Run `pigas.exe`
+7. Send party invite from your player to your companion.
+8. Run `pigas.exe`
 
 #### Player
 1. Copy file `data\macros\macros-cache.txt` to `GAME_DIRECTORY\WTF\Account\YOUR_ACCOUNT\macros-cache.txt`. It contains all commands to control your companion.

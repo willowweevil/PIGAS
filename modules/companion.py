@@ -217,18 +217,23 @@ class CompanionControlLoop(HardwareInputSimulator, GameWindow, CompanionProfile,
     def initialize_spellbook(self):
         spellbook_file = os.path.join(self.directory, "spellbook.yaml")
         spellbook = read_yaml_file(spellbook_file)
-        for _, spell_info in spellbook.items():
-            spell_info['ready'] = True
-            spell_info['timestamp_of_cast'] = None
-        self.spellbook = spellbook
+        if spellbook is None:
+            self.logger.warning("Companion spellbook is empty!")
+        else:
+            for _, spell_info in spellbook.items():
+                spell_info['ready'] = True
+                spell_info['timestamp_of_cast'] = None
+            self.spellbook = spellbook
 
     def set_rotations(self):
         rotations_file = os.path.join(self.directory, "rotations.yaml")
         rotations = read_yaml_file(rotations_file)
-
-        self.combat_rotation = rotations.get("Combat Rotation")
-        self.healing_rotation = rotations.get("Healing Rotation")
-        self.buffing_rotation = rotations.get("Buffing Rotation")
+        if rotations is None:
+            self.logger.warning("Companion rotations is not set!")
+        else:
+            self.combat_rotation = rotations.get("Combat Rotation")
+            self.healing_rotation = rotations.get("Healing Rotation")
+            self.buffing_rotation = rotations.get("Buffing Rotation")
 
     def set_companion_name(self, config):
         companion_config = self.get_companion_config(config)
@@ -719,13 +724,12 @@ class CompanionControlLoop(HardwareInputSimulator, GameWindow, CompanionProfile,
         context = read_the_context(self.context_file)
         context += f"\n{player_message}"
         assistant_answer_start_time = time.time()
-        self.logger.info(f"Got player message: {player_message}")
-        self.logger.info("Getting response..")
+        self.logger.debug(f"Got player message: {player_message}")
         response = get_open_ai_response(context)
         if response:
             self.ai_response_in_chat(response, context)
         else:
-            self.send_message_to_chat("I'm too tired to speak now..", key_delay=20)
+            self.send_message_to_chat("Sorry, I can't speak now.", key_delay=20)
         self.logger.info(
             f"Companion answer time was {round(time.time() - assistant_answer_start_time, 2)} seconds.")
 
@@ -972,9 +976,10 @@ class CompanionControlLoop(HardwareInputSimulator, GameWindow, CompanionProfile,
         self.send_message_to_chat(message="/salute", channel='/s', pause=3.0)
 
     def check_spellbook_cooldowns(self):
-        for spell in self.spellbook.keys():
-            if self.spellbook[spell]['cooldown']:
-                self.check_spell_readiness(spell)
+        if self.spellbook:
+            for spell in self.spellbook.keys():
+                if self.spellbook[spell]['cooldown']:
+                    self.check_spell_readiness(spell)
 
     def check_spell_readiness(self, spell_name):
         input_spell = self.spellbook[spell_name]

@@ -185,7 +185,7 @@ function GreedForLoot(self, event, rollID)
 end
 
 function AcceptPartyInvite(event, name)
-    AcceptPartyWithDelay(2)
+    AcceptPartyWithDelay(1)
 end
 
 function AcceptPartyWithDelay(seconds)

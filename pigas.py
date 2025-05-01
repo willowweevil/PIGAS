@@ -1,6 +1,7 @@
 import time
 
 from library.entity_attributes import *
+from library.errors import *
 
 from modules.gingham_processing import GinghamProcessor
 from modules.game_window import GameWindow
@@ -186,5 +187,12 @@ if __name__ == '__main__':
     except KeyboardInterrupt:
         ScriptWorkflowHandler(config_file=config_file).finish_script()
 
-    except Exception as e:
+    except (GameWindowError,
+            CompanionControlError,
+            WorkflowHandlerError,
+            GinghamProcessorError,
+            CommonError) as e:
         unexpected_finish(e)
+
+    # except Exception as e:
+    #     unexpected_finish(e, extra="Unhandled exception occurs")

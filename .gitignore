@@ -17,7 +17,7 @@ venv.bak/
 *debug*
 *.log
 comment*
-config.yaml
+config*
 context*
 .*
 _*

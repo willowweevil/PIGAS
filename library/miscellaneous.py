@@ -61,7 +61,9 @@ def stop_execution(code, input_message="\nPress Enter to exit...\n"):
             pass
     sys.exit(code)
 
-def unexpected_finish(e):
+def unexpected_finish(e, extra=None):
+    if extra is not None:
+        e = ': '.join([extra, str(e)])
     logging.error(e)
     stop_execution(1)
 
@@ -99,10 +101,14 @@ def read_yaml_file(input_file=None):
 
 def get_open_ai_response(input_message):
     connection_parameters = read_yaml_file('config.yaml')
-    client = openai.OpenAI(
-        api_key=connection_parameters['open-ai']['api_key'],
-        base_url=connection_parameters['open-ai']['base_url']
-    )
+    try:
+        client = openai.OpenAI(
+            api_key=connection_parameters['open-ai']['api_key'],
+            base_url=connection_parameters['open-ai']['base_url']
+        )
+    except openai.OpenAIError as e:
+        logging.error(e)
+        return None
     try:
         response = client.chat.completions.create(
             model="gpt-4o-mini",
