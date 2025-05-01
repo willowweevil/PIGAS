@@ -232,7 +232,7 @@ class ScriptWorkflowHandler(HardwareInputSimulator):
         addon_src = self.addon_directory
         addon_dst = os.path.join(self.game_directory, 'Interface', 'AddOns', self.addon_name)
         self.logger.info(
-            f"Going to copy \"{self.addon_name}\" addon to \"{os.path.join("YOUR_GAME_DIRECTORY", 'Interface', 'AddOns', self.addon_name)}\".")
+            f"Going to copy \"{self.addon_name}\" addon to \"{addon_dst}\".")
         if os.path.exists(addon_dst):
             self.logger.info("It seems that addon already exists in the game directory. Going to override addon.")
             shutil.rmtree(addon_dst)
@@ -276,6 +276,7 @@ class ScriptWorkflowHandler(HardwareInputSimulator):
                 f"Installed addon version is not actual! Actual version is {actual_version} and your version is {installed_version}!")
             self.copy_addon()
 
+        # system_platform = define_system_platform()
         # system_platform = define_system_platform()
         # if system_platform == Platform.LINUX:
         #     try:
