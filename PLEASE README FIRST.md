@@ -17,8 +17,8 @@ Your companion is just another player tied to you!
 1. Install World of Warcraft to the second PC or virtual machine. In this case, you could use the VirtualBox to install Windows or Ubuntu (only with Xorg window manager) operating systems.
    - If you are using `Ubuntu` install `xdotool` via `sudo apt install xdotool`.
    - If you are using `Windows` on `MacOS` via `Parallels` please, be sure to set `Scaled` resolution mode in `Configure-Hardware-Graphics` menu and set correct resolution in `Windows` (e.g., `1920x1200`). 
-2. Rename `template.config.yaml` to `config.yaml`; `template.context.txt` to `context.txt`.
-3. Fill all fields in `config.yaml`.
+2. Rename `tmp.config.yaml` to `config.yaml`; `tmp.context.txt` to `context.txt`.
+3. Fill all fields in `config.yaml` (check `data\example\config.yaml` for an example)
 4. Run `pigas.exe` to begin program initialization. It will copy `Config.wtf` and Addon to game directory.
 5. Set initial skills and rotation in `data\class\GAME_EXPANSION\COMPANION_CLASS` (see below for the part __How to set skills/rotations__).
 6. Enter the game as your companion.
@@ -30,7 +30,8 @@ Your companion is just another player tied to you!
 2. Send a party invite to your companion.
 
 ### How to set skills/rotations
-In `data\class\GAME_EXPANSION\COMPANION_CLASS` you will find some examples of spellbook and rotations. 
+In `data\class\GAME_EXPANSION\COMPANION_CLASS` you will find some ready to use examples of spellbook and rotations. 
+In `data\example\spells_fnd_rotations` are examples.
 To use your companion spells, you should:
 1. Add the necessary and known by you companion spells in `spellbook.yaml`. Spell should be placed on the action bar in the game.  In `spellbook.yaml` you should fill the button on spell in keyboard, spell name, cast time, cooldown (for time spells it should be their action time) and action bar number.
 2. Fill the rotations in `rotations.yaml`. For combat rotation, you could add support spells (like Power Word: Shield) and target for them ('Player' or 'Player Pet'). 'Attack Target Is Target Of' field means the target to attack (e.g., player's target).

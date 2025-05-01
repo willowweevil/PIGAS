@@ -26,7 +26,7 @@ call "%VENV_ACTIVATE%"
 
 :: Build with nuitka
 echo Start building application.
-python -m nuitka --standalone --onefile "%PIGAS_PYTHON%"
+python -m nuitka --enable-plugin=tk-inter --standalone --onefile "%PIGAS_PYTHON%"
 echo Build finished
 
 :: Create directory for build files
@@ -39,8 +39,8 @@ mkdir %BUILD_DIRECTORY% 2>nul || rem
 
 :: Copying files to build directory
 move "pigas.exe" "%BUILD_DIRECTORY%"
-copy /Y "template.config.yaml" "%BUILD_DIRECTORY%"
-copy /Y "template.context.txt" "%BUILD_DIRECTORY%"
+copy /Y "tmp.config.yaml" "%BUILD_DIRECTORY%"
+copy /Y "tmp.context.txt" "%BUILD_DIRECTORY%"
 copy /y "PLEASE README FIRST.md" "%BUILD_DIRECTORY%"
 robocopy "data" "%BUILD_DIRECTORY%/data" /E /COPYALL /IS
 

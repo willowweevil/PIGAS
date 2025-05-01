@@ -18,6 +18,6 @@ mkdir -p $BUILD_DIRECTORY
 mv pigas.bin $BUILD_DIRECTORY/
 cp -r data $BUILD_DIRECTORY/
 cp "PLEASE README FIRST.md" $BUILD_DIRECTORY/
-cp template.config.yaml $BUILD_DIRECTORY/
-cp template.context.txt $BUILD_DIRECTORY/
+cp tmp.config.yaml $BUILD_DIRECTORY/
+cp tmp.context.txt $BUILD_DIRECTORY/
 
