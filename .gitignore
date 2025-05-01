@@ -25,3 +25,10 @@ _*
 # Pyinstaller
 build/
 dist/
+
+# Nuitka
+*build/
+*dist/
+
+# Build
+pigas/
