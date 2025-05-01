@@ -1,18 +1,2 @@
 ---
-Healing Rotation:
-  Healing Target: "Player"
-  Healing Spells:
-    - "Regrowth"
-    - "Healing Touch"
-Buffing Rotation:
-  Buffing Spells:
-  - "Mark of the Wild"
-  - "Thorns"
-Combat Rotation:
-  Support Target: "Player"
-  Attack Target Is Target Of: "Player"
-  Support Spells:
-    - "Rejuvenation"
-  Attack Spells:
-    - "Moonfire"
-    - "Wrath"
+# Set your rotations here

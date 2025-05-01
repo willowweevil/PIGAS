@@ -207,12 +207,23 @@ class CompanionControlLoop(HardwareInputSimulator, GameWindow, CompanionProfile,
             raise CompanionControlError(f"Companion config is not set! Please, check the \"{config}\" file!")
         return companion_config
 
+    @staticmethod
+    def get_data_directory(config):
+        config_data = read_yaml_file(config)
+        other_data = config_data.get('other')
+        if not other_data:
+            return 'data'
+        data_directory = other_data.get('companion_data_directory')
+        return data_directory if data_directory else 'data'
+
     def set_companion_directory(self, config):
         companion_config = self.get_companion_config(config)
         companion_class = companion_config.get('class')
         if not companion_class:
             raise CompanionControlError(f"Companion class is not set! Please, check the \"{config}\" file!")
-        self.directory = f"./data/class/{self.expansion}/{companion_class}"
+        data_directory = self.get_data_directory(config)
+        self.directory = f"./{data_directory}/class/{self.expansion}/{companion_class}"
+        print(self.directory)
 
     def initialize_spellbook(self):
         spellbook_file = os.path.join(self.directory, "spellbook.yaml")
