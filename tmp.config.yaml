@@ -7,7 +7,3 @@ game:
 companion:
   name:  # name of your companion
   class:  # class of your companion
-
-open-ai:
-  base_url:  # api url
-  api_key:  # api key

@@ -9,13 +9,12 @@ import logging
 from library.errors import CommonError
 from library.platforms import Platform
 
-from library.constants import OPEN_AI_CREDENTIALS
-
 logging.basicConfig(level=logging.ERROR,
                     format="%(asctime)s %(levelname)s %(message)s")
 
-for key in logging.Logger.manager.loggerDict:
-    logging.getLogger(key).setLevel(logging.WARNING)
+for common_logger_name in logging.Logger.manager.loggerDict:
+    logging.getLogger(common_logger_name).setLevel(logging.WARNING)
+
 
 def setup_logging(loggers, debug=False):
     # Clear any existing handlers (important to avoid duplicates)
@@ -44,6 +43,7 @@ def setup_logging(loggers, debug=False):
         logger.setLevel(logging.DEBUG if debug else logging.INFO)
         logger.propagate = True
 
+
 def define_system_platform():
     if sys.platform in ['linux', 'linux2']:
         platform = Platform.LINUX
@@ -53,8 +53,9 @@ def define_system_platform():
         platform = Platform.MACOS
     else:
         raise CommonError(f"Cannot define platform: {sys.platform}")
-    #logging.debug(f"System platform was defined as {str(platform).split('.')[1]}.")
+    # logging.debug(f"System platform was defined as {str(platform).split('.')[1]}.")
     return platform
+
 
 def stop_execution(code, input_message="\nPress Enter to exit...\n"):
     time.sleep(0.5)
@@ -66,6 +67,7 @@ def stop_execution(code, input_message="\nPress Enter to exit...\n"):
             pass
     sys.exit(code)
 
+
 def unexpected_finish(e, title=None, traceback=None):
     if title:
         e = ': '.join([title, str(e)])
@@ -74,55 +76,65 @@ def unexpected_finish(e, title=None, traceback=None):
     logging.error(e)
     stop_execution(1)
 
+
 def is_debug(config_file):
     debug_level = False
-    config = read_yaml_file(config_file)
+    config = read_yaml_file(config_file, critical=True)
     other_data = config.get('other')
     if other_data:
         debug_level = other_data.get('debug')
     return True if debug_level is True else False
 
-def debug_pressed_keys(config_file):
-    debug_level = False
-    config = read_yaml_file(config_file)
-    other_data = config.get('other')
-    if other_data:
-        debug_level = other_data.get('pressed_keys')
-    return True if debug_level is True else False
+
+# def debug_pressed_keys(config_file):
+#     debug_level = False
+#     config = read_yaml_file(config_file)
+#     other_data = config.get('other')
+#     if other_data:
+#         debug_level = other_data.get('pressed_keys')
+#     return True if debug_level is True else False
 
 def get_random(my_list):
     return random.choice(my_list)
 
 
-def read_yaml_file(input_file=None):
+def read_yaml_file(input_file=None, critical=False):
     try:
         with open(input_file, 'r', encoding="utf-8") as file:
             data = yaml.safe_load(file)
     except FileNotFoundError:
-        logging.error(f"File {input_file} not found.")
-        stop_execution(1)
+        if critical:
+            # logging.error(f"File {input_file} not found.")
+            raise CommonError(f"File {input_file} not found.")
+        return None
     # except KeyboardInterrupt:
     #     logging.error(f"File \"{input_file}\" reading was interrupted by user.")
     return data
 
 
-def get_open_ai_connection_parameters(config_file):
-    # config_other = read_yaml_file('config.yaml').get('other')
-    # if config_other:
-    #     hardcoded_credentials = config_other.get('hardcoded_credentials', False)
-    # if not connection_parameters:
+def get_open_ai_connection_parameters():
+    open_ai_config_file = 'open-ai.yaml'
+    open_ai_config = read_yaml_file(open_ai_config_file)
+    if open_ai_config:
+        api_key = open_ai_config.get('api_key', None)
+        base_url = open_ai_config.get('base_url', None)
+        if not api_key:
+            logging.warning(f'OpenAI API Key not found. Please, check the \"{open_ai_config_file}\" file.')
+        if not base_url:
+            logging.warning(f'OpenAI API URL not found. Please, check the \"{open_ai_config_file}\" file.')
+    else:
+        api_key, base_url = None, None
+        logging.warning(f"{open_ai_config_file} not found.")
 
-    return OPEN_AI_CREDENTIALS["api_key"], OPEN_AI_CREDENTIALS["base_url"]
-    # key = connection_parameters.get("api_key")
-    # url = connection_parameters.get("base_url")
+    return {'api_key': api_key, 'base_url': base_url}
 
 
 def get_open_ai_response(input_message):
-    api_key, base_url = get_open_ai_connection_parameters('config.yaml')
+    connection_params = get_open_ai_connection_parameters()
     try:
         client = openai.OpenAI(
-            api_key=api_key,
-            base_url=base_url,
+            api_key=connection_params['api_key'],
+            base_url=connection_params['base_url'],
         )
     except openai.OpenAIError as e:
         logging.error(e)

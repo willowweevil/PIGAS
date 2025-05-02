@@ -1,0 +1,4 @@
+---
+open-ai:
+  base_url:  # api url
+  api_key:  # api key

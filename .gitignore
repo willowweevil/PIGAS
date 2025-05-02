@@ -19,6 +19,7 @@ venv.bak/
 comment*
 config*
 context*
+open-ai*
 .*
 _*
 

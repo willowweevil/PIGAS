@@ -2,9 +2,7 @@ import numpy as np
 import logging
 import time
 
-from library.miscellaneous import read_yaml_file
 from library.constants import WOW_AREAS
-
 
 class BasicGeometry:
     @staticmethod
@@ -55,7 +53,7 @@ class BasicGeometry:
 
 class Navigator(BasicGeometry):
 
-    def __init__(self, n_frames=20, config_file=None):
+    def __init__(self, n_frames=20, config_data=None):
         super().__init__()
         self.n_frames = n_frames
         self.last_companion_coordinates = [(0, 0)] * n_frames
@@ -63,14 +61,14 @@ class Navigator(BasicGeometry):
         self.last_companion_time = [0] * n_frames
         self.last_player_time = [0] * n_frames
 
-        self.config_file = config_file
+        self.config_data = config_data
         self.predefined_navigation_constants = self.set_predefined_navigation_constants()
 
         self.logger = logging.getLogger('navigation')
 
 
     def set_predefined_navigation_constants(self):
-        predefined_navigation_constants = read_yaml_file(self.config_file).get('navigation', None)
+        predefined_navigation_constants = self.config_data.get('navigation', None)
         return predefined_navigation_constants
 
     def _calculate_velocity(self, position, coordinates_array, times_array):

@@ -1,17 +1,16 @@
 import subprocess
 import logging
 import time
-import sys
 
 import mss
 from PIL import Image
+
+from modules.gingham_processing import GinghamProcessor
 
 from library.miscellaneous import define_system_platform
 
 from library.errors import GameWindowError
 from library.platforms import Platform
-
-from modules.gingham_processing import GinghamProcessor
 
 if define_system_platform() == Platform.WINDOWS:
     import win32gui
@@ -41,9 +40,6 @@ else:
 
     win32gui = MockWin32GUI()
 
-from library.miscellaneous import read_yaml_file
-from library.platforms import Platform
-
 
 class GameWindow:
     def __init__(self):
@@ -63,11 +59,10 @@ class GameWindow:
     def _set_system_platform(self):
         self.platform = define_system_platform()
 
-    def _set_window_title(self, config=None):
-        config_data = read_yaml_file(config)
+    def _set_window_title(self, config_data):
         game_config = config_data.get('game')
         if not game_config:
-            raise GameWindowError(f"Game config is not set! Please, check the \"{config}\" file!")
+            raise GameWindowError(f"Game config is not set! Please, check the config file!")
 
         self.window_title = game_config.get('window-title', 'World of Warcraft')
 
@@ -80,11 +75,11 @@ class GameWindow:
         self.logger.debug(f"Screenshot shift was set to: {self.screenshot_shift}")
         return True
 
-    def set_window_parameters(self, config_file=None):
+    def set_window_parameters(self, config_data=None):
         if not self.platform:
             self._set_system_platform()
         if not self.window_title:
-            self._set_window_title(config_file)
+            self._set_window_title(config_data)
         if not self.window_id:
             self._set_window_id()
         if not self.window_position or not self.window_size:
@@ -268,5 +263,3 @@ class GameWindow:
                 img.save(
                     f"screenshot_{savefig_prefix}_zero_{position_x + x_shift},{position_y + y_shift}_size_{width}x{height}_debug.png")
         return img
-
-

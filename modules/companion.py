@@ -168,6 +168,7 @@ class CompanionControlLoop(HardwareInputSimulator, GameWindow, CompanionProfile,
         self.healing_rotation = None
         self.buffing_rotation = None
         self.context_file = None
+        self.config_data = None
 
         self.should_heal = False
         self.should_support = False
@@ -177,7 +178,7 @@ class CompanionControlLoop(HardwareInputSimulator, GameWindow, CompanionProfile,
 
         self.logger = logging.getLogger('companion')
 
-    def initialize_companion(self, game_window, expansion, debug, config_file=None):
+    def initialize_companion(self, game_window, expansion, debug, config_data=None):
         self.game_window = game_window
         self.window_position = game_window.window_position
         self.window_size = game_window.window_size
@@ -186,51 +187,50 @@ class CompanionControlLoop(HardwareInputSimulator, GameWindow, CompanionProfile,
         self.screenshot_shift = game_window.screenshot_shift
         self.expansion = expansion
         self.debug = debug
-        self.set_companion_directory(config_file)
-        self.set_companion_name(config_file)
-        self.set_context_file(config_file)
+        self.config_data = config_data
+        self.set_companion_directory()
+        self.set_companion_name()
+        self.set_context_file()
         self.initialize_spellbook()
         self.set_rotations()
         self.set_should_heal_support_attack()
 
-    def set_context_file(self, config):
-        config_data = read_yaml_file(config)
-        companion_config = config_data.get('companion')
-        if not companion_config:
-            raise CompanionControlError(f"Companion config is not set! Please, check the \"{config}\" file!")
-
-        self.context_file = companion_config.get('context_file', 'context.txt')
-        if not self.context_file:
-            self.logger.info(f"Going to use the {self.context_file} as context file!")
-
-    @staticmethod
-    def get_companion_config(config):
-        config_data = read_yaml_file(config)
-        companion_config = config_data.get('companion')
-        if not companion_config:
-            raise CompanionControlError(f"Companion config is not set! Please, check the \"{config}\" file!")
-        return companion_config
-
-    @staticmethod
-    def get_data_directory(config):
-        config_data = read_yaml_file(config)
-        other_data = config_data.get('other')
+    def get_data_directory(self):
+        other_data = self.config_data.get('other')
         if not other_data:
             return 'data'
         data_directory = other_data.get('companion_data_directory')
         return data_directory if data_directory else 'data'
 
-    def set_companion_directory(self, config):
-        companion_config = self.get_companion_config(config)
+    def get_companion_config(self):
+        companion_config = self.config_data.get('companion')
+        if not companion_config:
+            raise CompanionControlError(f"Companion config is not set! Please, check the config file!")
+        return companion_config
+
+    def set_context_file(self):
+        companion_config = self.get_companion_config()
+        self.context_file = companion_config.get('context_file', 'context.txt')
+        if not self.context_file:
+            self.logger.info(f"Going to use the {self.context_file} as context file.")
+
+    def set_companion_directory(self):
+        companion_config = self.get_companion_config()
         companion_class = companion_config.get('class')
         if not companion_class:
-            raise CompanionControlError(f"Companion class is not set! Please, check the \"{config}\" file!")
-        data_directory = self.get_data_directory(config)
+            raise CompanionControlError(f"Companion class is not set! Please, check the config file!")
+        data_directory = self.get_data_directory()
         self.directory = f"./{data_directory}/class/{self.expansion}/{companion_class}"
+
+    def set_companion_name(self):
+        companion_config = self.get_companion_config()
+        self.name = companion_config.get('name')
+        if not self.name:
+            raise CompanionControlError(f"Companion name is not set! Please, check the config file!")
 
     def initialize_spellbook(self):
         spellbook_file = os.path.join(self.directory, "spellbook.yaml")
-        spellbook = read_yaml_file(spellbook_file)
+        spellbook = read_yaml_file(spellbook_file, critical=True)
         if spellbook is None:
             self.logger.warning("Companion spellbook is empty!")
         else:
@@ -241,19 +241,13 @@ class CompanionControlLoop(HardwareInputSimulator, GameWindow, CompanionProfile,
 
     def set_rotations(self):
         rotations_file = os.path.join(self.directory, "rotations.yaml")
-        rotations = read_yaml_file(rotations_file)
+        rotations = read_yaml_file(rotations_file, critical=True)
         if rotations is None:
             self.logger.warning("Companion rotations is not set!")
         else:
             self.combat_rotation = rotations.get("Combat Rotation")
             self.healing_rotation = rotations.get("Healing Rotation")
             self.buffing_rotation = rotations.get("Buffing Rotation")
-
-    def set_companion_name(self, config):
-        companion_config = self.get_companion_config(config)
-        self.name = companion_config.get('name')
-        if not self.name:
-            raise CompanionControlError(f"Companion name is not set! Please, check the \"{config}\" file!")
 
     def set_should_heal_support_attack(self):
         if self.healing_rotation:

@@ -16,22 +16,22 @@ Your companion is just another player tied to you!
 1. Install World of Warcraft to the second PC or virtual machine. In this case, you could use the VirtualBox to install Windows or Ubuntu (only with Xorg window manager) operating systems.
    - If you are using `Ubuntu` install `xdotool` via `sudo apt install xdotool`.
    - If you are using `Windows` on `MacOS` via `Parallels` please, be sure to set `Scaled` resolution mode in `Configure-Hardware-Graphics` menu and set correct resolution in `Windows` (e.g., `1920x1200`). 
-2. Rename `tmp.config.yaml` to `config.yaml`; `tmp.context.txt` to `context.txt`.
+2. Rename `tmp.config.yaml` to `config.yaml`; `tmp.context.txt` to `context.txt`; `tmp.open-ai.yaml` to `open-ai.yaml`.
 3. Fill all fields in `config.yaml` (check `data\example\config.yaml` for an example)
-4. Run `pigas.exe` to begin program initialization. It will copy `configs and addon to game directory.
+4. Run `pigas.exe` to start program initialization. It will copy configs and addon to the game directory.
 5. Set initial skills and rotation in `data\class\GAME_EXPANSION\COMPANION_CLASS` 
-   (see below for the part __How to set skills/rotations__).
+   (check the part __How to set skills/rotations__).
 6. Enter the game as your companion.
 7. Send a party invite from your player to your companion.
 8. Run `pigas.exe`
 
 ### How to set skills/rotations
-In `data\class\GAME_EXPANSION\COMPANION_CLASS` you will find some ready to use examples of spellbook and rotations. 
-In `data\example\spells_fnd_rotations` are examples.
+In `data\example\spells_and_rotations` you could fine some examples.
 To use your companion spells, you should:
-1. Add the necessary and known by you companion spells in `spellbook.yaml`. Spell should be placed on the action bar in the game.  In `spellbook.yaml` you should fill the button on spell in keyboard, spell name, cast time, cooldown (for time spells it should be their action time) and action bar number.
-2. Fill the rotations in `rotations.yaml`. For combat rotation, you could add support spells (like Power Word: Shield) and target for them ('Player' or 'Player Pet'). 'Attack Target Is Target Of' field means the target to attack (e.g., player's target).
-3. For this version of PIGAS, buffing spells will be used at the start.
+1. Go to `data\class\GAME_EXPANSION\COMPANION_CLASS`. 
+2. Add the necessary and known by you companion spells in `spellbook.yaml`. Spell should be placed on the action bar in the game.  In `spellbook.yaml` you should fill the button on spell in keyboard, spell name, cast time, cooldown (for time spells it should be their action time) and action bar number.
+3. Fill the rotations in `rotations.yaml`. For combat rotation, you could add support spells (like Power Word: Shield) and target for them ('Player' or 'Player Pet'). 'Attack Target Is Target Of' field means the target to attack (e.g., player's target).
+4. For this version of PIGAS, buffing spells will be used at the start.
 
 ### How to play
 Companion get commands from your player (player and companion should be in one party).
@@ -46,44 +46,42 @@ Companion recognize these commands:
 - `#dismount` - to dismount;
 - `#loot` - to move on player position and try to loot something;
 - `#movement-speed` - to change movement speed (run/walk);
-- `#pause` - paused PIGAS;
-- `#disable` - to disable PIGAS.
+- `#pause` - pause PIGAS;
+- `#disable` - disable PIGAS.
 
 You could send some emotions to a companion (`Let's /dance!`) or commands (e.g., `&/cast 0 1` or `&.server info`).
-To add some text to your context use `%Now we are in the Orgrimmar.`
-   
+To add some text to your context file `%Now we are in the Orgrimmar.`
+
+### Companion responding
+
+   `open-ai.yaml`
+   ```
+   open-ai:
+      base_url:  # api url
+      api_key:  # api key
+   ```
+
+   `context.txt`
+
 ### Some useful info
 1. You could copy file `.data\macro\macros-cache.txt` to your player client
    (to the directory `\WTF\Account\YOUR_PlAYER_ACCOUNT`) to easily control your companion.
-2. To reinstall PIGAS just delete hidden file `.local` from `pigas` directory.
+2. To reinstall PIGAS just remove the hidden file `.local` from `pigas` directory.
 3. If you have some troubles with distances between player and companion you could check 
    the distance with command `\distance` and set the distance manually using config 
-   (check the __Some extra config parameters__ part in this manual).
+   (check the __Extra config parameters__ part in this manual).
 
 ### Extra config parameters
 Some extra parameters are supported in `config.yaml`:
 1. Game window title
 
 If your actual game window title is not __World of Warcraft__ (you can check it in the task manager),
-change it in `game` _(default: World of Warcraft)_
+change it in `game` part of config _(default: World of Warcraft)_
    ```
    game
      window-title: YOUR_GAME_WINDOW_TITLE
    ```
-2. Debug
-
-_default: false_
-   ```
-   other:
-     debug: true
-   ```
-3. Open-AI
-    ```
-    open-ai:
-      base_url:  # api url
-      api_key:  # api key
-    ```
-4. Distances fix
+2. Distances fix
     ```
     navigation:
         distance_to_player_delta: 0.15
@@ -92,10 +90,18 @@ _default: false_
         start_to_avoid_obstacles_distance_coefficient: 3.0
         start_to_wait_player_distance_coefficient: 50.0
     ``` 
-5. Companion context
+3. Debug
+
+   _default: false_
+   ```
+   other:
+     debug: true
+   ```
+4. Companion context
 
    context file for AI response (default: context.txt)
    ```
    companion:
      context_file: YOUR_CONTEXT_FILE.txt
    ```
+   

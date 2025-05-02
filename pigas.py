@@ -8,7 +8,7 @@ from modules.game_window import GameWindow
 from modules.navigation import Navigator
 from modules.companion import CompanionControlLoop
 from modules.workflow_handler import ScriptWorkflowHandler
-from library.miscellaneous import is_debug, setup_logging, debug_pressed_keys
+from library.miscellaneous import is_debug, setup_logging
 
 from library.miscellaneous import unexpected_finish
 
@@ -31,20 +31,20 @@ if __name__ == '__main__':
 
         # game window
         game_window = GameWindow()
-        game_window.set_window_parameters(config_file=config_file)
+        game_window.set_window_parameters(config_data=workflow_handler.config_data)
 
         # gingham analyzer
         gingham = GinghamProcessor()
 
         # geometry and navigation
-        navigator = Navigator(config_file=config_file)
+        navigator = Navigator(config_data=workflow_handler.config_data)
 
         # companion actions
         companion = CompanionControlLoop()
         companion.initialize_companion(game_window=game_window,
                                        expansion=workflow_handler.expansion,
-                                       debug=debug,
-                                       config_file=config_file)
+                                       config_data=workflow_handler.config_data,
+                                       debug=debug)
 
         workflow_handler.set_modules(companion, gingham, navigator, game_window)
         while True:
@@ -61,7 +61,6 @@ if __name__ == '__main__':
 
                 # gingham calibration at first frame run
                 workflow_handler.calibration_workflow(debug=debug)
-
 
             # set session data
             session_data = workflow_handler.session_data

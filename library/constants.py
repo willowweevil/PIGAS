@@ -2,11 +2,6 @@ from pynput.keyboard import Key
 from pynput.mouse import Button
 import numpy as np
 
-OPEN_AI_CREDENTIALS = {
-    "api_key": "sk-RltKsa1yQmBPfADED63d40D221C649A3845d79A3B7FeC452",
-    "base_url": "https://api.aiguoguo199.com/v1"
-}
-
 CALIBRATION_ARRAY = np.array([[255, 255, 255, 255, 255, 0, 0, 0, 0, 0, 255, 255, 255, 255, 255, 0,
                                0, 0, 0, 0, 255, 255, 255, 255, 255, 0, 0, 0, 0, 0, 255, 255,
                                255, 255, 255],

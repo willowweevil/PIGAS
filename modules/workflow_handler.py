@@ -23,6 +23,7 @@ class ScriptWorkflowHandler(HardwareInputSimulator):
         self.game_directory = None
         self.account = None
 
+        self.config_data = None
         self.config_file = config_file
         self.frame = 0
 
@@ -62,7 +63,7 @@ class ScriptWorkflowHandler(HardwareInputSimulator):
 
     @property
     def streaming(self):
-        config = read_yaml_file(self.config_file)
+        config = read_yaml_file(self.config_file, critical=True)
         other_data = config.get("other")
         if other_data:
             is_streaming = other_data.get('streaming', False)
@@ -164,7 +165,12 @@ class ScriptWorkflowHandler(HardwareInputSimulator):
         self.write_program_runs_count(counts + 1)
         return counts + 1
 
+    def get_config(self):
+        self.config_data = read_yaml_file(self.config_file, critical=True)
+
     def initialization(self):
+        self.get_config()
+
         screen_resolution = self.define_screen_resolution()
         screen_proportions = round(screen_resolution[0] / screen_resolution[1], 2)
         if screen_proportions == round(16/9, 2):
@@ -176,7 +182,7 @@ class ScriptWorkflowHandler(HardwareInputSimulator):
             self.logger.warning(f"Cannot define screen proportions (found screen resolution is {screen_resolution[0]}x{screen_resolution[1]})."
                                 f"Please, set resolution in game manually.")
 
-        game_config = read_yaml_file(self.config_file).get("game")
+        game_config = self.config_data.get("game")
         if not game_config:
             raise WorkflowHandlerError(f"Incorrect \"{self.config_file}\" file!")
 
