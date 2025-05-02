@@ -11,6 +11,7 @@ set PIGAS_PYTHON=pigas.py
 set PIGAS_BINARY=pigas.exe
 set CONFIG=tmp.config.yaml
 set CONTEXT=tmp.context.txt
+set OPEN_AI=tmp.open-ai.yaml
 set README="READ_ME_PLEASE.md"
 set DATA_DIR=data
 
@@ -30,6 +31,7 @@ mkdir %BUILD_DIRECTORY% 2>nul || rem
 :: Copy files
 move "%PIGAS_BINARY%" "%BUILD_DIRECTORY%"
 copy /Y "%CONFIG%" "%BUILD_DIRECTORY%"
+copy /y "%OPEN_AI%" "%BUILD_DIRECTORY%"
 copy /Y "%CONTEXT%" "%BUILD_DIRECTORY%"
 copy /y "%README%" "%BUILD_DIRECTORY%"
 robocopy "%DATA_DIR%" "%BUILD_DIRECTORY%/%DATA_DIR%" /E /COPYALL /IS
