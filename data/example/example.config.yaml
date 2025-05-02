@@ -1,0 +1,9 @@
+---
+game:
+  game-directory: "C:\\Games\\WoW 3.3.5a" # <-- please use double backslash in Windows!
+  expansion: cataclysm
+  account: senior_eggplant
+
+companion:
+  name: ravenquill
+  class: druid
