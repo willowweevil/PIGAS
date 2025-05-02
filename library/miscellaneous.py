@@ -9,8 +9,13 @@ import logging
 from library.errors import CommonError
 from library.platforms import Platform
 
+from library.constants import OPEN_AI_CREDENTIALS
+
 logging.basicConfig(level=logging.ERROR,
                     format="%(asctime)s %(levelname)s %(message)s")
+
+for key in logging.Logger.manager.loggerDict:
+    logging.getLogger(key).setLevel(logging.WARNING)
 
 def setup_logging(loggers, debug=False):
     # Clear any existing handlers (important to avoid duplicates)
@@ -101,12 +106,23 @@ def read_yaml_file(input_file=None):
     return data
 
 
+def get_open_ai_connection_parameters(config_file):
+    # config_other = read_yaml_file('config.yaml').get('other')
+    # if config_other:
+    #     hardcoded_credentials = config_other.get('hardcoded_credentials', False)
+    # if not connection_parameters:
+
+    return OPEN_AI_CREDENTIALS["api_key"], OPEN_AI_CREDENTIALS["base_url"]
+    # key = connection_parameters.get("api_key")
+    # url = connection_parameters.get("base_url")
+
+
 def get_open_ai_response(input_message):
-    connection_parameters = read_yaml_file('config.yaml')
+    api_key, base_url = get_open_ai_connection_parameters('config.yaml')
     try:
         client = openai.OpenAI(
-            api_key=connection_parameters['open-ai']['api_key'],
-            base_url=connection_parameters['open-ai']['base_url']
+            api_key=api_key,
+            base_url=base_url,
         )
     except openai.OpenAIError as e:
         logging.error(e)

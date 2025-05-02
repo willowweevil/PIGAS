@@ -52,7 +52,7 @@ Companion recognize these commands:
 You could send some emotions to a companion (`Let's /dance!`) or commands (e.g., `&/cast 0 1` or `&.server info`).
 To add some text to your context use `%Now we are in the Orgrimmar.`
    
-### Some other info
+### Some useful info
 1. You could copy file `.data\macro\macros-cache.txt` to your player client
    (to the directory `\WTF\Account\YOUR_PlAYER_ACCOUNT`) to easily control your companion.
 2. To reinstall PIGAS just delete hidden file `.local` from `pigas` directory.
@@ -60,20 +60,30 @@ To add some text to your context use `%Now we are in the Orgrimmar.`
    the distance with command `\distance` and set the distance manually using config 
    (check the __Some extra config parameters__ part in this manual).
 
-### Some extra config parameters
+### Extra config parameters
 Some extra parameters are supported in `config.yaml`:
-1. Debug
-    ```
-    other:
-      debug: true
-    ```
-2. Open-AI
+1. Game window title
+
+If your actual game window title is not __World of Warcraft__ (you can check it in the task manager),
+change it in `game` _(default: World of Warcraft)_
+   ```
+   game
+     window-title: YOUR_GAME_WINDOW_TITLE
+   ```
+2. Debug
+
+_default: false_
+   ```
+   other:
+     debug: true
+   ```
+3. Open-AI
     ```
     open-ai:
       base_url:  # api url
       api_key:  # api key
     ```
-3. Distances fix
+4. Distances fix
     ```
     navigation:
         distance_to_player_delta: 0.15
@@ -81,4 +91,11 @@ Some extra parameters are supported in `config.yaml`:
         looting_distance_coefficient: 0.5
         start_to_avoid_obstacles_distance_coefficient: 3.0
         start_to_wait_player_distance_coefficient: 50.0
-    ```
+    ``` 
+5. Companion context
+
+   context file for AI response (default: context.txt)
+   ```
+   companion:
+     context_file: YOUR_CONTEXT_FILE.txt
+   ```

@@ -69,9 +69,7 @@ class GameWindow:
         if not game_config:
             raise GameWindowError(f"Game config is not set! Please, check the \"{config}\" file!")
 
-        self.window_title = game_config.get('window-title')
-        if not self.window_title:
-            raise GameWindowError(f"Window title is not set! Please, check the \"{config}\" file!")
+        self.window_title = game_config.get('window-title', 'World of Warcraft')
 
     def define_gingham_screenshot_shift(self, savefig=False):
         img = self.take_screenshot(savefig=savefig, savefig_prefix='calibration', screenshot_type='calibration')

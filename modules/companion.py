@@ -199,9 +199,9 @@ class CompanionControlLoop(HardwareInputSimulator, GameWindow, CompanionProfile,
         if not companion_config:
             raise CompanionControlError(f"Companion config is not set! Please, check the \"{config}\" file!")
 
-        self.context_file = companion_config.get('context_file')
+        self.context_file = companion_config.get('context_file', 'context.txt')
         if not self.context_file:
-            raise CompanionControlError(f"Context file is not set! Please, check the \"{config}\" file!")
+            self.logger.info(f"Going to use the {self.context_file} as context file!")
 
     @staticmethod
     def get_companion_config(config):
