@@ -2,5 +2,5 @@
 ## Personal In-Game Adventure Sidekick
 
 <div style="text-align: center;">
-  <img src="pigas.png">
+  <img src="image/pigas.png">
 </div>
