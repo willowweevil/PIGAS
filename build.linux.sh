@@ -26,11 +26,11 @@ echo Build finished
 echo Start copying files in $BUILD_DIR/ directory
 
 # Create build directory
-mkdir -p BUILD_DIR
+mkdir -p $BUILD_DIR
 
 # Copy files
-mv $PIGAS_BINARY $BUILD_DIR/
-cp -r $DATA_DIR $BUILD_DIR/
+mv $PIGAS_BINARY $BUILD_DIR/$PIGAS_BINARY
+cp -r $DATA_DIR $BUILD_DIR/$DATA_DIR
 cp $FOR_BUILD_DIR/$CONFIG $BUILD_DIR/
 cp $FOR_BUILD_DIR/$OPEN_AI $BUILD_DIR/
 cp $FOR_BUILD_DIR/$CONTEXT $BUILD_DIR/
