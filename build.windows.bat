@@ -6,14 +6,15 @@ chcp 65001
 cd /d "%~dp0"
 
 set VENV_ACTIVATE=.venv\Scripts\activate
-set BUILD_DIRECTORY=pigas
 set PIGAS_PYTHON=pigas.py
 set PIGAS_BINARY=pigas.exe
-set CONFIG=tmp.config.yaml
-set CONTEXT=tmp.context.txt
-set OPEN_AI=tmp.open-ai.yaml
+set CONFIG=for_build\tmp.config.yaml
+set CONTEXT=for_build\tmp.context.txt
+set OPEN_AI=for_build\tmp.open-ai.yaml
 set README="READ_ME_PLEASE.md"
+set FOR_BUILD_DIR=for_build
 set DATA_DIR=data
+set BUILD_DIR=pigas
 
 :: Activate venv
 call "%VENV_ACTIVATE%"
@@ -23,18 +24,18 @@ echo Start building application
 python -m nuitka --enable-plugin=tk-inter --standalone --onefile "%PIGAS_PYTHON%"
 echo Build finished
 
-echo Start copying files in %BUILD_DIRECTORY% directory
+echo Start copying files in %BUILD_DIR% directory
 
 :: Create build directory
-mkdir %BUILD_DIRECTORY% 2>nul || rem
+mkdir %BUILD_DIR% 2>nul || rem
 
 :: Copy files
-move "%PIGAS_BINARY%" "%BUILD_DIRECTORY%"
-copy /Y "%CONFIG%" "%BUILD_DIRECTORY%"
-copy /y "%OPEN_AI%" "%BUILD_DIRECTORY%"
-copy /Y "%CONTEXT%" "%BUILD_DIRECTORY%"
-copy /y "%README%" "%BUILD_DIRECTORY%"
-robocopy "%DATA_DIR%" "%BUILD_DIRECTORY%/%DATA_DIR%" /E /COPYALL /IS
+move "%PIGAS_BINARY%" "%BUILD_DIR%"
+copy /Y "%FOR_BUILD_DIR%/%CONFIG%" "%BUILD_DIR%"
+copy /y "%FOR_BUILD_DIR%/%OPEN_AI%" "%BUILD_DIR%"
+copy /Y "%FOR_BUILD_DIR%/%CONTEXT%" "%BUILD_DIR%"
+copy /y "%FOR_BUILD_DIR%/%README%" "%BUILD_DIR%"
+robocopy "%DATA_DIR%" "%BUILD_DIR%/%DATA_DIR%" /E /COPYALL /IS
 echo Copying finished
 echo Done
 

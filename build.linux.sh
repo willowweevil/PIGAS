@@ -5,14 +5,15 @@
 cd "$(dirname "$0")"
 
 export VENV_ACTIVATE=.venv/bin/activate
-export BUILD_DIRECTORY=pigas
 export PIGAS_PYTHON=pigas.py
 export PIGAS_BINARY=pigas.bin
 export CONFIG=tmp.config.yaml
-export OPEN_AI=tmp.open-ai.yaml
 export CONTEXT=tmp.context.txt
+export OPEN_AI=tmp.open-ai.yaml
 export README="READ_ME_PLEASE.md"
+export FOR_BUILD_DIR=for_build
 export DATA_DIR=data
+export BUILD_DIR=pigas
 
 # shellcheck disable=SC1090
 source $VENV_ACTIVATE
@@ -22,18 +23,18 @@ echo Start building application
 python -m nuitka --standalone --onefile $PIGAS_PYTHON
 echo Build finished
 
-echo Start copying files in $BUILD_DIRECTORY directory
+echo Start copying files in BUILD_DIR directory
 
 # Create build directory
-mkdir -p $BUILD_DIRECTORY
+mkdir -p BUILD_DIR
 
 # Copy files
-mv $PIGAS_BINARY $BUILD_DIRECTORY/
-cp -r $DATA_DIR $BUILD_DIRECTORY/
-cp $CONFIG $BUILD_DIRECTORY/
-cp $OPEN_AI $BUILD_DIRECTORY/
-cp $CONTEXT $BUILD_DIRECTORY/
-cp $README $BUILD_DIRECTORY/
+mv $PIGAS_BINARY BUILD_DIR/
+cp -r $DATA_DIR BUILD_DIR/
+cp $FOR_BUILD_DIR/$CONFIG BUILD_DIR/
+cp $FOR_BUILD_DIR/$OPEN_AI BUILD_DIR/
+cp $FOR_BUILD_DIR/$CONTEXT BUILD_DIR/
+cp $FOR_BUILD_DIR/$README BUILD_DIR/
 echo Copying finished
 echo Done
 
