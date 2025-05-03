@@ -23,13 +23,10 @@ open-ai*
 .*
 _*
 
-# Pyinstaller
-build/
-dist/
-
 # Nuitka
-*build/
-*dist/
+*.build/
+*.dist/
+*.onefile*
 
-# Build
+# Build Dir
 pigas/
