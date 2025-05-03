@@ -99,8 +99,7 @@ The **Player** account can issue the following commands, which direct the Compan
 ### Additional Commands
 - Do emotions (`/emote`): `Let's /dance!`. Companion will repeat the emotion.
 - Issue commands directly (`&command`): `&/cast Fireball`, `&.server info`, `&/use Hearthstone`.
-- Add notes to the context file by prefixing text with `%`:  
-  `%Now we are in the Orgrimmar.`
+- Add notes to the context file by prefixing text with `%`: `%Now we are in the Orgrimmar.`
 
 ---
 
@@ -108,15 +107,14 @@ The **Player** account can issue the following commands, which direct the Compan
 
 Configure companion responses using the following files:
 
-### `open-ai.yaml`
-```yaml
-open-ai:
-   base_url:  # API URL
-   api_key:   # API key
-```
+1. `open-ai.yaml` need to configure API access to OpenAI.
+    ```yaml
+    open-ai:
+       base_url:  # API URL
+       api_key:   # API key
+    ```
 
-### `context.txt`
-**Add relevant context for the Companion here.**
+2. `context.txt`: add relevant context for the *Companion* here.
 
 ---
 
