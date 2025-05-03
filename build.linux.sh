@@ -23,18 +23,18 @@ echo Start building application
 python -m nuitka --standalone --onefile $PIGAS_PYTHON
 echo Build finished
 
-echo Start copying files in BUILD_DIR directory
+echo Start copying files in $BUILD_DIR/ directory
 
 # Create build directory
 mkdir -p BUILD_DIR
 
 # Copy files
-mv $PIGAS_BINARY BUILD_DIR/
-cp -r $DATA_DIR BUILD_DIR/
-cp $FOR_BUILD_DIR/$CONFIG BUILD_DIR/
-cp $FOR_BUILD_DIR/$OPEN_AI BUILD_DIR/
-cp $FOR_BUILD_DIR/$CONTEXT BUILD_DIR/
-cp $FOR_BUILD_DIR/$README BUILD_DIR/
+mv $PIGAS_BINARY $BUILD_DIR/
+cp -r $DATA_DIR $BUILD_DIR/
+cp $FOR_BUILD_DIR/$CONFIG $BUILD_DIR/
+cp $FOR_BUILD_DIR/$OPEN_AI $BUILD_DIR/
+cp $FOR_BUILD_DIR/$CONTEXT $BUILD_DIR/
+cp $FOR_BUILD_DIR/$README $BUILD_DIR/
 echo Copying finished
 echo Done
 
