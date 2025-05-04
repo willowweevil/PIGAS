@@ -6,6 +6,9 @@ import time
 import random
 import logging
 
+from yaml.parser import ParserError
+from yaml.scanner import Scanner, ScannerError
+
 from library.errors import CommonError
 from library.platforms import Platform
 
@@ -107,6 +110,10 @@ def read_yaml_file(input_file=None, critical=False):
             # logging.error(f"File {input_file} not found.")
             raise CommonError(f"File {input_file} not found.")
         return None
+    except (ScannerError, ParserError) as e:
+        exception_text = str(e).replace('\n', ' ').replace('   ', ' ')
+        raise CommonError(f"Incorrect {input_file} file! Error: {exception_text}.\n"
+                          f"Please, be sure that indentation is correct (two spaces per level).")
     # except KeyboardInterrupt:
     #     logging.error(f"File \"{input_file}\" reading was interrupted by user.")
     return data

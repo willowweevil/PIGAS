@@ -8,9 +8,9 @@ cd /d "%~dp0"
 set VENV_ACTIVATE=.venv\Scripts\activate
 set PIGAS_PYTHON=pigas.py
 set PIGAS_BINARY=pigas.exe
-set CONFIG=for_build\tmp.config.yaml
-set CONTEXT=for_build\tmp.context.txt
-set OPEN_AI=for_build\tmp.open-ai.yaml
+set CONFIG=tmp.config.yaml
+set CONTEXT=tmp.context.txt
+set OPEN_AI=tmp.open-ai.yaml
 set README="READ_ME_PLEASE.pdf"
 set FOR_BUILD_DIR=for_build
 set DATA_DIR=data
@@ -31,11 +31,11 @@ mkdir %BUILD_DIR% 2>nul || rem
 
 :: Copy files
 move "%PIGAS_BINARY%" "%BUILD_DIR%"
-copy /Y "%FOR_BUILD_DIR%/%CONFIG%" "%BUILD_DIR%"
-copy /y "%FOR_BUILD_DIR%/%OPEN_AI%" "%BUILD_DIR%"
-copy /Y "%FOR_BUILD_DIR%/%CONTEXT%" "%BUILD_DIR%"
-copy /y "%FOR_BUILD_DIR%/%README%" "%BUILD_DIR%"
-robocopy "%DATA_DIR%" "%BUILD_DIR%/%DATA_DIR%" /E /COPYALL /IS
+copy /Y "%FOR_BUILD_DIR%\%CONFIG%" "%BUILD_DIR%"
+copy /y "%FOR_BUILD_DIR%\%OPEN_AI%" "%BUILD_DIR%"
+copy /Y "%FOR_BUILD_DIR%\%CONTEXT%" "%BUILD_DIR%"
+copy /y "%FOR_BUILD_DIR%\%README%" "%BUILD_DIR%"
+robocopy "%DATA_DIR%" "%BUILD_DIR%\%DATA_DIR%" /E /COPYALL /IS
 echo Copying finished
 echo Done
 
