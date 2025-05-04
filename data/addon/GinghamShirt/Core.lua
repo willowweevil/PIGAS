@@ -172,6 +172,8 @@ function EventFrame:OnUpdate()
 
     -- AnnounceLoot()
 
+    AcceptQuest()
+
     CalibrationControl()
 
 end
