@@ -288,9 +288,9 @@ WOW_AREAS = {
     301: 1.0,  # Stormwind City
     341: 3.0,  # Ironforge
     382: 1.0,  # Undercity
-    462: 1.0,  # Eversong Woods
-    463: 0.05,  # Ghostlands
-    480: 1.0,  # Silvermoon City
+    462: 1.0,  # 
+    463: 0.05,  # Eversong Woods
+    480: 1.0,  # 
     499: 1.0,  # Isle of Quel'Danas
     502: 1.0,  # The Scarlet Enclave
     545: 1.0,  # Gilneas
@@ -314,7 +314,7 @@ WOW_AREAS = {
     477: 1.0,  # Nagrand
     478: 1.0,  # Terokkar Forest
     479: 1.0,  # Netherstorm
-    481: 1.0,  # Shattrath City
+    481: 2.8,  # Silvermoon City
     485: 1.0,  # Northrend
     486: 1.0,  # Borean Tundra
     510: 1.0,  # Crystalsong Forest

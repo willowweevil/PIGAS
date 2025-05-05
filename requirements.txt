@@ -1,8 +1,8 @@
-mss
-numpy
-openai
-pillow
-PyYAML
-pynput
+mss==10.0.0
+Nuitka==2.6.9
+numpy==2.2.3
+openai==1.64.0
+pillow==11.1.0
+pynput==1.7.7
+PyYAML==6.0.2
 pywin32
-nuitka
