@@ -2,5 +2,5 @@
 ## Title: GinghamShirt
 ## Notes: Export some data to a plaid format
 ## Author: Weevil Games
-## Version: 0.4.13
+## Version: 0.4.14
 Core.lua
