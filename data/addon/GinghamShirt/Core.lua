@@ -366,16 +366,14 @@ end
 -- Commands.lua
 function SlashCmdList.ASSISTANT_POSITION(msg, editbox)
     local facing = GetPlayerFacing()
-    local pitch = GetUnitPitch("player")
     local x, y = GetPlayerMapPosition("player")
-    print(format("Assistant Coordinates %.2f %.2f %.2f %.2f", x * 100, y * 100, facing, pitch))
+    print(format("Assistant Coordinates %.2f %.2f %.2f", x * 100, y * 100, facing))
 end
 
 function SlashCmdList.PLAYER_POSITION(msg, editbox)
     local facing = GetPlayerFacing()
-    local pitch = GetUnitPitch("party1")
     local x, y = GetPlayerMapPosition("party1")
-    print(format("Main Character Coordinates %.2f %.2f %.2f %.2f", x * 100, y * 100, facing, pitch))
+    print(format("Main Character Coordinates %.2f %.2f %.2f", x * 100, y * 100, facing))
 end
 
 function SlashCmdList.DISTANCE(msg, editbox)
@@ -490,13 +488,13 @@ function SetCursorObjectInfoSquaresColor()
 end
 
 function SetCoordinatesSquareColor(character)
-    local x1, x2, y1, y2, facing, pitch = CalculateCoordinatesData(character)
+    local x1, x2, y1, y2, facing = CalculateCoordinatesData(character)
     if character == "player" then
         squares["AssistantCoordinatesSquare1"].texture:SetTexture(x1 / 255, x2, facing / 7)
-        squares["AssistantCoordinatesSquare2"].texture:SetTexture(y1 / 255, y2, pitch / 4 + 0.5)
+        squares["AssistantCoordinatesSquare2"].texture:SetTexture(y1 / 255, y2, 0)
     elseif character == "party1" then
         squares["MainCharacterCoordinatesSquare1"].texture:SetTexture(x1 / 255, x2, facing / 7)
-        squares["MainCharacterCoordinatesSquare2"].texture:SetTexture(y1 / 255, y2, pitch / 4 + 0.5)
+        squares["MainCharacterCoordinatesSquare2"].texture:SetTexture(y1 / 255, y2, 0)
     else
         print("Cannot set coordinates of " .. character .. ".")
     end
