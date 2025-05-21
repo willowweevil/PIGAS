@@ -242,11 +242,10 @@ end
 
 function CalculateCoordinatesData(character)
     local facing = GetPlayerFacing()
-    local pitch = GetUnitPitch(character)
     local x, y = GetPlayerMapPosition(character)
     local x1, x2 = math.modf(x * 255)
     local y1, y2 = math.modf(y * 255)
-    return x1, x2, y1, y2, facing, pitch
+    return x1, x2, y1, y2, facing
 end
 
 function CalculateHealthAndManaPercents(character)
@@ -329,9 +328,6 @@ function GetUnitsInfo()
         unitInfo.race = UnitRace("mouseover") or nil
         unitInfo.faction = UnitFactionGroup("mouseover") or nil
         unitInfo.health = UnitHealth("mouseover") .. "/" .. UnitHealthMax("mouseover") or nil
-        if UnitManaMax("mouseover") > 0 then
-            unitInfo.mana = UnitMana("mouseover") .. "/" .. UnitManaMax("mouseover")
-        end
         unitInfo.additionalInfo = tooltipMessage or nil
         local messageParts = {}
         for parameter, value in pairs(unitInfo) do
