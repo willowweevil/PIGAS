@@ -7,7 +7,7 @@ import random
 import logging
 
 from yaml.parser import ParserError
-from yaml.scanner import Scanner, ScannerError
+from yaml.scanner import ScannerError
 
 from library.errors import CommonError
 from library.platforms import Platform
@@ -20,6 +20,16 @@ for common_logger_name in logging.Logger.manager.loggerDict:
 
 
 def setup_logging(loggers, debug=False):
+    """
+    Set up logging configuration for specified loggers with both console and
+    file handlers. Allows for debug-level logging if specified.
+
+    Args:
+        loggers (list): A list of logger names to configure.
+        debug (bool): Optional; Whether to enable debug-level logging. Defaults
+            to False.
+
+    """
     # Clear any existing handlers (important to avoid duplicates)
     logging.root.handlers = []
 
@@ -48,6 +58,21 @@ def setup_logging(loggers, debug=False):
 
 
 def define_system_platform():
+    """
+    Define the system platform based on the host operating system.
+
+    Determines the platform on which the Python interpreter is
+    running by evaluating the `sys.platform` value. It maps the platform to
+    predefined `Platform` enum values such as LINUX, WINDOWS, or MACOS. If
+    the platform cannot be recognized, an exception is raised.
+
+    Returns:
+        Platform: The platform corresponding to the current operating system.
+
+    Raises:
+        CommonError: If the platform cannot be identified from `sys.platform`.
+
+    """
     if sys.platform in ['linux', 'linux2']:
         platform = Platform.LINUX
     elif sys.platform in ['Windows', 'win32', 'cygwin']:
@@ -61,6 +86,11 @@ def define_system_platform():
 
 
 def stop_execution(code, input_message="\nPress Enter to exit...\n"):
+    """
+    Stop the program execution with an optional exit code and a customizable input message
+    according to platform.
+
+    """
     time.sleep(0.5)
     platform = define_system_platform()
     if platform == Platform.WINDOWS:
@@ -72,6 +102,10 @@ def stop_execution(code, input_message="\nPress Enter to exit...\n"):
 
 
 def unexpected_finish(e, title=None, traceback=None):
+    """
+    Handles unexpected termination of the program by logging the error and stopping execution.
+
+    """
     if title:
         e = ': '.join([title, str(e)])
     if traceback:
@@ -81,6 +115,10 @@ def unexpected_finish(e, title=None, traceback=None):
 
 
 def is_debug(config_file):
+    """
+    Determine whether the program is running in debug mode based on the configuration file.
+
+    """
     debug_level = False
     config = read_yaml_file(config_file, critical=True)
     other_data = config.get('other')
@@ -98,10 +136,35 @@ def is_debug(config_file):
 #     return True if debug_level is True else False
 
 def get_random(my_list):
+    """
+    Get a random element from a list.
+
+    """
     return random.choice(my_list)
 
 
 def read_yaml_file(input_file=None, critical=False):
+    """
+    Read and parse a YAML file.
+
+    Opens and reads a YAML file from the provided input path. It uses
+    safe parsing to convert YAML content into Python objects. If the file is not
+    found and the critical parameter is set to True, an exception is raised. It also handles
+    errors caused by incorrect YAML formatting or indentation.
+
+    Args:
+        input_file (str or None): Path to the YAML file to be read. Defaults to None.
+        critical (bool): Flag indicating whether the operation is critical. If True,
+            raises an exception if the file is not found. Defaults to False.
+
+    Returns:
+        dict or None: Parsed content of the YAML file as a dictionary. Returns None
+        if the file is not found and critical is False.
+
+    Raises:
+        CommonError: If the YAML file is not found and critical is True, or if the
+        file contains errors during parsing.
+    """
     try:
         with open(input_file, 'r', encoding="utf-8") as file:
             data = yaml.safe_load(file)
@@ -120,6 +183,19 @@ def read_yaml_file(input_file=None, critical=False):
 
 
 def get_open_ai_connection_parameters():
+    """
+    Fetches the OpenAI connection parameters from a configuration file.
+
+    Reads the 'open-ai.yaml' configuration file to retrieve the API key and base
+    URL required for accessing the OpenAI API. If the file is not found or the
+    required parameters are missing, appropriate warnings are logged and default
+    values are returned as None.
+
+    Returns:
+        dict: A dictionary containing 'api_key' and 'base_url' keys. Both values
+        may be None if not specified in the configuration file or if the file
+        is missing.
+    """
     open_ai_config_file = 'open-ai.yaml'
     open_ai_config = read_yaml_file(open_ai_config_file)
     if open_ai_config:
@@ -137,6 +213,21 @@ def get_open_ai_connection_parameters():
 
 
 def get_open_ai_response(input_message):
+    """
+    Generates a response from OpenAI's language model based on the provided input message.
+
+    Establishes a connection to the OpenAI API using predefined
+    connection parameters, sends the input message to the model, and retrieves
+    the response. If an error occurs during the interaction with the OpenAI API,
+    the function logs the error and returns None.
+
+    Parameters:
+        input_message (str): The input message to be sent to the OpenAI model.
+
+    Returns:
+        str | None: The content of the response from the language model if successful,
+        otherwise None.
+    """
     connection_params = get_open_ai_connection_parameters()
     try:
         client = openai.OpenAI(
