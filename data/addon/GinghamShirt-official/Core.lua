@@ -1,0 +1,720 @@
+SLASH_ASSISTANT_POSITION1 = '/assistant_position'
+SLASH_PLAYER_POSITION1 = '/player_position'
+SLASH_DISTANCE1 = '/distance'
+
+local math = getfenv(0).math
+
+local commands = {
+    --- set condition
+    pause = "#pause",
+    mount = "#mount",
+    unmount = "#dismount",
+    stay = "#stay",
+    follow = "#follow",
+    step_by_step = "#step-by-step",
+    assist = "#assist",
+    defend = "#defend",
+    passive = "#passive",
+    only_heal = "#only-heal",
+    --- disabled by companion
+    disable = "#disable",
+    loot = "#loot",
+    run_walk = "#movement-speed",
+    --- misc
+    calibrate = "#calibration",
+    clean = "#clean",
+    clear = "#clear"
+}
+
+local states = {
+    looting = "looting"
+}
+
+local ginghamPixelSize = 5
+local cursorObjectInfo
+local mouseOverObject
+local previousMessage
+local lootMessage
+local assistantState
+local programControlColor
+
+local squares = {
+    "CompanionControlSquare",
+    "InteractionCommandsSquare",
+    "AssistantCoordinatesSquare1",
+    "AssistantCoordinatesSquare2",
+    "AssistantConditionSquare1",
+    "MainCharacterCoordinatesSquare1",
+    "MainCharacterCoordinatesSquare2",
+    "MainCharacterConditionSquare1",
+    "AssistantConditionSquare2",
+    "MapIDSquare"
+}
+local lettersSquares = {}
+local cursorObjectsPixels = {}
+local calibrationPixels = {}
+
+for i, name in ipairs(squares) do
+    squares[i] = {
+        name = name,
+        yOffset = -(ginghamPixelSize * (i - 1))
+    }
+end
+
+lettersSquares[1] = { name = "MessageLengthPixel",
+                      xOffset = 0,
+                      yOffset = -ginghamPixelSize*#squares }
+
+cursorObjectsPixels[1] = { name = "CursorObjectMessageLengthPixel",
+                           xOffset = 0,
+                           yOffset = -ginghamPixelSize*(#squares+1) }
+
+for i = 1, 85, 1 do
+    lettersSquares[i+1] = { name = string.format("LettersSquare_%d", i),
+                            xOffset = ginghamPixelSize * i,
+                            yOffset = 0 }
+end
+
+for i = 1, 85, 1 do
+    cursorObjectsPixels[i+1] = { name = string.format("CursorObjectPixel_%d", i),
+                                 xOffset = ginghamPixelSize * i,
+                                 yOffset = -ginghamPixelSize }
+end
+
+for i = 1, 49, 1 do
+    calibrationPixels[i] = { name = string.format("CalibrationPixel_%d", i),
+                             xOffset = ginghamPixelSize*(((i - 1) % 7) + 1) ,
+                             yOffset = - ginghamPixelSize*(math.floor((i - 1) / 7) + 5)  }
+end
+
+local EventFrame = CreateFrame("Frame")
+local AcceptPartyLogicFrame = CreateFrame("Frame")
+local LootingFrame = CreateFrame("Frame")
+local AutoGreedFrame = CreateFrame("Frame")
+
+function EventFrame:OnEvent(event, ...)
+    print("GinghamShirt is active")
+    self[event](self, ...)
+end
+
+EventFrame:SetScript("OnEvent", EventFrame.OnEvent)
+EventFrame:RegisterEvent("PLAYER_LOGIN")
+
+function EventFrame:PLAYER_LOGIN()
+    for _, data in ipairs(squares) do
+        squares[data.name] = CreateSquare(data.name, data.xOffset, data.yOffset)
+    end
+
+    for _, data in ipairs(lettersSquares) do
+        lettersSquares[data.name] = CreateSquare(data.name, data.xOffset, data.yOffset)
+    end
+    lettersSquares["MessageLengthPixel"].texture:SetColorTexture(0, 0, 0, 1)
+
+    for _, data in ipairs(cursorObjectsPixels) do
+        cursorObjectsPixels[data.name] = CreateSquare(data.name, data.xOffset, data.yOffset)
+    end
+    cursorObjectsPixels["CursorObjectMessageLengthPixel"].texture:SetColorTexture(0, 0, 0, 1)
+
+    for _, data in ipairs(calibrationPixels) do
+        --print(data.xOffset, data.yOffset)
+        calibrationPixels[data.name] = CreateSquare(data.name, data.xOffset, data.yOffset)
+    end
+
+    for _, squareName in ipairs({ "CompanionControlSquare", "InteractionCommandsSquare" }) do
+        squares[squareName]:RegisterEvent("CHAT_MSG_PARTY")
+        squares[squareName]:RegisterEvent("CHAT_MSG_PARTY_LEADER")
+        squares[squareName]:RegisterEvent("CHAT_MSG_WHISPER")
+    end
+
+    for _, innerSquare in ipairs(lettersSquares) do
+        lettersSquares[innerSquare.name]:RegisterEvent("CHAT_MSG_PARTY")
+        lettersSquares[innerSquare.name]:RegisterEvent("CHAT_MSG_PARTY_LEADER")
+        --lettersSquares[innerSquare.name]:RegisterEvent("CHAT_MSG_WHISPER")
+        lettersSquares[innerSquare.name]:SetScript("OnEvent", SetPlayerMessageSquaresColors)
+    end
+
+    squares["CompanionControlSquare"]:SetScript("OnEvent", SetCompanionControlSquareColor)
+    squares["InteractionCommandsSquare"]:SetScript("OnEvent", SetInteractionCommandsSquareColor)
+
+    AcceptPartyLogicFrame:RegisterEvent("PLAYER_LOGIN")
+    AcceptPartyLogicFrame:RegisterEvent("PARTY_INVITE_REQUEST")
+    AcceptPartyLogicFrame:SetScript("OnEvent", AcceptPartyInvite)
+
+    LootingFrame:RegisterEvent("CHAT_MSG_LOOT")
+    LootingFrame:RegisterEvent("CHAT_MSG_MONEY")
+    LootingFrame:SetScript("OnEvent", GenerateLootMessage)
+
+    AutoGreedFrame:RegisterEvent("START_LOOT_ROLL")
+    AutoGreedFrame:SetScript("OnEvent", GreedForLoot)
+
+    GameTooltip:HookScript("OnShow", GetUnitsInfo)
+    GameTooltip:HookScript("OnShow", GetGameObjectsInfo)
+
+    EventFrame:SetScript("OnUpdate", EventFrame.OnUpdate)
+
+end
+
+function EventFrame:OnUpdate()
+
+    SetCompanionControlSquareColor()
+    SetCoordinatesSquareColor("player")
+    SetCoordinatesSquareColor("party1")
+    SetConditionStatusSquareColor("player")
+    SetConditionStatusSquareColor("party1")
+    SetInteractionCommandsSquareColor()
+    SetMapIDSquareColor()
+
+    mouseOverObject = isMouseOverObject()
+    if not GetGameObjectsInfo() then
+        GetUnitsInfo()
+    end
+    SetCursorObjectInfoSquaresColor()
+    SetPlayerMessageSquaresColors()
+
+    -- AnnounceLoot()
+
+    AcceptQuest()
+
+    CalibrationControl()
+
+end
+
+-- Actions.lua
+function GreedForLoot(self, event, rollID)
+    local _, _, _, _, _, canGreed = GetLootRollItemInfo(rollID)
+    if canGreed then
+        RollOnLoot(rollID, 2)
+    end
+end
+
+function AcceptPartyInvite(event, name)
+    AcceptPartyWithDelay(1)
+end
+
+function AcceptPartyWithDelay(seconds)
+    AcceptPartyLogicFrame:SetScript("OnUpdate", function(self, elapsed)
+        if seconds > 0 then
+            seconds = seconds - elapsed
+        else
+            AcceptGroup()
+            AcceptPartyLogicFrame:SetScript("OnUpdate", nil)
+        end
+    end)
+end
+
+function AnnounceLoot()
+    if assistantState == states.looting and lootMessage then
+        SendChatMessage(lootMessage, "PARTY")
+        lootMessage = nil
+    end
+end
+
+function GenerateLootMessage(self, event, message)
+    if event == "CHAT_MSG_LOOT" then
+        local is_it_yours = string.match(message, "You receive loot:")
+        if is_it_yours then
+            lootMessage = "I found something! It's a " .. message:match("%[(.-)%]") .. "!", "PARTY"
+        end
+    elseif event == "CHAT_MSG_MONEY" then
+        return
+    end
+    return lootMessage
+end
+
+-- Misc.lua
+function isMouseOverObject()
+    local tooltipText = GameTooltipTextLeft1:GetText()
+    if tooltipText and tooltipText ~= "" then
+        return true
+    end
+    return false
+end
+
+function CheckBreathLevel()
+    for i = 1, MIRRORTIMER_NUMTIMERS do
+        local timerName, value, maxValue, scale, paused, label = GetMirrorTimerInfo(i)
+        if timerName == "BREATH" then
+            local breathLevel = GetMirrorTimerProgress("BREATH")
+            return breathLevel / maxValue
+        end
+    end
+    return 1.0
+end
+
+function CalculateCoordinatesData(character)
+    local facing = GetPlayerFacing()
+
+    local x = 0
+    local y = 0
+
+    if C_Map.GetBestMapForUnit(character) ~= nil then
+        if C_Map.GetPlayerMapPosition(C_Map.GetBestMapForUnit(character), character) ~= nil then
+            x = C_Map.GetPlayerMapPosition(C_Map.GetBestMapForUnit(character), character).x
+            y = C_Map.GetPlayerMapPosition(C_Map.GetBestMapForUnit(character), character).y
+        end
+    end
+
+    local x1, x2 = math.modf(x * 255)
+    local y1, y2 = math.modf(y * 255)
+
+    return x1, x2, y1, y2, facing
+end
+
+function CalculateHealthAndManaPercents(character)
+    local healthPercent = UnitHealth(character) / UnitHealthMax(character)
+    local manaMax = UnitPowerMax(character, Enum.PowerType.Mana)
+    local manaPercent = 0
+    if manaMax > 0 then
+        manaPercent = UnitPower(character, Enum.PowerType.Mana) / manaMax
+    end
+    return healthPercent, manaPercent
+end
+
+
+-- TextHelpers.lua
+function containCommand(message_string, command)
+    if message_string then
+        local startIndex, _ = string.find(message_string, command, 1, true)
+        if startIndex then
+            return true
+        end
+    end
+    return false
+end
+
+function containAnyOfCommands(message_string)
+    if message_string then
+        for _, command in pairs(commands) do
+            local startIndex, _ = string.find(message_string, command, 1, true)
+            if startIndex then
+                return true
+            end
+        end
+        return false
+    end
+    return false
+end
+
+function ExtractSubstrings(input)
+    local results = {}
+    for substring in input:gmatch("%[(.-)%]") do
+        table.insert(results, substring)
+    end
+    return results
+end
+
+
+-- Text.lua
+function GetTooltipInfo()
+    local tooltipInfo = {}
+    for i = 1, GameTooltip:NumLines() do
+        local line = _G["GameTooltipTextLeft" .. i]
+        if line then
+            local text = line:GetText()
+            if text then
+                table.insert(tooltipInfo, text)
+            end
+        end
+    end
+    return tooltipInfo
+end
+
+function GetUnitsInfo()
+    local unitInfo = { name = nil,
+                       nlass = nil,
+                       race = nil,
+                       faction = nil,
+                       level = nil,
+                       health = nil,
+                       mana = nil,
+                       maxMana = nil,
+                       maxHealth = nil,
+                       additionalInfo = nil }
+    if UnitExists("mouseover") then
+        local tooltipInfo = GetTooltipInfo()
+        local tooltipMessage = ""
+        if #tooltipInfo > 0 then
+            for i, info in pairs(tooltipInfo) do
+                if i > 1 and i < #tooltipInfo then
+                    tooltipMessage = tooltipMessage .. info .. ", "
+                elseif i == #tooltipInfo then
+                    tooltipMessage = tooltipMessage .. info
+                end
+            end
+        end
+        unitInfo.name = UnitName("mouseover") or nil
+        unitInfo.race = UnitRace("mouseover") or nil
+        unitInfo.faction = UnitFactionGroup("mouseover") or nil
+        unitInfo.health = UnitHealth("mouseover") .. "/" .. UnitHealthMax("mouseover") or nil
+        
+        local manaMax = UnitPowerMax("mouseover", Enum.PowerType.Mana)
+        if manaMax > 0 then
+            unitInfo.mana = UnitPower("mouseover", Enum.PowerType.Mana) .. "/" .. manaMax
+        end
+        unitInfo.additionalInfo = tooltipMessage or nil
+        local messageParts = {}
+        for parameter, value in pairs(unitInfo) do
+            if value ~= nil then
+                table.insert(messageParts, parameter .. ": " .. value)
+            end
+        end
+        cursorObjectInfo = "UNIT | " .. table.concat(messageParts, "; ")
+        return true
+    end
+    return false
+end
+
+function GetGameObjectsInfo()
+    if mouseOverObject then
+        if not UnitExists("mouseover") then
+            local tooltipInfo = GetTooltipInfo()
+            local tooltipMessage = ""
+            if #tooltipInfo > 0 then
+                for i, info in pairs(tooltipInfo) do
+                    if i > 0 and i < #tooltipInfo then
+                        tooltipMessage = tooltipMessage .. info .. ", "
+                    elseif i == #tooltipInfo then
+                        tooltipMessage = tooltipMessage .. info
+                    end
+                end
+            end
+            cursorObjectInfo = "GAMEOBJECT | " .. tooltipMessage
+        end
+    else
+        cursorObjectInfo = nil
+    end
+end
+
+
+-- Commands.lua
+function SlashCmdList.ASSISTANT_POSITION(msg, editbox)
+    local facing = GetPlayerFacing()
+
+    local x = 0
+    local y = 0
+    if C_Map.GetBestMapForUnit("player") ~= nil then
+        if C_Map.GetPlayerMapPosition(C_Map.GetBestMapForUnit("player"), "player") ~= nil then
+            x = C_Map.GetPlayerMapPosition(C_Map.GetBestMapForUnit("player"), "player").x
+            y = C_Map.GetPlayerMapPosition(C_Map.GetBestMapForUnit("player"), "player").y
+        end
+    end
+
+    print(format("Assistant Coordinates %.2f %.2f %.2f", x * 100, y * 100, facing))
+end
+
+function SlashCmdList.PLAYER_POSITION(msg, editbox)
+    local facing = GetPlayerFacing()
+
+    local x = 0
+    local y = 0
+    if C_Map.GetBestMapForUnit("party1") ~= nil then
+        if C_Map.GetPlayerMapPosition(C_Map.GetBestMapForUnit("party1"), "party1") ~= nil then
+            x = C_Map.GetPlayerMapPosition(C_Map.GetBestMapForUnit("party1"), "party1").x
+            y = C_Map.GetPlayerMapPosition(C_Map.GetBestMapForUnit("party1"), "party1").y
+        end
+    end
+
+    print(format("Main Character Coordinates %.2f %.2f %.2f", x * 100, y * 100, facing))
+end
+
+function SlashCmdList.DISTANCE(msg, editbox)
+
+    local player_x = 0
+    local player_y = 0
+    if C_Map.GetBestMapForUnit("party1") ~= nil then
+        player_x = C_Map.GetPlayerMapPosition(C_Map.GetBestMapForUnit("party1"), "party1").x
+        player_y = C_Map.GetPlayerMapPosition(C_Map.GetBestMapForUnit("party1"), "party1").y
+    end
+
+    local assistant_x = 0
+    local assistant_y = 0
+    if C_Map.GetBestMapForUnit("party1") ~= nil then
+        assistant_x = C_Map.GetPlayerMapPosition(C_Map.GetBestMapForUnit("player"), "player").x
+        assistant_y = C_Map.GetPlayerMapPosition(C_Map.GetBestMapForUnit("player"), "player").y
+    end
+
+    local distance = math.sqrt((player_x - assistant_x) ^ 2 + (player_y - assistant_y) ^ 2) * 100
+    local mapID = C_Map.GetBestMapForUnit("player")
+    
+    local mapName = "Not defined"
+    if mapID ~= nil then
+        mapName, _, _ = C_Map.GetMapInfo(mapID).name
+    end
+    print(format("Distance between assistant and player is %.2f. Map: %s. MapID: %d", distance, mapName, mapID))
+end
+
+
+-- Pixels.lua
+function CreateSquare(name, xOffset, yOffset, size)
+    local square = CreateFrame("Frame", name, UIParent)
+    square:SetSize(size or 5, size or 5)
+
+    square:SetFrameStrata("TOOLTIP")
+    square:SetFrameLevel(1)
+
+    square.texture = square:CreateTexture(nil, "ARTWORK")
+    square.texture:SetAllPoints(square)
+    square.texture:SetColorTexture(color and color.r or 0, color and color.g or 0, color and color.b or 0, color and color.a or 0)
+
+    square:SetPoint("TOPLEFT", xOffset or 0, yOffset or 0)
+    square:Show()
+    return square
+end
+
+function ColorTextSquares(container, message, squaresNamesPrefix)
+    for i = 1, #message do
+        local color = 0
+        local char = string.sub(message, i, i)
+        local char_ascii = string.byte(char)
+        if char_ascii > 27 and char_ascii < 127 then
+            color = (string.byte(char) - 27) / 100
+        end
+        local squaresCounter = math.floor(i / 3) + ((i % 3 ~= 0) and 1 or 0)
+        if i == #message then
+            if squaresCounter * 3 - #message == 2 then
+                color2 = 0
+                color3 = 0
+            elseif squaresCounter * 3 - #message == 1 then
+                color3 = 0
+            end
+        end
+        container[string.format("%s_%d", squaresNamesPrefix, squaresCounter)].texture:SetAlpha(1)
+        if i % 3 == 1 then
+            color1 = color
+            container[string.format("%s_%d", squaresNamesPrefix, squaresCounter)].texture:SetColorTexture(color1, color2, color3, 1)
+        elseif not (i % 3 == 0 or i % 3 == 1) then
+            color2 = color
+            container[string.format("%s_%d", squaresNamesPrefix, squaresCounter)].texture:SetColorTexture(color1, color2, color3, 1)
+        elseif i % 3 == 0 then
+            color3 = color
+            container[string.format("%s_%d", squaresNamesPrefix, squaresCounter)].texture:SetColorTexture(color1, color2, color3, 1)
+        end
+    end
+end
+
+function CleanTextSquares(container, textLengthSquare, textSquares)
+    container[textLengthSquare].texture:SetColorTexture(0, 0, 0, 1)
+    for i = 1, #container-1, 1 do
+        container[string.format("%s_%d", textSquares, i)].texture:SetAlpha(0)
+    end
+end
+
+--- Colors Letters Squares According to Received Message
+--- @param message string Chat Message
+--- @param sender string Sender of Message
+function SetPlayerMessageSquaresColors(self, event, message, sender, ...)
+    if color1 == nil or color2 == nil or color3 == nil then
+        color1, color2, color3 = 0, 0, 0
+    end
+    -- clean if assistant wrote something
+    if sender == UnitName("player") then
+        CleanTextSquares(lettersSquares, "MessageLengthPixel", "LettersSquare")
+    end
+    if sender ~= UnitName("player") and not containAnyOfCommands(message) then
+        -- clean if player write new message
+        if previousMessage ~= nil and message ~= nil and message ~= previousMessage then
+            CleanTextSquares(lettersSquares, "MessageLengthPixel", "LettersSquare")
+        end
+        -- color pixels according to player message
+        if message ~= nil and not containAnyOfCommands(message) then
+            -- define length of message
+            message = string.lower(message)
+            local messageLen1, messageLen23 = math.modf(#message / 100)
+            local messageLen2, messageLen3 = math.modf(messageLen23 * 100 / 10)
+            lettersSquares["MessageLengthPixel"].texture:SetColorTexture(messageLen1 / 10, messageLen2 / 10, messageLen3, 1)
+            ColorTextSquares(lettersSquares, message, 'LettersSquare')
+            previousMessage = message
+        end
+    end
+    if containCommand(message, commands.clean) or containCommand(message, commands.clear) then
+        CleanTextSquares(lettersSquares, "MessageLengthPixel", "LettersSquare")
+    end
+end
+
+function SetCursorObjectInfoSquaresColor()
+    if color1 == nil or color2 == nil or color3 == nil then
+        color1, color2, color3 = 0, 0, 0
+    end
+
+    if not cursorObjectInfo then
+        CleanTextSquares(cursorObjectsPixels, "CursorObjectMessageLengthPixel", "CursorObjectPixel")
+    end
+
+    if cursorObjectInfo then
+        local message = string.sub(cursorObjectInfo, 1, 255)
+        message = string.lower(message)
+        local messageLen1, messageLen23 = math.modf(#message / 100)
+        local messageLen2, messageLen3 = math.modf(messageLen23 * 100 / 10)
+        cursorObjectsPixels["CursorObjectMessageLengthPixel"].texture:SetColorTexture(messageLen1 / 10, messageLen2 / 10, messageLen3, 1)
+        ColorTextSquares(cursorObjectsPixels, message, 'CursorObjectPixel')
+    end
+end
+
+function SetCoordinatesSquareColor(character)
+    local x1, x2, y1, y2, facing = CalculateCoordinatesData(character)
+    if character == "player" then
+        squares["AssistantCoordinatesSquare1"].texture:SetColorTexture(x1 / 255, x2, facing / 7, 1)
+        squares["AssistantCoordinatesSquare2"].texture:SetColorTexture(y1 / 255, y2, 0, 1)
+    elseif character == "party1" then
+        squares["MainCharacterCoordinatesSquare1"].texture:SetColorTexture(x1 / 255, x2, facing / 7, 1)
+        squares["MainCharacterCoordinatesSquare2"].texture:SetColorTexture(y1 / 255, y2, 0, 1)
+    else
+        print("Cannot set coordinates of " .. character .. ".")
+    end
+end
+
+--- Colors Companion Control Square
+--- @param message string incoming message
+function SetCompanionControlSquareColor(self, event, message, sender, ...)
+    ---- program control (enable = 0.0, calibration = 0.25, pause = 0.5, disable = 1.0)
+    if programControlColor == nil then
+        programControlColor = 0.0
+    end
+    ---- moving control (follow = 1.0, step-by-step = 0.5, stay = 0.0)
+    if movingControlColor == nil then
+        movingControlColor = 1.0
+    end
+    ---- combat control (assist = 1.0, defend = 0.75, only-heal = 0.5, passive = 0.0)
+    if combatControlColor == nil then
+        combatControlColor = 1.0
+    end
+    if containCommand(message, commands.disable) then
+        if programControlColor ~= 1.0 then
+            programControlColor = 1.0
+        elseif programControlColor == 1 then
+            programControlColor = 0.0
+        end
+    end
+    if containCommand(message, commands.pause) then
+        if programControlColor == 0.0 then
+            SendChatMessage("The control script was paused!", "PARTY")
+            programControlColor = 0.5
+        elseif programControlColor == 0.5 then
+            SendChatMessage("The control script was removed from the pause! I'm alive!", "PARTY")
+            programControlColor = 0.0
+        end
+    end
+    if containCommand(message, commands.calibrate) then
+        if programControlColor == 0.0 then
+            programControlColor = 0.25
+        elseif programControlColor == 0.25 then
+            programControlColor = 0.0
+        end
+    end
+    if containCommand(message, commands.follow) then
+        SendChatMessage("I'm following you!", "PARTY")
+        movingControlColor = 1.0
+    elseif containCommand(message, commands.step_by_step) then
+        SendChatMessage("I'm following you on your steps!", "PARTY")
+        movingControlColor = 0.5
+    elseif containCommand(message, commands.stay) then
+        SendChatMessage("Ok, I'll be here..", "PARTY")
+        movingControlColor = 0.0
+    end
+    if containCommand(message, commands.assist) then
+        SendChatMessage("I'll assist!", "PARTY")
+        combatControlColor = 1.0
+    elseif containCommand(message, commands.defend) then
+        SendChatMessage("I'll defend you and me!", "PARTY")
+        combatControlColor = 0.75
+    elseif containCommand(message, commands.only_heal) then
+        SendChatMessage("Just healing!", "PARTY")
+        combatControlColor = 0.5
+    elseif containCommand(message, commands.passive) then
+        SendChatMessage("Ok, just look, don't touch..", "PARTY")
+        combatControlColor = 0.0
+    end
+
+    squares["CompanionControlSquare"].texture:SetColorTexture(programControlColor, movingControlColor, combatControlColor, 1)
+end
+
+function SetInteractionCommandsSquareColor(self, event, message, sender, ...)
+    ---- loot control (don't loot = 0.0, should loot = 1.0)
+    if lootColor == nil then
+        lootColor = 0
+    end
+    ---- mount control (unmount = 0.0, mount = 1.0)
+    if mountColor == nil then
+        mountColor = 0
+    end
+    ---- moving speed control (don't change = 0.0, should change = 1.0)
+    if movingSpeedColor == nil then
+        movingSpeedColor = 0.0
+    end
+    if containCommand(message, commands.loot) then
+        if lootColor == 0 then
+            assistantState = states.looting
+            lootColor = 1
+        else
+            assistantState = nil
+            lootColor = 0
+        end
+    end
+    if containCommand(message, commands.mount) then
+        mountColor = 1
+    end
+    if containCommand(message, commands.unmount) then
+        mountColor = 0
+    end
+    if containCommand(message, commands.run_walk) then
+        if movingSpeedColor == 0 then
+            movingSpeedColor = 1
+        else
+            movingSpeedColor = 0
+        end
+    end
+    squares["InteractionCommandsSquare"].texture:SetColorTexture(lootColor, mountColor, movingSpeedColor, 1)
+end
+
+function SetConditionStatusSquareColor(character)
+    -- combat status
+    local inCombat = 0
+    if UnitAffectingCombat(character) then
+        inCombat = 1
+    end
+    -- health and mana
+    local healthPercent, manaPercent = CalculateHealthAndManaPercents(character)
+    -- mounted
+    local isMounted = IsMounted()
+    if isMounted == nil or isMounted == false then
+        isMounted = 0
+    else 
+        isMounted = 1
+    end
+    -- breath level
+    local breathLevel = CheckBreathLevel()
+    
+    if character == "player" then
+        squares["AssistantConditionSquare1"].texture:SetColorTexture(inCombat, healthPercent, manaPercent, 1)
+        squares["AssistantConditionSquare2"].texture:SetColorTexture(isMounted, breathLevel, 0, 1)
+    elseif character == "party1" then
+        squares["MainCharacterConditionSquare1"].texture:SetColorTexture(inCombat, healthPercent, manaPercent, 1)
+    else
+        print("Cannot set condition status of " .. character .. ".")
+    end
+end
+
+function SetMapIDSquareColor()
+    local mapID = C_Map.GetBestMapForUnit("player")
+    if mapID < 0 then
+        mapID = 0
+    end
+    local color1, color2 = math.modf(mapID / 255)
+    if color1 > 0 then
+        color1 = 1 / color1
+    end
+    squares["MapIDSquare"].texture:SetColorTexture(color1, color2, 0, 1)
+end
+
+function CalibrationControl()
+    if programControlColor == 0.25 then
+        for i = 1, #calibrationPixels, 1 do
+            calibrationPixels[string.format("CalibrationPixel_%d", i)].texture:SetAlpha(1)
+            calibrationPixels[string.format("CalibrationPixel_%d", i)].texture:SetColorTexture(i%2, 0, 0, 1)
+        end
+    else
+        for i = 1, #calibrationPixels, 1 do
+            calibrationPixels[string.format("CalibrationPixel_%d", i)].texture:SetAlpha(0)
+        end
+    end
+end

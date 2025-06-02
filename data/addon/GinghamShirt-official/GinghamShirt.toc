@@ -1,0 +1,6 @@
+## Interface: 90200
+## Title: GinghamShirt
+## Notes: Export some data to a plaid format
+## Author: Weevil Games
+## Version: 0.5.0
+Core.lua

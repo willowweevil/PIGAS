@@ -17,11 +17,12 @@ class ScriptWorkflowHandler(HardwareInputSimulator):
         super().__init__()
         self.program_runs_count_file = '.local'
         self.addon_name = 'GinghamShirt'
-        self.addon_directory = f'./data/addon/{self.addon_name}'
+        self.addon_directory = f'./data/addon'
 
-        self.expansion = None
         self.game_directory = None
+        self.server_type = None
         self.account = None
+        self.expansion = None
 
         self.config_data = None
         self.config_file = config_file
@@ -190,9 +191,19 @@ class ScriptWorkflowHandler(HardwareInputSimulator):
         if not self.game_directory:
             raise WorkflowHandlerError(f"Game directory is not set! Please, check the \"{self.config_file}\" file!")
 
+        self.server_type = game_config.get("server-type")
+        if not self.server_type:
+            raise WorkflowHandlerError(f"Server type is not set! Please, check the \"{self.config_file}\" file!")
+        if self.server_type != "private" or self.server_type != "official":
+            raise WorkflowHandlerError(f"Incorrect server type (\"{self.server_type}\" is not supported). "
+                                       f"Use only \"private\" or \"official\".")
+
         self.expansion = game_config.get("expansion")
         if not self.expansion:
             raise WorkflowHandlerError(f"Game expansion is not set! Please, check the \"{self.config_file}\" file!")
+        if self.expansion != "wotlk" or self.expansion != "cataclysm":
+            raise WorkflowHandlerError(f"Incorrect expansion \"{self.expansion}\". "
+                                       f"Only \"wotlk\" and \"cataclysm\" are supported. ")
 
         self.account = game_config.get("account")
         if not self.account:
@@ -236,7 +247,7 @@ class ScriptWorkflowHandler(HardwareInputSimulator):
 
     def copy_addon(self):
         # copy addon
-        addon_src = self.addon_directory
+        addon_src = f"{self.addon_directory}/{self.addon_name}-{self.server_type}"
         addon_dst = os.path.join(self.game_directory, 'Interface', 'AddOns', self.addon_name)
         self.logger.info(
             f"Going to copy \"{self.addon_name}\" addon to \"{addon_dst}\".")
@@ -259,9 +270,9 @@ class ScriptWorkflowHandler(HardwareInputSimulator):
                         version = line.split(' ')[-1].strip()
             file.close()
         except FileNotFoundError:
-            addon_directory = '/'.join(filepath.split('/')[:-2])
+            directory = '/'.join(filepath.split('/')[:-2])
             raise WorkflowHandlerError(
-                f"Cannot find \"{self.addon_name}\" addon in {addon_directory}. Please, check if it exists.")
+                f"Cannot find \"{self.addon_name}\" addon in {directory}. Please, check if it exists.")
 
         except PermissionError:
             self.logger.error(f"Cannot check version of \"{self.addon_name}\" addon. "
@@ -269,7 +280,8 @@ class ScriptWorkflowHandler(HardwareInputSimulator):
         return version
 
     def check_addon_version(self):
-        actual_version = self.get_addon_version(os.path.join(self.addon_directory, f'{self.addon_name}.toc'))
+        actual_version = self.get_addon_version(os.path.join(f"{self.addon_directory}/{self.addon_name}-{self.server_type}",
+                                                             f'{self.addon_name}.toc'))
         installed_version = self.get_addon_version(
             os.path.join(self.game_directory, 'Interface', 'AddOns', self.addon_name, f'{self.addon_name}.toc'))
 

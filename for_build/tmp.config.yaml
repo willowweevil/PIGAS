@@ -1,6 +1,7 @@
 ---
 game:
-  game-directory: ... # full path to directory with installed game. Use double backslashes \\ in Windows
+  game-directory: # full path to directory with installed game. Use double backslashes \\ in Windows
+  server-type: private # 'private' or 'official'
   expansion: cataclysm # only 'cataclysm' and 'wotlk' are supported
   account:  # name of your account
 
