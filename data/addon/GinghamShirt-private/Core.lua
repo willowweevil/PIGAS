@@ -54,6 +54,9 @@ local lettersSquares = {}
 local cursorObjectsPixels = {}
 local calibrationPixels = {}
 
+local messagePixelsN = 85
+local afterCalibrationTransparencyChanged = false
+
 for i, name in ipairs(squares) do
     squares[i] = {
         name = name,
@@ -63,28 +66,33 @@ end
 
 lettersSquares[1] = { name = "MessageLengthPixel",
                       xOffset = 0,
-                      yOffset = -ginghamPixelSize*#squares }
+                      yOffset = -ginghamPixelSize * #squares }
 
 cursorObjectsPixels[1] = { name = "CursorObjectMessageLengthPixel",
                            xOffset = 0,
-                           yOffset = -ginghamPixelSize*(#squares+1) }
+                           yOffset = -ginghamPixelSize * (#squares + 1) }
 
-for i = 1, 85, 1 do
-    lettersSquares[i+1] = { name = string.format("LettersSquare_%d", i),
-                            xOffset = ginghamPixelSize * i,
-                            yOffset = 0 }
+for i = 1, messagePixelsN, 1 do
+    lettersSquares[i + 1] = { name = string.format("LettersSquare_%d", i),
+                              xOffset = ginghamPixelSize * i,
+                              yOffset = 0 }
 end
 
-for i = 1, 85, 1 do
-    cursorObjectsPixels[i+1] = { name = string.format("CursorObjectPixel_%d", i),
-                                 xOffset = ginghamPixelSize * i,
-                                 yOffset = -ginghamPixelSize }
+for i = 1, messagePixelsN, 1 do
+    cursorObjectsPixels[i + 1] = { name = string.format("CursorObjectPixel_%d", i),
+                                   xOffset = ginghamPixelSize * i,
+                                   yOffset = -ginghamPixelSize }
 end
 
-for i = 1, 49, 1 do
+for i = 1, messagePixelsN, 1 do
     calibrationPixels[i] = { name = string.format("CalibrationPixel_%d", i),
-                             xOffset = ginghamPixelSize*(((i - 1) % 7) + 1) ,
-                             yOffset = - ginghamPixelSize*(math.floor((i - 1) / 7) + 5)  }
+                             xOffset = ginghamPixelSize * (i - 1) } --((i - 1) % 85) }
+                             --yOffset = -ginghamPixelSize * (math.floor((i - 1) / 85) + 0) }
+end
+
+for i = 1, 14, 1 do
+    calibrationPixels[i+messagePixelsN] = { name = string.format("CalibrationPixel_%d", (i+messagePixelsN)),
+                             yOffset = - ginghamPixelSize *  i }
 end
 
 local EventFrame = CreateFrame("Frame")
@@ -437,7 +445,7 @@ end
 
 function CleanTextSquares(container, textLengthSquare, textSquares)
     container[textLengthSquare].texture:SetTexture(0, 0, 0)
-    for i = 1, #container-1, 1 do
+    for i = 1, #container - 1, 1 do
         container[string.format("%s_%d", textSquares, i)].texture:SetAlpha(0)
     end
 end
@@ -509,7 +517,7 @@ end
 --- Colors Companion Control Square
 --- @param message string incoming message
 function SetCompanionControlSquareColor(self, event, message, sender, ...)
-    ---- program control (enable = 0.0, calibration = 0.25, pause = 0.5, disable = 1.0)
+    ---- program control (enable = 0.0, pause = 0.25, disable = 0.5, calibration = 1.0)
     if programControlColor == nil then
         programControlColor = 0.0
     end
@@ -522,28 +530,29 @@ function SetCompanionControlSquareColor(self, event, message, sender, ...)
         combatControlColor = 1.0
     end
     if containCommand(message, commands.disable) then
-        if programControlColor ~= 1.0 then
-            programControlColor = 1.0
-        elseif programControlColor == 1 then
+        if programControlColor ~= 0.5 then
+            programControlColor = 0.5
+        elseif programControlColor == 0.5 then
             programControlColor = 0.0
         end
     end
     if containCommand(message, commands.pause) then
         if programControlColor == 0.0 then
             SendChatMessage("The control script was paused!", "PARTY")
-            programControlColor = 0.5
-        elseif programControlColor == 0.5 then
+            programControlColor = 0.25
+        elseif programControlColor == 0.25 then
             SendChatMessage("The control script was removed from the pause! I'm alive!", "PARTY")
             programControlColor = 0.0
         end
     end
     if containCommand(message, commands.calibrate) then
         if programControlColor == 0.0 then
-            programControlColor = 0.25
-        elseif programControlColor == 0.25 then
+            programControlColor = 1.0
+        elseif programControlColor == 1.0 then
             programControlColor = 0.0
         end
     end
+
     if containCommand(message, commands.follow) then
         SendChatMessage("I'm following you!", "PARTY")
         movingControlColor = 1.0
@@ -646,14 +655,32 @@ function SetMapIDSquareColor()
 end
 
 function CalibrationControl()
-    if programControlColor == 0.25 then
+    if programControlColor == 1.0 then
         for i = 1, #calibrationPixels, 1 do
+            ChangeTransparency(0)
             calibrationPixels[string.format("CalibrationPixel_%d", i)].texture:SetAlpha(1)
-            calibrationPixels[string.format("CalibrationPixel_%d", i)].texture:SetTexture(i%2, 0, 0)
+            calibrationPixels[string.format("CalibrationPixel_%d", i)].texture:SetTexture(i % 2, 0, 0)
+            afterCalibrationTransparencyChanged = false
         end
     else
-        for i = 1, #calibrationPixels, 1 do
-            calibrationPixels[string.format("CalibrationPixel_%d", i)].texture:SetAlpha(0)
+        if not afterCalibrationTransparencyChanged then
+            for i = 1, #calibrationPixels, 1 do
+                ChangeTransparency(1)
+                --print(#calibrationPixels)
+                calibrationPixels[string.format("CalibrationPixel_%d", i)].texture:SetAlpha(0)
+                afterCalibrationTransparencyChanged = true
+            end
+        end
+    end
+end
+
+function ChangeTransparency(alpha)
+    local allSquares = { squares, lettersSquares, cursorObjectsPixels }
+    for _, squares in ipairs(allSquares) do
+        for _, data in ipairs(squares) do
+            if data.name ~= "CompanionControlSquare" then
+                squares[data.name].texture:SetAlpha(alpha)
+            end
         end
     end
 end
