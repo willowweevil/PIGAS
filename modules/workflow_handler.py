@@ -192,8 +192,8 @@ class ScriptWorkflowHandler(HardwareInputSimulator):
             raise WorkflowHandlerError(f"Game directory is not set! Please, check the \"{self.config_file}\" file!")
 
         self.server_type = game_config.get("server-type")
-        if not self.server_type:
-            raise WorkflowHandlerError(f"Server type is not set! Please, check the \"{self.config_file}\" file!")
+        # if not self.server_type:
+        #     raise WorkflowHandlerError(f"Server type is not set! Please, check the \"{self.config_file}\" file!")
         if self.server_type != "official":
             self.server_type = "private" # working only for private servers now
             # raise WorkflowHandlerError(f"Incorrect server type (\"{self.server_type}\" is not supported). "
