@@ -54,6 +54,9 @@ local lettersSquares = {}
 local cursorObjectsPixels = {}
 local calibrationPixels = {}
 
+local messagePixelsN = 85
+local afterCalibrationTransparencyChanged = false
+
 for i, name in ipairs(squares) do
     squares[i] = {
         name = name,

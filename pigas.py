@@ -69,8 +69,8 @@ if __name__ == '__main__':
             screenshot = game_window.take_screenshot(savefig=debug)
             gingham_pixels = gingham.pixels_analysis(data=screenshot,
                                                      n_monitoring_pixels=game_window.n_pixels['y'],
-                                                     pixel_height=game_window.pixel_size['y'],
-                                                     pixel_width=game_window.pixel_size['x'])
+                                                     pixel_height=game_window.pixel_size['x'],
+                                                     pixel_width=game_window.pixel_size['y'])
             session_data.update(gingham.to_dictionary(gingham_pixels))
 
             # extend session data with calculated geometry

@@ -43,8 +43,16 @@ else:
 
 class GameWindow:
     def __init__(self):
-        self.pixel_size = {'x': 5, 'y': 5}
+
+        # without message length pixels (now the message length pixels defined as [-1] element!)
         self.n_pixels = {'x': 201, 'y': 12}
+
+        # N pixels from calibration lines (#calibration command)
+        self.n_rows = 15
+        self.n_cols = 85
+        self.pixel_size = {'x': 5, 'y': 5}
+        self.pixels_sizes = {'x': [], 'y': []}
+
         self.screenshot_shift = None
 
         self.platform = None
@@ -68,11 +76,18 @@ class GameWindow:
 
     def define_gingham_screenshot_shift(self, savefig=False):
         img = self.take_screenshot(savefig=savefig, savefig_prefix='calibration', screenshot_type='calibration')
-        calibration_array_index = GinghamProcessor().get_calibration_array_position(img)
-        if calibration_array_index[0] == -1:
+
+        gingham_shirt_geometry = GinghamProcessor().define_gingham_shirt_parameters(
+            img,
+            expected_rows = self.n_rows,
+            expected_cols = self.n_cols)
+
+        if gingham_shirt_geometry['zero_x'] is None:
             return False
-        self.screenshot_shift = {'x': calibration_array_index[1] - 5, 'y': calibration_array_index[0] - 25}
+        self.screenshot_shift = {'x': gingham_shirt_geometry['zero_x'], 'y': gingham_shirt_geometry['zero_y']}
+        self.pixels_sizes = {'x': gingham_shirt_geometry['widths'], 'y': gingham_shirt_geometry['heights']}
         self.logger.debug(f"Screenshot shift was set to: {self.screenshot_shift}")
+        self.logger.debug(f"Pixels sizes are: {self.pixels_sizes}")
         return True
 
     def set_window_parameters(self, config_data=None):
@@ -218,8 +233,8 @@ class GameWindow:
 
     def _get_gingham_screenshot_geometry(self):
         position_x, position_y = self.window_position
-        width = self.pixel_size['x'] * self.n_pixels['x']
-        height = self.pixel_size['y'] * self.n_pixels['y']
+        width = self.pixel_size['x'] * self.n_pixels['x'] # sum(self.pixels_sizes['x'])
+        height = self.pixel_size['y'] * self.n_pixels['y']  # sum(self.pixels_sizes['y']) #
         if self.screenshot_shift:
             x_shift = self.screenshot_shift['x'] if self.screenshot_shift['x'] else 0
             y_shift = self.screenshot_shift['y'] if self.screenshot_shift['y'] else 0

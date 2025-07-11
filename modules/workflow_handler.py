@@ -194,14 +194,15 @@ class ScriptWorkflowHandler(HardwareInputSimulator):
         self.server_type = game_config.get("server-type")
         if not self.server_type:
             raise WorkflowHandlerError(f"Server type is not set! Please, check the \"{self.config_file}\" file!")
-        if self.server_type != "private" or self.server_type != "official":
-            raise WorkflowHandlerError(f"Incorrect server type (\"{self.server_type}\" is not supported). "
-                                       f"Use only \"private\" or \"official\".")
+        if self.server_type != "official":
+            self.server_type = "private" # working only for private servers now
+            # raise WorkflowHandlerError(f"Incorrect server type (\"{self.server_type}\" is not supported). "
+            #                            f"Use only \"private\" or \"official\".")
 
         self.expansion = game_config.get("expansion")
         if not self.expansion:
             raise WorkflowHandlerError(f"Game expansion is not set! Please, check the \"{self.config_file}\" file!")
-        if self.expansion != "wotlk" or self.expansion != "cataclysm":
+        if self.expansion != "wotlk" and self.expansion != "cataclysm":
             raise WorkflowHandlerError(f"Incorrect expansion \"{self.expansion}\". "
                                        f"Only \"wotlk\" and \"cataclysm\" are supported. ")
 
@@ -231,7 +232,9 @@ class ScriptWorkflowHandler(HardwareInputSimulator):
             calibrated = self.game_window.define_gingham_screenshot_shift(savefig=debug)
             if calibrated:
                 self.companion.screenshot_shift = self.game_window.screenshot_shift
+                #self.companion.pixels_sizes = self.game_window.pixels_sizes
                 self.companion.send_message_to_chat("PIGAS #calibration complete!")
+                time.sleep(0.5)
             else:
                 self.companion.send_message_to_chat("PIGAS #calibration failed! Please try to change window game resolution!")
                 raise WorkflowHandlerError("Failed to find \"Gingham Shirt\" position.")

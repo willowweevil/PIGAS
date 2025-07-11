@@ -1,9 +1,12 @@
 import numpy as np
 import re
 from collections import Counter
+import cv2
 
 from library.errors import GinghamProcessorError
 from library.constants import CALIBRATION_ARRAY
+
+import matplotlib.pyplot as plt
 
 class GinghamProcessor:
     @staticmethod
@@ -57,11 +60,42 @@ class GinghamProcessor:
         else:
             return match_indices[0]
 
-    def get_calibration_array_position(self, screenshot):
+
+    # def get_calibration_array_position(self, screenshot):
+    #     img, _ = self._get_image_array(screenshot, get_raw=True)
+    #
+    #     print(self.define_gingham_shirt_parameters(img, expected_rows=15, expected_cols=85))
+    #
+    #     img = img[:, :, 0]
+    #     calibration_index = self.find_subarray_index_2d(img, CALIBRATION_ARRAY)
+    #     return calibration_index
+
+    def define_gingham_shirt_parameters(self, screenshot, expected_rows, expected_cols):
+
+        data = {'zero_x': None,
+                'zero_y': None,
+                'widths': None,
+                'heights': None}
+
         img, _ = self._get_image_array(screenshot, get_raw=True)
-        img = img[:, :, 0]
-        calibration_index = self.find_subarray_index_2d(img, CALIBRATION_ARRAY)
-        return calibration_index
+        img = img[:, :, 0] == 255
+        img = np.array(img)
+
+        for line in img:
+            if sum(line) > 0:
+                derivative = np.diff(line)
+                data['zero_x'] = list(derivative).index(1.0)
+                data['widths'] = np.diff(np.where(derivative == 1)[0].tolist()[:expected_cols + 1])
+                break
+
+        for line in img.T:
+            if sum(line) > 0:
+                derivative = np.diff(line)
+                data['zero_y'] = list(derivative).index(1.0)
+                data['heights'] = np.diff(np.where(derivative == 1)[0].tolist()[:expected_rows + 1])
+                break
+
+        return data
 
     @staticmethod
     def _get_dominant_color(i, img_array, array_length):
@@ -185,8 +219,8 @@ class GinghamProcessor:
     def to_dictionary(self, all_pixels):
         data_pixels, player_message_pixels, cursor_message_pixels = all_pixels[0], all_pixels[1], all_pixels[2]
 
-        pause_script = True if 0.0 < data_pixels[0][0] < 1.0 else False
-        disable_script = self.check_bool_pixel(data_pixels[0][0], 1.0)  # True if data_pixels[0][0] == 1.0 else False
+        pause_script = True if 0.2 < data_pixels[0][0] < 0.3 else False
+        disable_script = True if 0.4 < data_pixels[0][0] < 0.6 else False
 
         follow_command = self.check_bool_pixel(data_pixels[0][1],
                                                1.0)  # True if round(data_pixels[0][1], 2) == 1.0 else False
