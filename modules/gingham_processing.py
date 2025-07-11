@@ -1,12 +1,12 @@
 import numpy as np
 import re
 from collections import Counter
-import cv2
+#import cv2
 
 from library.errors import GinghamProcessorError
-from library.constants import CALIBRATION_ARRAY
+#from library.constants import CALIBRATION_ARRAY
 
-import matplotlib.pyplot as plt
+#import matplotlib.pyplot as plt
 
 class GinghamProcessor:
     @staticmethod
