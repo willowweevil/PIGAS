@@ -37,6 +37,6 @@ copy /y "%FOR_BUILD_DIR%\%OPEN_AI%" "%BUILD_DIR%"
 copy /Y "%FOR_BUILD_DIR%\%CONTEXT%" "%BUILD_DIR%"
 copy /y "%README%" "%BUILD_DIR%"
 copy /y "%IMAGE%" "%BUILD_DIR%"
-robocopy "%DATA_DIR%" "%BUILD_DIR%\%DATA_DIR%" /E /COPYALL /IS
+robocopy "%DATA_DIR%" "%BUILD_DIR%\%DATA_DIR%" /MIR /COPY:DAT
 echo Copying finished
 echo Done
