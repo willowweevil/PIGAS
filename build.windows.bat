@@ -12,6 +12,7 @@ set CONFIG=tmp.config.yaml
 set CONTEXT=tmp.context.txt
 set OPEN_AI=tmp.open-ai.yaml
 set README="README.md"
+set IMAGE="pigas.png"
 set FOR_BUILD_DIR=for_build
 set DATA_DIR=data
 set BUILD_DIR=pigas
@@ -35,6 +36,7 @@ copy /Y "%FOR_BUILD_DIR%\%CONFIG%" "%BUILD_DIR%"
 copy /y "%FOR_BUILD_DIR%\%OPEN_AI%" "%BUILD_DIR%"
 copy /Y "%FOR_BUILD_DIR%\%CONTEXT%" "%BUILD_DIR%"
 copy /y "%README%" "%BUILD_DIR%"
+copy /y "%IMAGE%" "%BUILD_DIR%"
 robocopy "%DATA_DIR%" "%BUILD_DIR%\%DATA_DIR%" /E /COPYALL /IS
 echo Copying finished
 echo Done
