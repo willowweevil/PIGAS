@@ -78,8 +78,7 @@ class GinghamProcessor:
                 'heights': None}
 
         img, _ = self._get_image_array(screenshot, get_raw=True)
-        img = img[:, :, 0] == 255
-        img = np.array(img)
+        img = (img[:,:,0] == 255) & (img[:,:,1] == 0) & (img[:,:,2] == 0)
 
         for line in img:
             if sum(line) > 0:
