@@ -12,7 +12,7 @@ export CONTEXT=tmp.context.txt
 export OPEN_AI=tmp.open-ai.yaml
 export README="README.md"
 export IMAGE="pigas.png"
-export FOR_BUILD_DIR=for_build
+export FOR_BUILD_DIR=data/templates
 export DATA_DIR=data
 export BUILD_DIR=pigas
 

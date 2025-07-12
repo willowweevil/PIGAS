@@ -13,7 +13,7 @@ set CONTEXT=tmp.context.txt
 set OPEN_AI=tmp.open-ai.yaml
 set README="README.md"
 set IMAGE="pigas.png"
-set FOR_BUILD_DIR=for_build
+set FOR_BUILD_DIR=data\templates
 set DATA_DIR=data
 set BUILD_DIR=pigas
 

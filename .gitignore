@@ -13,7 +13,8 @@ env.bak/
 venv.bak/
 .idea/
 
-# Project files
+# Project files and directories
+for_game
 *debug*
 *.log
 comment*
