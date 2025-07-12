@@ -10,7 +10,7 @@ export PIGAS_BINARY=pigas.bin
 export CONFIG=tmp.config.yaml
 export CONTEXT=tmp.context.txt
 export OPEN_AI=tmp.open-ai.yaml
-export README="READ_ME_PLEASE.pdf"
+export README="README.md"
 export FOR_BUILD_DIR=for_build
 export DATA_DIR=data
 export BUILD_DIR=pigas
@@ -34,7 +34,7 @@ cp -r $DATA_DIR $BUILD_DIR/$DATA_DIR
 cp $FOR_BUILD_DIR/$CONFIG $BUILD_DIR/
 cp $FOR_BUILD_DIR/$OPEN_AI $BUILD_DIR/
 cp $FOR_BUILD_DIR/$CONTEXT $BUILD_DIR/
-cp $FOR_BUILD_DIR/$README $BUILD_DIR/
+cp $README $BUILD_DIR/
 echo Copying finished
 echo Done
 

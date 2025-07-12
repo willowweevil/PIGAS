@@ -11,7 +11,7 @@ set PIGAS_BINARY=pigas.exe
 set CONFIG=tmp.config.yaml
 set CONTEXT=tmp.context.txt
 set OPEN_AI=tmp.open-ai.yaml
-set README="READ_ME_PLEASE.pdf"
+set README="README.md"
 set FOR_BUILD_DIR=for_build
 set DATA_DIR=data
 set BUILD_DIR=pigas
@@ -34,47 +34,7 @@ move "%PIGAS_BINARY%" "%BUILD_DIR%"
 copy /Y "%FOR_BUILD_DIR%\%CONFIG%" "%BUILD_DIR%"
 copy /y "%FOR_BUILD_DIR%\%OPEN_AI%" "%BUILD_DIR%"
 copy /Y "%FOR_BUILD_DIR%\%CONTEXT%" "%BUILD_DIR%"
-copy /y "%FOR_BUILD_DIR%\%README%" "%BUILD_DIR%"
+copy /y "%README%" "%BUILD_DIR%"
 robocopy "%DATA_DIR%" "%BUILD_DIR%\%DATA_DIR%" /E /COPYALL /IS
 echo Copying finished
 echo Done
-
-:: Check if Python script exists
-@REM if not exist "%PIGAS_PYTHON%" (
-@REM     echo Python script not found: %PIGAS_PYTHON%
-@REM     pause
-@REM     exit /b 1
-@REM )
-
-:: Check if venv exists
-@REM if not exist "%VENV_ACTIVATE%" (
-@REM     echo Virtual environment not found at: %VENV_ACTIVATE%
-@REM     pause
-@REM     exit /b 1
-@REM )
-
-@REM if not exist "%BUILD_DIRECTORY%" (
-@REM     echo Something gone wrong and build directory does not exist.
-@REM     pause
-@REM     exit /b 1
-@REM )
-
-@REM if %ERRORLEVEL% GEQ 8 (
-@REM     echo.
-@REM     echo ERROR: Copy failed (ErrorLevel=%ERRORLEVEL%).
-@REM     pause
-@REM     exit /b 1
-@REM )
-
-
-@REM :: Keep window open
-@REM if %ERRORLEVEL% GEQ 8 (
-@REM     echo ERROR: Copy failed (ErrorLevel=%ERRORLEVEL%).
-@REM )
-
-@REM if %ERRORLEVEL% LSS 8 (
-@REM     echo ERROR occurs: (ErrorLevel=%ERRORLEVEL%).
-@REM )
-
-echo.
-pause
